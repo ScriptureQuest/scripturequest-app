@@ -1,0 +1,50 @@
+[
+  {
+    "id": "lost_sheep",
+    "emojis": "🐑✨",
+    "correctTitle": "The Lost Sheep",
+    "options": ["The Lost Sheep", "The Good Samaritan", "The Mustard Seed"]
+  },
+  {
+    "id": "lost_coin",
+    "emojis": "🪙🔦",
+    "correctTitle": "The Lost Coin",
+    "options": ["The Lost Coin", "The Sower", "The Prodigal Son"]
+  },
+  {
+    "id": "prodigal_son",
+    "emojis": "👦🏡🐖",
+    "correctTitle": "The Prodigal Son",
+    "options": ["The Prodigal Son", "The Two Sons", "The Good Shepherd"]
+  },
+  {
+    "id": "mustard_seed",
+    "emojis": "🌱👑",
+    "correctTitle": "The Mustard Seed",
+    "options": ["The Mustard Seed", "The Hidden Treasure", "The Ten Talents"]
+  },
+  {
+    "id": "wise_foolish_builders",
+    "emojis": "🏠⛈️🏠",
+    "correctTitle": "Wise and Foolish Builders",
+    "options": ["Wise and Foolish Builders", "The Two Houses", "The Talents"]
+  },
+  {
+    "id": "good_samaritan",
+    "emojis": "🚶‍♂️💔🤕🤝",
+    "correctTitle": "The Good Samaritan",
+    "options": ["The Good Samaritan", "The Good Shepherd", "The Great Banquet"]
+  },
+  {
+    "id": "ten_talents",
+    "emojis": "💰💰💰➡️📈",
+    "correctTitle": "The Talents",
+    "options": ["The Talents", "The Rich Fool", "The Vineyard Workers"]
+  },
+  {
+    "id": "hidden_treasure",
+    "emojis": "🗺️💎",
+    "correctTitle": "The Hidden Treasure",
+    "options": ["The Hidden Treasure", "The Pearl of Great Price", "The Net"]
+  }
+]

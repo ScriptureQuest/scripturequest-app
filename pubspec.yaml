@@ -1,0 +1,56 @@
+name: level_up_your_faith
+description: "Scripture Quest is a unique mobile app that blends Christian scripture with engaging RPG-style mechanics, empowering gamers to deepen their spiritual journey and consistently connect with God's Word through a modern, neon-accented dark mode interface."
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  share_plus: ^12.0.0
+  timezone: 0.10.1
+  flutter_local_notifications: ^19.0.0
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.1.0
+  go_router: ^16.1.0
+  provider: ^6.0.0
+  shared_preferences: ^2.0.0
+  intl: 0.20.2
+  uuid: ^4.0.0
+  url_launcher: ^6.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/bible/kjv.json
+    - assets/avatar/soul_avatar_base.png
+    - assets/verses/
+    - assets/games/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icons/dreamflow_icon.jpg
+  remove_alpha_ios: true
+
+# Native splash screen configuration
+# Uses Sacred-Dark background and a centered existing image asset
+flutter_native_splash:
+  android: true
+  ios: true
+  # We will manage web splash manually in web/index.html for a consistent look
+  web: false
+  color: "#0A0E1A" # GamerColors.darkBackground
+  image: assets/avatar/soul_avatar_base.png
+  android_12:
+    color: "#0A0E1A"
+    image: assets/avatar/soul_avatar_base.png
