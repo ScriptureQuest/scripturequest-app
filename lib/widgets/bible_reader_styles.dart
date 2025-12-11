@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:level_up_your_faith/models/settings.dart';
 
 // Simple theme data for the Bible reader area
@@ -60,32 +61,38 @@ class BibleReaderStyles {
 
   // New themed styles
   static TextStyle verseNumber(double fontScale, BibleReaderThemeData t, {ReaderFontStyle fontStyle = ReaderFontStyle.classicSerif}) {
-    return TextStyle(
+    final baseStyle = TextStyle(
       fontSize: 12.5 * fontScale,
       fontWeight: FontWeight.w700,
       color: t.accent.withValues(alpha: 0.95), // POPS but not neon-bright
       height: 1.4,
-      fontFamily: fontStyle == ReaderFontStyle.classicSerif ? 'serif' : null,
     );
+    return fontStyle == ReaderFontStyle.classicSerif
+        ? GoogleFonts.lora(textStyle: baseStyle)
+        : GoogleFonts.inter(textStyle: baseStyle);
   }
 
   static TextStyle verseBody(double fontScale, BibleReaderThemeData t, {ReaderFontStyle fontStyle = ReaderFontStyle.classicSerif}) {
-    return TextStyle(
+    final baseStyle = TextStyle(
       fontSize: 14 * fontScale,
       height: 1.6,
       color: t.text,
-      fontFamily: fontStyle == ReaderFontStyle.classicSerif ? 'serif' : null,
     );
+    return fontStyle == ReaderFontStyle.classicSerif
+        ? GoogleFonts.lora(textStyle: baseStyle)
+        : GoogleFonts.inter(textStyle: baseStyle);
   }
 
   static TextStyle jesusWords(double fontScale, BibleReaderThemeData t, {ReaderFontStyle fontStyle = ReaderFontStyle.classicSerif}) {
-    return TextStyle(
+    final baseStyle = TextStyle(
       fontSize: 14 * fontScale,
       height: 1.6,
       color: t.red,
       fontWeight: FontWeight.w500,
-      fontFamily: fontStyle == ReaderFontStyle.classicSerif ? 'serif' : null,
     );
+    return fontStyle == ReaderFontStyle.classicSerif
+        ? GoogleFonts.lora(textStyle: baseStyle)
+        : GoogleFonts.inter(textStyle: baseStyle);
   }
 
   static TextStyle verseText(double f, BibleReaderThemeData t) {

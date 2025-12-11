@@ -18,13 +18,38 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   bool _loadedJournal = false;
   bool _onboardingChecked = false;
+  bool _whatsNewChecked = false;
+  int _lastStreakEventValue = 0;
   
+  // Animation controller for streak celebration
+  late AnimationController _streakAnimController;
+  late Animation<double> _streakScaleAnim;
+  late Animation<double> _streakOpacityAnim;
+
   @override
   void initState() {
     super.initState();
+    // Initialize streak celebration animation
+    _streakAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _streakScaleAnim = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _streakAnimController, curve: Curves.easeInOut),
+    );
+    _streakOpacityAnim = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween<double>(begin: 1.0, end: 0.6), weight: 50),
+      TweenSequenceItem(tween: Tween<double>(begin: 0.6, end: 1.0), weight: 50),
+    ]).animate(_streakAnimController);
+  }
+
+  @override
+  void dispose() {
+    _streakAnimController.dispose();
+    super.dispose();
   }
 
   @override
@@ -38,6 +63,38 @@ class _HomeScreenState extends State<HomeScreen> {
         _loadedJournal = true;
       }
     }
+    
+    // Check What's New modal
+    if (!_whatsNewChecked) {
+      final provider = Provider.of<AppProvider?>(context, listen: false);
+      if (provider != null && provider.isInitialized) {
+        _whatsNewChecked = true;
+        _checkWhatsNew(provider);
+      }
+    }
+  }
+  
+  Future<void> _checkWhatsNew(AppProvider app) async {
+    try {
+      // Delay slightly to let Home finish initial render
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
+      
+      final shouldShow = await app.shouldShowWhatsNew();
+      if (shouldShow && mounted) {
+        _showWhatsNewModal(app);
+      }
+    } catch (e) {
+      debugPrint('_checkWhatsNew error: $e');
+    }
+  }
+  
+  void _showWhatsNewModal(AppProvider app) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => _WhatsNewDialog(app: app),
+    );
   }
 
   @override
@@ -429,40 +486,63 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final streak = app.currentBibleStreak;
-    return SacredCard(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: GamerColors.accent.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: GamerColors.accent.withValues(alpha: 0.4)),
+    
+    // Trigger animation when streak event increments
+    final currentEvent = app.streakCelebrationEvent;
+    if (currentEvent > _lastStreakEventValue && _lastStreakEventValue > 0) {
+      // Streak just incremented - trigger animation
+      _streakAnimController.forward(from: 0.0);
+    }
+    _lastStreakEventValue = currentEvent;
+    
+    return AnimatedBuilder(
+      animation: _streakAnimController,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _streakScaleAnim.value,
+          child: Opacity(
+            opacity: 1.0, // Keep card opaque
+            child: SacredCard(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Opacity(
+                    opacity: _streakOpacityAnim.value,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: GamerColors.accent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.4)),
+                      ),
+                      child: const Icon(Icons.local_fire_department, color: GamerColors.accent, size: 22),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Streak: $streak ${streak == 1 ? 'day' : 'days'}',
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Don\'t break it—complete today\'s reading.',
+                          style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: const Icon(Icons.local_fire_department, color: GamerColors.accent, size: 22),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Streak: $streak ${streak == 1 ? 'day' : 'days'}',
-                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Don\'t break it—complete today\'s reading.',
-                  style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -1386,6 +1466,117 @@ String _formatDate(DateTime dt) {
   final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   final m = months[dt.month - 1];
   return '$m ${dt.day}, ${dt.year}';
+}
+
+// ===================== What's New Dialog =====================
+
+class _WhatsNewDialog extends StatelessWidget {
+  final AppProvider app;
+  const _WhatsNewDialog({required this.app});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    
+    return Dialog(
+      backgroundColor: cs.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                Icon(Icons.celebration, color: cs.primary, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FutureBuilder<String>(
+                    future: app.getCurrentAppVersion(),
+                    builder: (context, snapshot) {
+                      final version = snapshot.data ?? '1.0.0';
+                      return Text(
+                        'What\'s New in $version',
+                        style: theme.textTheme.headlineSmall,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // What's new list
+            _WhatsNewItem(
+              icon: Icons.timer_outlined,
+              text: 'Reading streak now requires real reading time',
+            ),
+            const SizedBox(height: 12),
+            _WhatsNewItem(
+              icon: Icons.today_outlined,
+              text: 'Verse of the Day rotates daily',
+            ),
+            const SizedBox(height: 12),
+            _WhatsNewItem(
+              icon: Icons.grid_on_outlined,
+              text: 'Matching game verse loading fixed',
+            ),
+            const SizedBox(height: 12),
+            _WhatsNewItem(
+              icon: Icons.color_lens_outlined,
+              text: 'New purple app icon',
+            ),
+            const SizedBox(height: 12),
+            _WhatsNewItem(
+              icon: Icons.text_fields_outlined,
+              text: 'Reader menu improved with clearer font options',
+            ),
+            const SizedBox(height: 24),
+            // Got it button
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () async {
+                  await app.markWhatsNewSeen();
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: const Text('Got it'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WhatsNewItem extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  
+  const _WhatsNewItem({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: GamerColors.accent),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 // ===================== UI Helpers for polish =====================

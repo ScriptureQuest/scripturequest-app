@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:io' show Platform;
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:level_up_your_faith/models/user_model.dart';
 import 'package:level_up_your_faith/models/verse_model.dart';
 import 'package:level_up_your_faith/models/quest_model.dart';
@@ -1146,10 +1149,16 @@ class AppProvider extends ChangeNotifier {
   int _currentBibleStreak = 0;
   int _longestBibleStreak = 0;
   DateTime? _lastBibleReadDate; // date-only (local)
+  
+  // Streak celebration animation event (increment to trigger animation)
+  int _streakCelebrationEvent = 0;
+  int _streakCelebrationValue = 0;
 
   int get currentBibleStreak => _currentBibleStreak;
   int get longestBibleStreak => _longestBibleStreak;
   DateTime? get lastBibleReadDate => _lastBibleReadDate;
+  int get streakCelebrationEvent => _streakCelebrationEvent;
+  int get streakCelebrationValue => _streakCelebrationValue;
 
   // Streak XP bonus is derived: active when current Bible streak >= 7 days
   bool get hasStreakBonus => _currentBibleStreak >= 7;
@@ -4441,6 +4450,9 @@ class AppProvider extends ChangeNotifier {
           }
           _lastBibleReadDate = today;
           countedNewDay = true;
+          // Trigger streak celebration animation
+          _streakCelebrationEvent++;
+          _streakCelebrationValue = _currentBibleStreak;
         } else if (diffDays > 1) {
           // missed a day; reset to 1
           try {
@@ -5406,6 +5418,126 @@ class AppProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('removeFriend error: $e');
+    }
+  }
+
+  // ================== What's New Modal (v1.0) ==================
+  String? _lastSeenVersion;
+  String _lastSeenVersionKey(String uid) => 'last_seen_version_$uid';
+
+  /// Check if What's New modal should be shown
+  /// Returns true if current version differs from last seen version
+  Future<bool> shouldShowWhatsNew() async {
+    try {
+      final uid = _currentUser?.id ?? '';
+      if (uid.isEmpty) return false;
+      
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+      
+      if (_lastSeenVersion == null) {
+        // Load from storage
+        _lastSeenVersion = _storageService.getString(_lastSeenVersionKey(uid));
+      }
+      
+      // Show modal if version has changed
+      if (_lastSeenVersion == null || _lastSeenVersion != currentVersion) {
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('shouldShowWhatsNew error: $e');
+      return false;
+    }
+  }
+
+  /// Mark the current app version as seen
+  Future<void> markWhatsNewSeen() async {
+    try {
+      final uid = _currentUser?.id ?? '';
+      if (uid.isEmpty) return;
+      
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+      
+      _lastSeenVersion = currentVersion;
+      await _storageService.save<String>(_lastSeenVersionKey(uid), currentVersion);
+    } catch (e) {
+      debugPrint('markWhatsNewSeen error: $e');
+    }
+  }
+
+  /// Get current app version string
+  Future<String> getCurrentAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      return packageInfo.version;
+    } catch (e) {
+      debugPrint('getCurrentAppVersion error: $e');
+      return '1.0.0';
+    }
+  }
+
+  // ================== Device Info for Feedback (v1.0) ==================
+  /// Get device information formatted for feedback emails
+  Future<Map<String, String>> getDeviceInfoForFeedback() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final deviceInfo = DeviceInfoPlugin();
+      
+      String deviceModel = 'Unknown';
+      String osVersion = 'Unknown';
+      String platform = 'Unknown';
+      
+      try {
+        if (!kIsWeb) {
+          if (Platform.isIOS) {
+            platform = 'iOS';
+            final iosInfo = await deviceInfo.iosInfo;
+            deviceModel = iosInfo.utsname.machine ?? 'Unknown iOS Device';
+            osVersion = iosInfo.systemVersion ?? 'Unknown';
+          } else if (Platform.isAndroid) {
+            platform = 'Android';
+            final androidInfo = await deviceInfo.androidInfo;
+            deviceModel = '${androidInfo.manufacturer ?? ''} ${androidInfo.model ?? ''}'.trim();
+            osVersion = 'Android ${androidInfo.version.release ?? 'Unknown'}';
+          } else {
+            platform = 'Desktop';
+          }
+        } else {
+          platform = 'Web';
+          final webInfo = await deviceInfo.webBrowserInfo;
+          deviceModel = webInfo.browserName.name;
+          osVersion = webInfo.platform ?? 'Unknown';
+        }
+      } catch (e) {
+        debugPrint('Platform detection error: $e');
+      }
+      
+      final summary = 'App Version: ${packageInfo.version}\n'
+                      'Build: ${packageInfo.buildNumber}\n'
+                      'Device: $deviceModel\n'
+                      'OS: $osVersion\n'
+                      'Platform: $platform';
+      
+      return {
+        'version': packageInfo.version,
+        'build': packageInfo.buildNumber,
+        'device': deviceModel,
+        'os': osVersion,
+        'platform': platform,
+        'summary': summary,
+      };
+    } catch (e) {
+      debugPrint('getDeviceInfoForFeedback error: $e');
+      return {
+        'version': '1.0.0',
+        'build': '1',
+        'device': 'Unknown',
+        'os': 'Unknown',
+        'platform': 'Unknown',
+        'summary': 'App Version: 1.0.0\nBuild: 1\nDevice: Unknown\nOS: Unknown\nPlatform: Unknown',
+      };
     }
   }
 }

@@ -113,7 +113,7 @@ class _VersesScreenState extends State<VersesScreen> {
             ),
             centerTitle: true,
             actions: [
-              // 1) Reader/Text settings (opens Reader menu for text + appearance)
+              // Reader/Text settings (font + text size)
               IconButton(
                 icon: const Icon(Icons.format_size),
                 tooltip: 'Reader settings',
@@ -122,25 +122,7 @@ class _VersesScreenState extends State<VersesScreen> {
                 padding: const EdgeInsets.all(6),
                 onPressed: _openReaderSettings,
               ),
-              // 2) Theme/appearance button (existing logic lives inside Bible Menu)
-              IconButton(
-                icon: const Icon(Icons.color_lens_outlined),
-                tooltip: 'Appearance',
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                padding: const EdgeInsets.all(6),
-                onPressed: _openAppearanceSheet,
-              ),
-              // 3) Version selector entry (book icon)
-              IconButton(
-                icon: const Icon(Icons.menu_book_outlined),
-                tooltip: 'Bible version',
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                padding: const EdgeInsets.all(6),
-                onPressed: _openVersionSelectorSheet,
-              ),
-              // 4) Reader menu / overflow
+              // Overflow menu with Appearance and Version
               IconButton(
                 icon: const Icon(Icons.more_vert),
                 tooltip: 'Bible menu',
@@ -406,6 +388,35 @@ class _VersesScreenState extends State<VersesScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+
+                // Section: Reader Preferences
+                Text(
+                  'Reader Preferences',
+                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                ),
+                const SizedBox(height: 8),
+                _menuTile(
+                  context,
+                  icon: Icons.color_lens_outlined,
+                  title: 'Appearance',
+                  subtitle: 'Color scheme & red letters',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _openAppearanceSheet();
+                  },
+                ),
+                _menuTile(
+                  context,
+                  icon: Icons.menu_book_outlined,
+                  title: 'Bible Version',
+                  subtitle: 'Select translation',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _openVersionSelectorSheet();
+                  },
+                ),
+
                 const SizedBox(height: 12),
 
                 // Section: Navigation

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:level_up_your_faith/providers/settings_provider.dart';
@@ -216,10 +217,11 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              // ============ Support Scripture Quest ============
+              // ============ Support & Feedback ============
               _Section(
-                title: 'Support Scripture Quest',
+                title: 'Support & Feedback',
                 children: [
+                  // Support Scripture Quest
                   Text(
                     'If you\'d like to help support ongoing development and keep Scripture Quest free, you can give here.',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -242,6 +244,40 @@ class SettingsScreen extends StatelessWidget {
                       },
                       icon: const Icon(Icons.open_in_new_rounded),
                       label: const Text('Open GoFundMe'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Send Feedback / Report a Bug
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final appProvider = context.read<AppProvider>();
+                          final deviceInfo = await appProvider.getDeviceInfoForFeedback();
+                          final subject = Uri.encodeComponent('Scripture Quest Feedback');
+                          final body = Uri.encodeComponent('Hi! I have some feedback:\n\n\n---\n\n${deviceInfo['summary']}');
+                          final uri = Uri.parse('mailto:feedback@scripturequest.app?subject=$subject&body=$body');
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
+                          } else {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Could not open email client')),
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          debugPrint('Send feedback error: $e');
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not prepare feedback email')),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.feedback_outlined),
+                      label: const Text('Send Feedback / Report a Bug'),
                     ),
                   ),
                 ],
