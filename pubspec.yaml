@@ -1,7 +1,7 @@
 name: level_up_your_faith
 description: "Scripture Quest is a unique mobile app that blends Christian scripture with engaging RPG-style mechanics, empowering gamers to deepen their spiritual journey and consistently connect with God's Word through a modern, neon-accented dark mode interface."
 publish_to: "none"
-version: 1.0.0
+version: 1.0.1+3
 
 environment:
   sdk: ^3.6.0
