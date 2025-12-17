@@ -288,4 +288,14 @@ class SettingsProvider extends ChangeNotifier {
     await _service.save(_settings);
     notifyListeners();
   }
+
+  /// Dev only: Resets onboarding state to allow re-testing onboarding flow
+  Future<void> resetOnboardingState() async {
+    _settings = _settings.copyWith(
+      hasCompletedPersonalizedSetup: false,
+      hasCompletedQuickTour: false,
+    );
+    await _service.save(_settings);
+    notifyListeners();
+  }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -125,6 +126,16 @@ class MyApp extends StatelessWidget {
 }
 
 final _router = GoRouter(
+  // Dev only: URL parameter ?onboarding=1 forces onboarding to show
+  redirect: (context, state) {
+    if (kDebugMode) {
+      final forceOnboarding = state.uri.queryParameters['onboarding'] == '1';
+      if (forceOnboarding && state.matchedLocation != '/onboarding') {
+        return '/onboarding';
+      }
+    }
+    return null;
+  },
   routes: [
     // Onboarding shown outside the shell (no bottom nav)
     GoRoute(

@@ -282,6 +282,35 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              // ============ Dev Tools (Debug Only) ============
+              if (kDebugMode) ...[
+                const SizedBox(height: 16),
+                _Section(
+                  title: 'Developer Tools',
+                  children: [
+                    Text(
+                      'These tools are only visible in debug/dev builds.',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          await sp.resetOnboardingState();
+                          if (context.mounted) {
+                            context.go('/onboarding');
+                          }
+                        },
+                        icon: const Icon(Icons.restart_alt),
+                        label: const Text('Reset Onboarding (Dev)'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         );
