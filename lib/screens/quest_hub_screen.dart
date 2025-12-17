@@ -14,10 +14,7 @@ class QuestHubScreen extends StatefulWidget {
   State<QuestHubScreen> createState() => _QuestHubScreenState();
 }
 
-enum _TaskBoardTab { daily, nightly, reflection }
-
 class _QuestHubScreenState extends State<QuestHubScreen> {
-  _TaskBoardTab _selected = _TaskBoardTab.daily;
   bool _onboardingChecked = false;
 
   @override
@@ -32,6 +29,11 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
         });
       }
     }
+  }
+
+  bool _isDaytime() {
+    final hour = DateTime.now().hour;
+    return hour >= 6 && hour < 18;
   }
 
   @override
@@ -52,27 +54,18 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
       final List<TaskModel> nightly = provider.getNightlyTasksForToday();
       final List<TaskModel> reflection = provider.getReflectionTasks();
 
-      List<TaskModel> currentList() {
-        switch (_selected) {
-          case _TaskBoardTab.daily:
-            return daily;
-          case _TaskBoardTab.nightly:
-            return nightly;
-          case _TaskBoardTab.reflection:
-            return reflection;
-        }
-      }
+      final List<TaskModel> todayQuests = _isDaytime() ? daily : nightly;
+      final String todayLabel = _isDaytime() ? 'Today' : 'Tonight';
 
-      String emptyCopy() {
-        switch (_selected) {
-          case _TaskBoardTab.daily:
-            return "You've finished your Daily Tasks for today. Well done.";
-          case _TaskBoardTab.nightly:
-            return 'Nightly Tasks unlock later in the day. Keep walking with God.';
-          case _TaskBoardTab.reflection:
-            return 'All Reflection tasks are completed. You can revisit them anytime in your journey.';
-        }
-      }
+      final List<TaskModel> weeklyQuests = provider.quests
+          .where((q) => q.isWeekly || q.category == 'weekly' || q.questFrequency == 'weekly')
+          .where((q) => !q.isCompleted)
+          .toList();
+
+      final List<TaskModel> eventQuests = provider.quests
+          .where((q) => q.category == 'event' || q.category == 'seasonal')
+          .where((q) => !q.isCompleted)
+          .toList();
 
       final votdRef = provider.getVerseOfTheDay();
       String featuredText = 'For God so loved the world that he gave his one and only Son...';
@@ -101,15 +94,32 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
               const SizedBox(height: 16),
               _buildContinueReading(context, provider, continueRef),
               const SizedBox(height: 24),
-              const SectionHeader('Your Tasks', icon: Icons.check_circle_outline),
-              const SizedBox(height: 8),
-              _buildSegmentedControl(),
-              const SizedBox(height: 12),
-              if (currentList().isEmpty)
-                _buildEmptyState(context, emptyCopy())
-              else
-                ...currentList().map<Widget>((q) => TaskCard(quest: q)),
-              const SizedBox(height: 16),
+              if (todayQuests.isNotEmpty) ...[
+                _buildSectionHeader(context, todayLabel),
+                const SizedBox(height: 8),
+                ...todayQuests.map<Widget>((q) => TaskCard(quest: q)),
+                const SizedBox(height: 16),
+              ],
+              if (reflection.isNotEmpty) ...[
+                _buildSectionHeader(context, 'Reflection'),
+                const SizedBox(height: 8),
+                ...reflection.map<Widget>((q) => TaskCard(quest: q)),
+                const SizedBox(height: 16),
+              ],
+              if (weeklyQuests.isNotEmpty) ...[
+                _buildSectionHeader(context, 'This Week'),
+                const SizedBox(height: 8),
+                ...weeklyQuests.map<Widget>((q) => TaskCard(quest: q)),
+                const SizedBox(height: 16),
+              ],
+              if (eventQuests.isNotEmpty) ...[
+                _buildSectionHeader(context, 'Seasonal / Events'),
+                const SizedBox(height: 8),
+                ...eventQuests.map<Widget>((q) => TaskCard(quest: q)),
+                const SizedBox(height: 16),
+              ],
+              if (todayQuests.isEmpty && reflection.isEmpty && weeklyQuests.isEmpty && eventQuests.isEmpty)
+                _buildEmptyState(context),
               _buildQuestsLink(context),
             ],
           ),
@@ -121,37 +131,26 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
   Widget _buildWelcomeHeader(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return SacredCard(
-      padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Text.rich(
+      TextSpan(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.primary.withValues(alpha: 0.35)),
-            ),
-            child: const Icon(Icons.auto_awesome, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Welcome Back, Warrior', style: theme.textTheme.headlineSmall),
-                const SizedBox(height: 6),
-                Text(
-                  "Let's take one more step today.",
-                  style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant),
-                ),
-              ],
-            ),
+          const TextSpan(text: 'Welcome, '),
+          TextSpan(
+            text: 'Warrior',
+            style: TextStyle(color: cs.primary),
           ),
         ],
       ),
+      style: theme.textTheme.headlineSmall,
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
     );
   }
 
@@ -261,40 +260,18 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
     );
   }
 
-  Widget _buildSegmentedControl() {
-    return SegmentedButton<_TaskBoardTab>(
-      segments: const <ButtonSegment<_TaskBoardTab>>[
-        ButtonSegment(label: Text('Daily'), value: _TaskBoardTab.daily, icon: Icon(Icons.wb_sunny_rounded)),
-        ButtonSegment(label: Text('Nightly'), value: _TaskBoardTab.nightly, icon: Icon(Icons.nights_stay_rounded)),
-        ButtonSegment(label: Text('Reflection'), value: _TaskBoardTab.reflection, icon: Icon(Icons.psychology_alt_rounded)),
-      ],
-      selected: <_TaskBoardTab>{_selected},
-      onSelectionChanged: (s) {
-        setState(() => _selected = s.first);
-      },
-      style: ButtonStyle(
-        visualDensity: VisualDensity.compact,
-        shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, String message) {
+  Widget _buildEmptyState(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
         children: [
           Icon(
-            _selected == _TaskBoardTab.daily
-                ? Icons.wb_sunny_rounded
-                : _selected == _TaskBoardTab.nightly
-                    ? Icons.nights_stay_rounded
-                    : Icons.psychology_alt_rounded,
+            Icons.check_circle_outline,
             color: Theme.of(context).colorScheme.outline,
             size: 40,
           ),
           const SizedBox(height: 12),
-          EmptyState(message: message),
+          EmptyState(message: "You're all caught up. Well done!"),
         ],
       ),
     );

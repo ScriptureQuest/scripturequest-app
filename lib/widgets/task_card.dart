@@ -376,22 +376,31 @@ class TaskCard extends StatelessWidget {
   // ---------------------- Chips & Labels ----------------------
   // Strong category pill used in the bottom row per spec
   Widget _buildCategoryPillStrong(BuildContext context) {
-    final TaskCategory cat = quest.resolvedCategory;
     late final String label;
     late final Color color;
-    switch (cat) {
-      case TaskCategory.daily:
-        label = 'DAILY TASK';
-        color = Theme.of(context).colorScheme.primary;
-        break;
-      case TaskCategory.nightly:
-        label = 'NIGHT TASK';
-        color = Theme.of(context).colorScheme.secondary;
-        break;
-      case TaskCategory.reflection:
-        label = 'REFLECTION';
-        color = Theme.of(context).colorScheme.tertiary;
-        break;
+
+    if (quest.isWeekly || quest.category == 'weekly' || quest.questFrequency == 'weekly') {
+      label = 'WEEKLY QUEST';
+      color = GamerColors.neonPurple;
+    } else if (quest.category == 'event' || quest.category == 'seasonal') {
+      label = 'EVENT QUEST';
+      color = GamerColors.accentSecondary;
+    } else {
+      final TaskCategory cat = quest.resolvedCategory;
+      switch (cat) {
+        case TaskCategory.daily:
+          label = 'DAILY QUEST';
+          color = Theme.of(context).colorScheme.primary;
+          break;
+        case TaskCategory.nightly:
+          label = 'NIGHTLY QUEST';
+          color = Theme.of(context).colorScheme.secondary;
+          break;
+        case TaskCategory.reflection:
+          label = 'REFLECTION';
+          color = Theme.of(context).colorScheme.tertiary;
+          break;
+      }
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

@@ -38,14 +38,18 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Quest Hub final structure
+  - Minimal header: "Welcome, Warrior" (Warrior in accent color, no card/subtitle)
+  - Today's Verse always visible, Continue Reading card below
+  - Time-aware "Today/Tonight" section: daily quests 6AM-5:59PM, nightly 6PM-5:59AM
+  - Separate sections: Reflection, This Week (weekly), Seasonal/Events - hidden if empty
+  - Pill labels updated: DAILY QUEST, NIGHTLY QUEST, WEEKLY QUEST, EVENT QUEST, REFLECTION
+
 - 2025-12-17: Quest Hub as primary home
-  - Created new QuestHubScreen as primary landing page (/)
-  - Header shows: "Welcome Back, Warrior", Today's Verse (always visible), Continue Reading card
-  - Tasks (Daily/Nightly/Reflection) are the main content below header
-  - Moved Reading Plans entry to Community screen (first in "Get involved" section)
-  - Bottom-left nav tab renamed from "Tasks" to "Quest Hub", routes to "/" 
-  - AppBar has no home icon - users return via bottom tab
+  - QuestHubScreen is primary landing page at /
+  - Bottom-left nav tab renamed from "Tasks" to "Quest Hub"
   - Home screen preserved at /home but not in primary navigation
+  - Moved Reading Plans to Community screen
   
 - 2025-12-17: Initial Replit environment setup
   - Installed Flutter via nix packages
