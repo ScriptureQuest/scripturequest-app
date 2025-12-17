@@ -243,14 +243,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 24),
 
-          // Live preview
+          // Live preview - elevated scripture card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Text.rich(
               TextSpan(
@@ -412,6 +419,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: 12),
           _buildRhythmOption('ownPace', "I'll explore at my own pace"),
 
+          const SizedBox(height: 16),
+          Text(
+            'You can change this anytime.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+            ),
+          ),
+
           const Spacer(flex: 3),
           SizedBox(
             width: double.infinity,
@@ -456,7 +471,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         HapticFeedback.selectionClick();
         setState(() => _rhythmChoice = value);
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
@@ -466,6 +482,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             color: selected ? cs.primary : cs.outlineVariant.withValues(alpha: 0.5),
             width: selected ? 2 : 1,
           ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: cs.primary.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           children: [
@@ -487,11 +512,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 4) Optional Identity - Lightweight
+  // 4) Identity - Name is required, no title preview
   // ─────────────────────────────────────────────────────────────────────────
   Widget _pageIdentity(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final nameValid = _nameCtrl.text.trim().isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
@@ -500,14 +526,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         children: [
           const Spacer(flex: 2),
           Text(
-            'Your Journey Name',
+            'What should we call you?',
             style: theme.textTheme.headlineMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'This is how your journey will be shown. You can change it later.',
+            'This is how your journey will be shown.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant,
             ),
@@ -516,60 +542,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
           TextField(
             controller: _nameCtrl,
+            autofocus: true,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.done,
             keyboardType: TextInputType.name,
             maxLength: 30,
             decoration: InputDecoration(
-              hintText: 'Enter your name (optional)',
+              hintText: 'Your name',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
               counterText: '',
             ),
-            onSubmitted: (_) => _saveNameAndContinue(),
-          ),
-          const SizedBox(height: 12),
-
-          // Title preview
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: GamerColors.darkCard,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.workspace_premium, color: cs.primary, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Title: Pilgrim',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) {
+              if (nameValid) _saveNameAndContinue();
+            },
           ),
 
           const Spacer(flex: 3),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: _busy ? null : _saveNameAndContinue,
+              onPressed: (_busy || !nameValid) ? null : _saveNameAndContinue,
               child: _busy ? const Text('Saving...') : const Text('Continue'),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: TextButton(
-              onPressed: _busy ? null : _next,
-              child: Text(
-                'Skip',
-                style: TextStyle(color: cs.onSurfaceVariant),
-              ),
             ),
           ),
           const Spacer(),
@@ -580,10 +576,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _saveNameAndContinue() async {
     final name = _nameCtrl.text.trim();
-    if (name.isEmpty) {
-      _next();
-      return;
-    }
+    if (name.isEmpty) return;
 
     setState(() => _busy = true);
     try {
@@ -609,28 +602,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final cs = theme.colorScheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Spacer(flex: 2),
           Text(
             "You're Ready",
-            style: theme.textTheme.headlineMedium?.copyWith(
+            style: theme.textTheme.headlineLarge?.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             'Your path is simple. Faithfulness grows in small steps.',
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: cs.onSurfaceVariant,
+              color: cs.onSurface.withValues(alpha: 0.75),
+              height: 1.5,
             ),
           ),
           const Spacer(flex: 3),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
               onPressed: _busy
                   ? null
                   : () async {
@@ -643,14 +640,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         debugPrint('onboarding finalize error: $e');
                       }
                       if (!mounted) return;
-                      context.go('/home');
+                      context.go('/');
                     },
               child: _busy
                   ? const Text('Preparing...')
                   : const Text('Enter Quest Hub'),
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 16),
         ],
       ),
     );

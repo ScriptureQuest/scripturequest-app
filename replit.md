@@ -38,12 +38,21 @@ The application is built with Flutter 3.32.0 and Dart 3.8.0, utilizing the Provi
 - **Web Server:** Python's `http.server` (for local development/serving web build)
 
 ## Recent Changes
-- 2025-12-17: Refined Onboarding Experience
+- 2025-12-17: Onboarding UI/UX Refinement (Calm & Personal)
+  - **Identity screen:** Name now required (no skip), gentle copy "What should we call you?", autofocus on text field
+  - **No titles during onboarding:** Removed "Pilgrim" title preview entirely - titles appear post-onboarding only
+  - **Reading Comfort screen:** Elevated scripture preview card with shadow and increased internal padding
+  - **Reading Rhythm screen:** Improved selected state with subtle glow/shadow, added "You can change this anytime." reassurance line
+  - **Final screen:** Enhanced visual hierarchy with larger headline, improved text contrast, raised CTA button
+  - **Dev tools:** Added `?onboarding=1` URL parameter and Settings button to reset onboarding (kDebugMode only)
+  - No changes to XP, streak logic, quest logic, routes, or data models
+
+- 2025-12-17: Refined Onboarding Experience (Initial)
   - Complete rewrite of OnboardingScreen with 5 calm, minimal screens:
     1. Welcome (purpose statement, not feature list)
     2. Reading Comfort (text size slider, Paper/Sepia/Night theme, red letters toggle with live preview)
     3. Reading Rhythm (single choice: Daily / Few times a week / Own pace)
-    4. Identity (optional name + title preview, clear skip option)
+    4. Identity (name entry, no title preview)
     5. Gentle Close (reassurance message, "Enter Quest Hub" button)
   - Design: No scrolling, one action per screen, calm typography
   - Tone: Faith-forward, no gamified language (XP/streaks hidden during onboarding)

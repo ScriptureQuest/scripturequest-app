@@ -1,0 +1,148 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Refine the Onboarding flow UI/UX only to better align with the current calm, readable, reassuring direction of the app. No changes to core logic, navigation structure, data models, XP, streak mechanics, or quest generation.
+
+Goals
+
+Make onboarding feel calm, grounded, and personal
+
+Reduce abstraction and remove premature or meaningless concepts
+
+Emphasize reading comfort and belonging
+
+Avoid pressure, gamification, or overwhelm
+
+Ensure onboarding visually and emotionally matches the current Quest Hub & Bible reader experience
+
+Required Changes
+1) Titles in Onboarding
+
+Remove titles entirely from onboarding
+
+Do NOT display “Pilgrim” or any title during onboarding
+
+Titles should first appear post-onboarding (Profile or after first meaningful action)
+
+No placeholder or preview titles during setup
+
+2) Name Step (Identity)
+
+Make name required
+
+Remove “Skip” option
+
+Copy should feel gentle, not demanding:
+
+Example tone: “What should we call you?”
+
+Keep helper text short and reassuring
+
+Autofocus the text field on screen load
+
+Do NOT introduce validation friction beyond non-empty input
+
+3) Reading Comfort Screen (Visual Elevation Only)
+
+Keep all existing controls:
+
+Theme (Paper / Sepia / Night)
+
+Text size slider (80%–160%)
+
+Red letters toggle
+
+Visually emphasize the scripture preview card:
+
+Slightly increase elevation or shadow
+
+Improve contrast against background
+
+Add a touch more internal padding (not external spacing)
+
+This screen should feel like a “moment of comfort”
+
+No copy additions beyond what already exists
+
+4) Reading Rhythm Screen
+
+Keep the three choices exactly as-is:
+
+Daily
+
+A few times a week
+
+I’ll explore at my own pace
+
+Improve selected state clarity:
+
+Subtle glow, border, or background emphasis
+
+Add a single reassurance line below options:
+
+“You can change this anytime.”
+
+No streak or XP language here
+
+5) Welcome & Beta Screens
+
+Maintain minimal copy
+
+No feature lists
+
+No gamified language (XP, streaks, rewards)
+
+Beta messaging remains informational only and non-alarming
+
+6) Final Screen (“You’re Ready”)
+
+Keep existing message and tone
+
+Slightly improve visual hierarchy:
+
+Increase contrast between headline and body text
+
+Raise primary CTA slightly from bottom edge for comfort
+
+No new interactions or explanations
+
+Design Constraints
+
+No scrolling on any onboarding screen
+
+One primary action per screen
+
+Maintain current typography, theme, and spacing system
+
+No animations required beyond existing transitions
+
+Onboarding should feel intentional, not empty or placeholder-like
+
+Do NOT Change
+
+XP logic
+
+Streak logic
+
+Quest logic
+
+Storage schemas
+
+Routes
+
+Feature availability
+
+Post-onboarding UI
+
+Outcome
+
+Onboarding should feel:
+
+Calm
+
+Personal
+
+Reassuring
+
+Focused on Scripture and comfort
+
+Aligned with the rest of the app experience
