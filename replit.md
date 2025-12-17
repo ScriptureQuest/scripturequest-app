@@ -38,6 +38,14 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Simplified navigation + streak visibility (v2.6)
+  - Bottom navigation reduced to 3 tabs: Quest Hub, Bible, Profile
+  - Avatar and Community removed from bottom bar (accessible from Profile → Explore)
+  - Quest Hub header now shows inline streak (🔥 N) on the right when streak >= 1
+  - Profile screen gained new "Explore" section with links to:
+    - Reading Plans, Avatar & Cosmetics, Community, Play & Learn
+  - No changes to quest generation, XP, streak calculations, or Bible reader logic
+
 - 2025-12-17: QuestHub filter wiring fix (v2.5)
   - Fixed filter chips to show mutually exclusive quest lists:
     - Tonight/Today: ONLY action quests (scripture_reading, routine, service, community) from daily/nightly

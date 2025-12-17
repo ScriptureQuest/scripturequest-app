@@ -131,11 +131,96 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 28),
             // Achievements — polished preview card
             FadeSlideIn(child: _AchievementsPreviewCard()),
+
+            const SizedBox(height: 28),
+            const SectionHeader('Explore', icon: Icons.explore_rounded),
+            const SizedBox(height: 12),
+            FadeSlideIn(
+              child: _ExploreSection(),
+            ),
             const SizedBox(height: 12),
           ],
         ),
       );
     });
+  }
+}
+
+class _ExploreSection extends StatelessWidget {
+  const _ExploreSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return SacredCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        children: [
+          _ExploreRow(
+            icon: Icons.auto_stories_rounded,
+            label: 'Reading Plans',
+            onTap: () => context.go('/reading-plans'),
+          ),
+          Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
+          _ExploreRow(
+            icon: Icons.self_improvement_rounded,
+            label: 'Avatar & Cosmetics',
+            onTap: () => context.go('/avatar'),
+          ),
+          Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
+          _ExploreRow(
+            icon: Icons.people_rounded,
+            label: 'Community',
+            onTap: () => context.go('/community'),
+          ),
+          Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
+          _ExploreRow(
+            icon: Icons.games_rounded,
+            label: 'Play & Learn',
+            onTap: () => context.go('/play-learn'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExploreRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ExploreRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: cs.primary, size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: cs.onSurface,
+                    ),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: cs.onSurfaceVariant, size: 20),
+          ],
+        ),
+      ),
+    );
   }
 }
 

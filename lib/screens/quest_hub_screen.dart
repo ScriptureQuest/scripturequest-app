@@ -226,17 +226,40 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
   Widget _buildWelcomeHeader(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return Text.rich(
-      TextSpan(
-        children: [
-          const TextSpan(text: 'Welcome, '),
+    final provider = context.watch<AppProvider>();
+    final streak = provider.currentBibleStreak;
+    
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text.rich(
           TextSpan(
-            text: 'Warrior',
-            style: TextStyle(color: cs.primary),
+            children: [
+              const TextSpan(text: 'Welcome, '),
+              TextSpan(
+                text: 'Warrior',
+                style: TextStyle(color: cs.primary),
+              ),
+            ],
           ),
-        ],
-      ),
-      style: theme.textTheme.headlineSmall,
+          style: theme.textTheme.headlineSmall,
+        ),
+        if (streak >= 1)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.local_fire_department, color: Colors.orange, size: 22),
+              const SizedBox(width: 4),
+              Text(
+                '$streak',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.orange,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+      ],
     );
   }
 

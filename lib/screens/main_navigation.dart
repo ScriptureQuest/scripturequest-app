@@ -268,18 +268,14 @@ class _BottomNavBarState extends State<_BottomNavBar> {
     final app = context.watch<AppProvider>();
     final location = GoRouterState.of(context).uri.toString();
     int currentIndex = -1;
-    // Map current route to 5-tab layout (center Bible):
-    // 0: Quest Hub, 1: Avatar, 2: Bible, 3: Community, 4: Profile
+    // Map current route to 3-tab layout (beta simplicity):
+    // 0: Quest Hub, 1: Bible, 2: Profile
     if (location == '/' || location.startsWith('/tasks')) {
       currentIndex = 0;
-    } else if (location.startsWith('/avatar') || location.startsWith('/equip') || location.startsWith('/inventory')) {
-      currentIndex = 1;
     } else if (location.startsWith('/bible') || location.startsWith('/verses') || location.startsWith('/scripture') || location.startsWith('/favorites')) {
+      currentIndex = 1;
+    } else if (location.startsWith('/profile') || location.startsWith('/player') || location.startsWith('/avatar') || location.startsWith('/equip') || location.startsWith('/inventory') || location.startsWith('/community') || location.startsWith('/friends') || location.startsWith('/leaderboards')) {
       currentIndex = 2;
-    } else if (location.startsWith('/community') || location.startsWith('/friends') || location.startsWith('/leaderboards')) {
-      currentIndex = 3;
-    } else if (location.startsWith('/profile') || location.startsWith('/player')) {
-      currentIndex = 4;
     }
     // For home and root, don't highlight any tab (user may be on detail screens, quests, etc.)
     // This prevents incorrect highlighting when on non-tab screens
@@ -314,33 +310,21 @@ class _BottomNavBarState extends State<_BottomNavBar> {
                 onTap: () => context.go('/'),
                 scale: _nudgeActive ? 1.12 : 1.0,
               ),
-              _NavItem(
-                icon: Icons.self_improvement_outlined,
-                label: 'Avatar',
-                isSelected: currentIndex == 1,
-                onTap: () => context.go('/avatar'),
-              ),
               KeyedSubtree(
                 key: QuickTourAnchors.bibleNavKey,
                 child: _NavItem(
                   icon: Icons.menu_book_outlined,
                   label: 'Bible',
-                  isSelected: currentIndex == 2,
+                  isSelected: currentIndex == 1,
                   onTap: () => context.go('/bible'),
                 ),
-              ),
-              _NavItem(
-                icon: Icons.people_outline,
-                label: 'Community',
-                isSelected: currentIndex == 3,
-                onTap: () => context.go('/community'),
               ),
               KeyedSubtree(
                 key: QuickTourAnchors.profileNavKey,
                 child: _NavItem(
                   icon: Icons.person_outline,
                   label: 'Profile',
-                  isSelected: currentIndex == 4,
+                  isSelected: currentIndex == 2,
                   onTap: () => context.go('/profile'),
                 ),
               ),

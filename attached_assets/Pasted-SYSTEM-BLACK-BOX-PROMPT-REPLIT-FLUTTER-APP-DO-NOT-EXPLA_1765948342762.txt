@@ -1,0 +1,66 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Next Change Set (Build v2.6): Simplify primary navigation to a 3-tab bottom bar and add inline streak visibility to the Quest Hub header, building on the latest QuestHub filter wiring fix (v2.5). Do NOT touch quest generation/progress logic.
+
+Goals:
+1) Reduce bottom navigation to 3 tabs for beta simplicity:
+   - Quest Hub
+   - Bible
+   - Profile
+2) Remove Avatar and Community from the bottom bar (back burner).
+3) Keep Community/Explore content accessible from Profile instead.
+4) Display streak in Quest Hub header inline to the RIGHT of “Welcome, {username}” (not under it).
+
+Requirements:
+
+A) Quest Hub Header (streak inline)
+- In QuestHubScreen (lib/screens/quest_hub_screen.dart), keep the “Welcome, {username}” styling unchanged.
+- Add a small inline streak indicator on the same row aligned to the right:
+  - Icon: flame (🔥) or the existing flame icon
+  - Show only if currentStreak >= 1
+  - Format: flame icon + number only (e.g., “🔥 7”) OR “🔥 7d” if space is tight (choose the cleanest).
+  - No extra card, no subtitle, no animation.
+- Ensure this does not push Today’s Verse down excessively; keep header compact.
+
+B) Bottom Navigation Simplification (3 tabs)
+- In main navigation (lib/screens/main_navigation.dart or wherever the BottomNavigationBar is defined):
+  - Remove Avatar tab and Community tab from the bottom bar entirely.
+  - Bottom bar must contain exactly 3 items in this order:
+    1) Quest Hub
+    2) Bible
+    3) Profile
+  - Quest Hub remains the default landing destination (“/”) and first tab.
+  - Ensure route detection/highlighting works correctly for these 3 tabs.
+
+C) Preserve Routes (do not break deep links)
+- Do NOT delete any screens/routes.
+- Keep existing routes like /community and /avatar accessible via direct navigation if referenced elsewhere, but they must not appear in bottom tabs.
+- Do NOT change QuestHub filter wiring logic from v2.5.
+
+D) Move Community Access into Profile (simple section)
+- In Profile screen (lib/screens/profile_screen.dart or equivalent), add a new section/card titled “Explore” or “Community”.
+- Inside that section add simple navigation rows/buttons to:
+  - Reading Plans (/reading-plans)
+  - Friends (/friends) OR Journey Board (/journey-board) (use whatever exists)
+  - Play & Learn (/play-learn)
+  - Events/Seasonal Quests (link to /quests or /quests?filter=events if exists; otherwise omit)
+- Keep it minimal and calm: no new complex UI, no “coming soon” spam.
+
+E) Safety Constraints
+- Do NOT modify:
+  - quest generation logic, strict matching, quest progress services
+  - XP/streak calculations or storage
+  - Bible reader logic
+- This prompt is navigation + header visibility only.
+
+F) Output
+- Provide a final STATUS UPDATE in the standard format:
+  - Goal
+  - What changed
+  - What did NOT change
+  - Files touched
+  - Key logic notes
+  - Quick test checklist
+  - Known risks
+
+Make minimal changes required to ship a simpler, quest-focused beta navigation.
