@@ -38,6 +38,13 @@ The application is built with Flutter 3.32.0 and Dart 3.8.0, utilizing the Provi
 - **Web Server:** Python's `http.server` (for local development/serving web build)
 
 ## Recent Changes
+- 2025-12-17: UI/UX Calmness & Readability Polish
+  - Quest Hub: Added subtle reassurance line under Welcome header - "Today's path is simple. Stay faithful in small steps."
+  - Bible Reader: Default text size now 130% (was 100%) for improved readability out of the box
+  - App Bar cleanup: Removed manual refresh icon from Bible reader (single menu icon remains)
+  - Bible Menu: Highlights, Bookmarks, and Favorites remain visible as separate entries
+  - No changes to XP, quest logic, routes, or data models
+
 - 2025-12-17: vNext - Quest Hub & Bible Navigation Improvements
   - **A) Quest Hub filter chip bug fix:**
     - Verified `_filter` is the ONLY source of truth for chip highlight AND list display

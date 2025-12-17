@@ -258,36 +258,48 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
     final provider = context.watch<AppProvider>();
     final streak = provider.currentBibleStreak;
     
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text.rich(
-          TextSpan(
-            children: [
-              const TextSpan(text: 'Welcome, '),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text.rich(
               TextSpan(
-                text: 'Warrior',
-                style: TextStyle(color: cs.primary),
+                children: [
+                  const TextSpan(text: 'Welcome, '),
+                  TextSpan(
+                    text: 'Warrior',
+                    style: TextStyle(color: cs.primary),
+                  ),
+                ],
               ),
-            ],
-          ),
-          style: theme.textTheme.headlineSmall,
+              style: theme.textTheme.headlineSmall,
+            ),
+            if (streak >= 1)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.local_fire_department, color: Colors.orange, size: 22),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$streak',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+          ],
         ),
-        if (streak >= 1)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.local_fire_department, color: Colors.orange, size: 22),
-              const SizedBox(width: 4),
-              Text(
-                '$streak',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: Colors.orange,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+        const SizedBox(height: 4),
+        Text(
+          "Today's path is simple. Stay faithful in small steps.",
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant.withValues(alpha: 0.7),
           ),
+        ),
       ],
     );
   }

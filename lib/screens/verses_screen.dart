@@ -119,15 +119,6 @@ class _VersesScreenState extends State<VersesScreen> {
             ),
             centerTitle: true,
             actions: [
-              // Refresh button (web-friendly alternative to pull-to-refresh)
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Refresh chapter',
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                padding: const EdgeInsets.all(6),
-                onPressed: _refreshChapterContent,
-              ),
               // Single entry point: Bible Menu
               IconButton(
                 icon: const Icon(Icons.more_vert),

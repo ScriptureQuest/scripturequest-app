@@ -79,7 +79,7 @@ class Settings {
         redLettersEnabled: true,
         dailyReminderHour: 20,
         dailyReminderMinute: 0,
-        bibleFontScale: 1.0,
+        bibleFontScale: 1.3,
         bibleReaderTheme: 'paper',
         bibleReaderFontStyle: 'classicSerif',
         bibleReaderTextSize: 'medium',
