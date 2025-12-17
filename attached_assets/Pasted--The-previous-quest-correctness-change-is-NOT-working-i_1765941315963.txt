@@ -1,0 +1,44 @@
+
+The previous quest correctness change is NOT working in runtime. Fix it by verifying actual runtime quest metadata and ensuring Start navigation + chapter completion progression are correctly wired end-to-end.
+
+Observed failures:
+- Waiting 45+ seconds on John 1 and tapping Complete Chapter does NOT progress the Nightly “read any chapter” quest.
+- Tapping Start on a Psalms-themed quest still opens the last-read chapter (John 1), not Psalms.
+
+Requirements:
+
+1) Verify Runtime Quest Data (must be done)
+- Add debug-only logs at the moment quests are rendered on QuestHubScreen and when Start is pressed:
+  - quest id, title, questType, scriptureReference (if any), targetBook (if any), allowedBooks (if any), and whether it is considered action vs reflection.
+- Confirm in logs that:
+  A) “Nightly Reading / read any chapter” quests are questType == scripture_reading.
+  B) Psalms-themed quests have targetBook == Psalms OR allowedBooks contains Psalms OR scriptureReference points to Psalms.
+
+2) Fix Start Navigation for Psalms Quests
+- Ensure Start uses this priority:
+  A) scriptureReference (exact book+chapter) -> open reader there
+  B) allowedBooks/targetBook -> open reader to that book (Psalms) at chapter 1 (or a sensible default)
+  C) fallback -> last-read reference
+- If Psalms quest lacks metadata at runtime, update the quest template/source so the metadata is actually assigned when the quest is created.
+
+3) Fix Chapter Completion Progress Wiring (Nightly Any-Chapter)
+- Ensure the Bible reader’s Complete Chapter action triggers quest progression with:
+  - completedBook + completedChapter
+  - hasMetReadingThreshold == true (existing 45s gate)
+- Ensure quest_progress_service.onChapterComplete (or equivalent) is called from the reader completion path.
+- Ensure scripture_reading quests with NO target metadata count ANY completed chapter.
+- Ensure routine quests are NOT progressed by chapter completion (keep the safety change).
+
+4) Do NOT change XP, rewards, streak logic, expiration rules, or UI layout.
+- This is purely correctness: metadata assignment + Start routing + chapter completion wiring.
+
+5) Output
+- Provide a STATUS UPDATE including:
+  - Exact files changed
+  - The source where quest templates are defined/created and how metadata is assigned
+  - Example debug log lines showing:
+    a) a Psalms quest has targetBook=Psalms and Start opens Psalms
+    b) a nightly any-chapter quest is scripture_reading and completes after John 1 completion
+  - A test checklist for the two observed failures.
+
+Make the minimal changes required so these two tests pass consistently.

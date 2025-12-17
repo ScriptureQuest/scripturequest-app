@@ -10,10 +10,32 @@ class TaskService {
   static const String _storageKey = 'quests';
   static const String _lastDailyGenerationKey = 'last_daily_generation';
   static const String _lastWeeklyGenerationKey = 'last_weekly_generation';
+  // Migration key: bump this version to force quest regeneration when templates change
+  static const String _questMigrationKey = 'quest_migration_v';
+  static const int _questMigrationVersion = 2; // v2: added targetBook to nightly templates
   final StorageService _storage;
   final _uuid = const Uuid();
 
   TaskService(this._storage);
+
+  /// Check and run one-time quest migration if needed (e.g., template metadata changed)
+  Future<void> _runQuestMigrationIfNeeded() async {
+    try {
+      final migrationKey = '$_questMigrationKey$_questMigrationVersion';
+      final migrated = _storage.getString(migrationKey);
+      if (migrated == 'done') return;
+
+      // Clear lastDailyGenerationKey to force regeneration of daily/nightly quests
+      // This ensures new targetBook metadata is applied to nightly quests
+      await _storage.save(_lastDailyGenerationKey, '');
+      await _storage.save(migrationKey, 'done');
+      if (kDebugMode) {
+        debugPrint('[TaskService] Quest migration v$_questMigrationVersion: forcing daily/nightly quest regeneration');
+      }
+    } catch (e) {
+      debugPrint('Quest migration error: $e');
+    }
+  }
 
   Future<void> _initializeSampleData() async {
     final quests = _getSampleQuests();
@@ -120,6 +142,9 @@ class TaskService {
   }
 
   Future<void> createDailyQuests() async {
+    // Run migration first to ensure fresh templates are used
+    await _runQuestMigrationIfNeeded();
+    
     final today = DateTime.now();
     final todayString = '${today.year}-${today.month}-${today.day}';
     final lastGen = _storage.getString(_lastDailyGenerationKey);
@@ -127,8 +152,11 @@ class TaskService {
     if (lastGen == todayString) return;
     
     final quests = await getAllQuests();
-    // Remove old daily quests that are not completed
-    quests.removeWhere((q) => (q.category == 'daily' || q.isDaily || q.type == 'daily') && q.status != 'completed');
+    // Remove old daily and nightly quests that are not completed
+    quests.removeWhere((q) => 
+      ((q.category == 'daily' || q.isDaily || q.type == 'daily') && q.status != 'completed') ||
+      ((q.category == 'nightly' || q.type == 'nightly') && q.status != 'completed')
+    );
     
     final newDailyQuests = _generateDailyQuests();
     // Add Nightly tasks (v2.0)

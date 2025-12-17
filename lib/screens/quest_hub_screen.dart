@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -140,6 +141,14 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
 
       final quests = currentQuests();
       final cs = Theme.of(context).colorScheme;
+
+      // Debug logging for runtime quest metadata verification (debug builds only)
+      if (kDebugMode && quests.isNotEmpty) {
+        debugPrint('[QuestHub] Rendering ${quests.length} quests (filter: $_filter):');
+        for (final q in quests.take(5)) { // Log first 5 to avoid spam
+          debugPrint('  -> "${q.title}": type=${q.questType}, targetBook=${q.targetBook ?? "(none)"}, scriptureRef=${q.scriptureReference ?? "(none)"}');
+        }
+      }
 
       return Scaffold(
         appBar: AppBar(

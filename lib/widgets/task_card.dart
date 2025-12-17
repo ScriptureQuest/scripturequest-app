@@ -530,6 +530,15 @@ class TaskCard extends StatelessWidget {
   void _navigateForQuestType(BuildContext context, AppProvider provider) {
     final qt = quest.questType.trim().toLowerCase();
     final ref = (quest.scriptureReference ?? '').trim();
+    final targetBk = (quest.targetBook ?? '').trim();
+
+    // Debug logging for runtime metadata verification (debug builds only)
+    if (kDebugMode) {
+      debugPrint('[TaskCard.Start] Quest: "${quest.title}"');
+      debugPrint('  -> id=${quest.id}, questType=$qt');
+      debugPrint('  -> scriptureReference=${ref.isEmpty ? "(none)" : ref}');
+      debugPrint('  -> targetBook=${targetBk.isEmpty ? "(none)" : targetBk}');
+    }
 
     // Track if we used the fallback path
     bool usedFallback = false;

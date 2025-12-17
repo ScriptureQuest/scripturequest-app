@@ -725,8 +725,12 @@ class _VersesScreenState extends State<VersesScreen> {
       
       if (_hasMetReadingThreshold) {
         _dailyQuestProgressedThisSession = true;
-        provider.progressDailyReadingQuest();
-        debugPrint('Daily reading quest progressed via chapter completion');
+        // Pass current book and chapter for proper quest target matching
+        provider.progressDailyReadingQuest(
+          book: _selectedBook,
+          chapter: _selectedChapter,
+        );
+        debugPrint('Daily reading quest progressed via chapter completion: $_selectedBook $_selectedChapter');
       } else {
         final elapsed = _readingStartTime != null 
             ? DateTime.now().difference(_readingStartTime!).inSeconds 

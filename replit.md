@@ -38,7 +38,7 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
-- 2025-12-17: Nightly quest completion + Psalms targeting fixes
+- 2025-12-17: Nightly quest completion + Psalms targeting fixes (v2 wiring fix)
   - Added targetBook field to TaskModel for book-level targeting without exact reference
   - Nightly quest templates updated:
     - "Nightly Reading" (generic): questType=scripture_reading, no target → any chapter completes
@@ -46,6 +46,21 @@ The app runs as a Flutter web application on port 5000. The workflow:
     - "Read a verse about God's protection": questType=scripture_reading, targetBook=Psalms
   - Start button navigation now uses priority: scriptureReference > targetBook > lastBibleReference
   - QuestProgressService passes q.targetBook to matchesQuestTarget()
+  - Fixed chapter completion wiring:
+    - progressDailyReadingQuest now accepts book/chapter params
+    - Calls QuestProgressService.handleEvent with correct signature (event:, payload:, callbacks:)
+    - verses_screen.dart passes _selectedBook/_selectedChapter on Complete Chapter
+  - Fixed quest callback wiring:
+    - onApplyProgress/onMarkComplete now call TaskService methods (not Quest Board)
+    - TaskService.updateQuestProgress and completeQuest properly update TaskModel quests in storage
+  - Quest migration system added (v2):
+    - _questMigrationVersion = 2 forces daily/nightly quest regeneration
+    - createDailyQuests now also clears old nightly quests before regenerating
+    - Ensures targetBook metadata is applied to nightly quests
+  - Debug-only logging added (kDebugMode gated):
+    - QuestHubScreen: logs rendered quests with targetBook/scriptureRef metadata
+    - TaskCard.Start: logs quest metadata before navigation
+    - AppProvider: logs book/chapter on quest progress
   - No XP, rewards, or UI layout changes
 
 - 2025-12-17: Quest correctness system v2.1 (safety refinements)

@@ -3053,11 +3053,35 @@ class AppProvider extends ChangeNotifier {
     await loadData();
   }
 
-  /// Progress the daily reading quest when the user has actually spent time reading.
-  /// This should only be called after confirming meaningful reading (time or scroll based).
-  Future<void> progressDailyReadingQuest() async {
+  /// Progress scripture reading quests when the user completes a chapter.
+  /// This should only be called after confirming meaningful reading (time threshold met).
+  Future<void> progressDailyReadingQuest({String? book, int? chapter}) async {
     try {
-      incrementQuestProgressForType('daily', amount: 1);
+      // Call QuestProgressService with chapter completion event
+      // Use TaskService methods for TaskModel quest progression (not Quest Board)
+      await _questProgressService.handleEvent(
+        event: 'onChapterComplete',
+        payload: {
+          'book': book ?? '',
+          'chapter': chapter ?? 0,
+          'hasMetReadingThreshold': true,
+        },
+        onApplyProgress: (questId, amount) async {
+          // Use TaskService to update TaskModel quests
+          await _questService.updateQuestProgress(questId, amount);
+          // Also refresh the quests list in memory
+          refreshQuests();
+        },
+        onMarkComplete: (questId) async {
+          // Use TaskService to complete TaskModel quests
+          await _questService.completeQuest(questId);
+          // Also refresh the quests list in memory
+          refreshQuests();
+        },
+      );
+      if (kDebugMode) {
+        debugPrint('[AppProvider] progressDailyReadingQuest: book=$book, chapter=$chapter');
+      }
     } catch (e) {
       debugPrint('progressDailyReadingQuest error: $e');
     }
