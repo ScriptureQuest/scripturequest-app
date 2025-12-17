@@ -1,0 +1,47 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Fix QuestHubScreen so (1) filter chip selection always matches the quest list being displayed, and (2) Today’s Verse always shows the correct verse text that matches its displayed reference.
+
+PART A — FILTER CHIP SYNC (UI BUG)
+1) Single Source of Truth
+- Use ONE state variable: _activeFilter.
+- BOTH the displayed quest list AND the selected chip highlight must be derived ONLY from _activeFilter.
+- Remove any fallback/implicit filter logic that can show Weekly while _activeFilter is Tonight.
+
+2) Chip Interaction
+- On chip tap: setState(() => _activeFilter = selectedFilter)
+- The quest list must immediately re-derive from _activeFilter.
+
+3) Initialization
+- _activeFilter defaults to Today/Tonight once on first build.
+- After the user taps a chip, do not auto-switch filters.
+
+PART B — TODAY’S VERSE MISMATCH (REFERENCE != TEXT)
+Problem observed:
+- Today’s Verse displays reference (e.g., 2 Corinthians 12:9) but shows incorrect verse text (e.g., John 3:16).
+This means reference and verse text are coming from different sources.
+
+Requirements:
+1) Today’s Verse must be computed from ONE canonical source of truth:
+- Get the Verse-of-the-Day reference via provider/service (e.g., getVerseOfTheDayReference()).
+- Then fetch the verse text using that exact reference (same book/chapter/verse).
+- Render reference + text from the same resolved object.
+
+2) Hard rule:
+- Never use last-read reference or Continue Reading fallback to populate Today’s Verse text.
+- Continue Reading remains separate and can use last-read reference (with fallback to VOTD reference only if last-read is null).
+
+3) Add a defensive sanity check (debug only):
+- If the resolved verse text does not match the resolved reference (null/missing lookup), show a safe placeholder like:
+  “Unable to load today’s verse.” (and do NOT substitute unrelated verses)
+- Log a debug message in kDebugMode with both the reference and lookup result.
+
+SAFETY CONSTRAINTS
+- Do NOT change quest generation, XP/streak logic, completion logic, or storage schemas.
+- Do NOT change UI styling beyond what is necessary to fix the bugs.
+- Keep header flow: Welcome → Today’s Verse → Continue Reading.
+
+OUTPUT
+- Provide a final STATUS UPDATE in the standard format.
+- Explicitly state how Today’s Verse reference+text are kept in sync now.
+- Explicitly state how filter state is kept in sync now.

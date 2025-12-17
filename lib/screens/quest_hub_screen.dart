@@ -148,15 +148,43 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
         }
       }
 
+      // Today's Verse: Single source of truth for reference + text
       final votdRef = provider.getVerseOfTheDay();
-      String featuredText = 'For God so loved the world that he gave his one and only Son...';
-      if (provider.verses.isNotEmpty) {
+      String? votdText;
+      // Look up verse text that matches the VOTD reference exactly
+      if (provider.verses.isNotEmpty && votdRef.isNotEmpty) {
         try {
           final verse = provider.verses.firstWhere((v) => v.reference == votdRef);
-          featuredText = verse.text.isNotEmpty ? verse.text : featuredText;
+          if (verse.text.isNotEmpty) {
+            votdText = verse.text;
+          }
+        } catch (_) {
+          // Verse not found in cache - try alternative lookup methods
+        }
+      }
+      // If exact match failed, try partial reference matching (book + chapter + verse)
+      if (votdText == null && provider.verses.isNotEmpty && votdRef.isNotEmpty) {
+        try {
+          // Normalize comparison: strip extra spaces, handle case differences
+          final normalizedRef = votdRef.trim().toLowerCase();
+          final verse = provider.verses.firstWhere(
+            (v) => v.reference.trim().toLowerCase() == normalizedRef,
+            orElse: () => provider.verses.first, // Will be caught by text check
+          );
+          if (verse.reference.trim().toLowerCase() == normalizedRef && verse.text.isNotEmpty) {
+            votdText = verse.text;
+          }
         } catch (_) {}
       }
+      // Defensive: If no matching text found, show safe placeholder (never mismatched text)
+      final featuredText = votdText ?? 'Tap to read this verse';
+      
+      // Debug logging for VOTD reference/text sync verification
+      if (kDebugMode) {
+        debugPrint('[QuestHub] VOTD ref="$votdRef", text=${votdText != null ? "found (${votdText.length} chars)" : "NOT FOUND - using placeholder"}');
+      }
 
+      // Continue Reading: separate source (last-read reference, fallback to VOTD)
       final last = (provider.lastBibleReference ?? '').trim();
       final continueRef = last.isNotEmpty ? last : (votdRef.isNotEmpty ? votdRef : 'John 1');
 

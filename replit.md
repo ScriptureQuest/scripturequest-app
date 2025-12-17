@@ -38,6 +38,17 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Filter chip sync + Today's Verse fix (v2.7)
+  - Fixed Today's Verse reference/text mismatch:
+    - Reference and text now derived from single source (VOTD reference)
+    - Lookup attempts exact match, then normalized case-insensitive match
+    - If no matching text found, shows "Tap to read this verse" (never mismatched John 3:16)
+    - Debug logging in kDebugMode for sync verification
+  - Confirmed filter chip uses single state variable (_filter) for both:
+    - Chip highlight selection
+    - Quest list derivation
+  - No changes to quest generation, XP, streaks, or completion logic
+
 - 2025-12-17: Simplified navigation + streak visibility (v2.6)
   - Bottom navigation reduced to 3 tabs: Quest Hub, Bible, Profile
   - Avatar and Community removed from bottom bar (accessible from Profile → Explore)
