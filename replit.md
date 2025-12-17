@@ -29,6 +29,23 @@ The app runs as a Flutter web application on port 5000. The workflow:
 1. Builds the Flutter web app in release mode
 2. Serves the static files using Python's http.server
 
+## Testing & QA
+Run tests and analysis:
+```bash
+flutter test                    # Run all widget tests
+flutter analyze                 # Static analysis for code issues
+```
+
+Test files are located in `test/`:
+- `bible_reader_test.dart` - Core loop tests (chapter navigation, completion checkmarks)
+
+Debug logs (kDebugMode only) can be viewed in browser console:
+- `[ChaptersSheet]` - Chapter picker interactions
+- `[BibleNav]` - Navigation events
+- `[BibleState]` - Current state changes
+- `[CompleteChapter]` - Completion button actions
+- `[CompletionState]` - Completion persistence
+
 ## Key Features
 - Daily verse of the day
 - Scripture reading and memorization
@@ -38,6 +55,31 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Bible Reader Core Loop Hardening (v3.4)
+  - Root cause fix: BibleService.parseReference now tries display names first
+    - Previously "Psalms 50" matched "Psalm" but left remainder "s 50" (chapter extraction failed)
+    - Now "Psalms 50" matches display "Psalms" correctly, remainder "50" extracts properly
+    - This fixes chapter picker navigation for Psalms and any book with display/ref mismatch
+  - Fixed: Chapter picker now correctly navigates to the tapped chapter (not always chapter 1)
+  - Fixed: Completion checkmarks only appear after explicit "Complete Chapter" action
+  - Removed premature recordChapterRead calls from:
+    - _setupPagerForBook (viewing a chapter no longer marks it complete)
+    - _onChapterChanged (paging/swiping no longer marks chapters complete)
+    - _loadChapter (loading passage no longer marks chapters complete)
+  - Added debug logging (kDebugMode only):
+    - [ChaptersSheet] tapped book=<book> chapter=<n>
+    - [BibleNav] navigateTo book=<book> chapter=<n>
+    - [BibleState] current book=<book> chapter=<n>
+    - [CompleteChapter] pressed book=<book> chapter=<n> eligible=<true/false>
+    - [CompleteChapter] persisted=<true/false>
+    - [CompletionState] completedChaptersCount=<n> for book=<book>
+  - Added widget tests in test/bible_reader_test.dart:
+    - Chapter picker taps navigate to correct chapter
+    - Checkmark does NOT appear just by opening/viewing a chapter
+    - Checkmark appears ONLY after explicit Complete Chapter action
+    - Multiple chapters can be completed independently
+  - No XP, quest, streak, or storage schema changes
+
 - 2025-12-17: High-ROI UX polish (v3.2)
   - Pull-to-refresh on Quest Hub and Profile screens (re-binds UI state, no regeneration)
   - Subtle haptics:

@@ -1825,7 +1825,11 @@ class AppProvider extends ChangeNotifier {
   bool isChapterRead(String book, int chapter) {
     try {
       final key = _normalizeDisplayBook(book);
-      return _readChaptersPerBook[key]?.contains(chapter) ?? false;
+      final result = _readChaptersPerBook[key]?.contains(chapter) ?? false;
+      if (kDebugMode && result) {
+        debugPrint('[CompletionState] isChapterCompleted book=$book chapter=$chapter result=$result');
+      }
+      return result;
     } catch (e) {
       debugPrint('isChapterRead error: $e');
       return false;
@@ -4099,7 +4103,8 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  // ================== Record chapter read and unlock achievements ==================
+  // ================== Record chapter COMPLETED and unlock achievements ==================
+  // NOTE: This is only called when user explicitly presses "Complete Chapter" button
   Future<List<AchievementModel>> recordChapterRead(String book, int chapter, {bool hasMetReadingThreshold = false}) async {
     try {
       final b = _normalizeDisplayBook(book);
@@ -4117,6 +4122,12 @@ class AppProvider extends ChangeNotifier {
       set.add(chapter);
       await _persistReadChapters(uid, currentMap);
       _readChaptersPerBook = currentMap;
+      
+      if (kDebugMode) {
+        final count = _readChaptersPerBook[b]?.length ?? 0;
+        debugPrint('[CompletionState] completedChaptersCount=$count for book=$b (just added chapter=$chapter)');
+      }
+      
       notifyListeners();
 
       // Daily Activity: only log when this is a newly read chapter (affects totalChaptersRead)

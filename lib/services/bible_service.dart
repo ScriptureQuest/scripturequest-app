@@ -98,14 +98,34 @@ class BibleService {
     return disp;
   }
 
-  /// Parse a reference like "John 3:16", "Psalm 23", "1 Thessalonians 5:1-2".
+  /// Parse a reference like "John 3:16", "Psalm 23", "Psalms 50", "1 Thessalonians 5:1-2".
   /// Returns a tuple-like map: { 'bookDisplay': String?, 'bookRef': String?, 'chapter': int?, 'verse': int?, 'verseEnd': int? }
   Map<String, dynamic> parseReference(String reference) {
     final raw = reference.trim();
     if (raw.isEmpty) return {'bookDisplay': null, 'bookRef': null, 'chapter': null, 'verse': null, 'verseEnd': null};
 
     final refUpper = raw.toUpperCase();
-    // Sort ref names by length desc to avoid partial matches like 'John' before '1 John'
+    
+    // First, try matching against display names (e.g., "Psalms 50" matches display "Psalms")
+    // Sort by length desc to avoid partial matches like 'John' before '1 John'
+    final displayNames = _books.map((e) => e['display'] as String).toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
+    for (final displayName in displayNames) {
+      final upper = displayName.toUpperCase();
+      if (refUpper.startsWith(upper)) {
+        // Extract chapter and verse numbers after book name
+        final remainder = raw.substring(displayName.length).trim();
+        // Match patterns like "3", "3:16", "3:16-18"
+        final match = RegExp(r'^(\d+)(?::(\d+)(?:-(\d+))?)?').firstMatch(remainder);
+        final chapter = match != null ? int.tryParse(match.group(1)!) : null;
+        final verse = match != null && match.group(2) != null ? int.tryParse(match.group(2)!) : null;
+        final verseEnd = match != null && match.group(3) != null ? int.tryParse(match.group(3)!) : null;
+        final refName = displayToRef(displayName);
+        return {'bookDisplay': displayName, 'bookRef': refName, 'chapter': chapter, 'verse': verse, 'verseEnd': verseEnd};
+      }
+    }
+    
+    // Fallback: try matching against ref names (e.g., "Psalm 23" matches ref "Psalm")
     final refNames = _books.map((e) => e['ref'] as String).toList()
       ..sort((a, b) => b.length.compareTo(a.length));
     for (final refName in refNames) {

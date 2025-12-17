@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
@@ -976,6 +977,9 @@ class _VersesScreenState extends State<VersesScreen> {
                             selected: i == (_selectedChapter ?? -1),
                             read: provider.isChapterRead(bookDisplay, i),
                             onTap: () {
+                              if (kDebugMode) {
+                                debugPrint('[ChaptersSheet] tapped book=$bookDisplay chapter=$i');
+                              }
                               // Close this (chapter) sheet
                               Navigator.of(ctx).pop();
                               // Close the parent (book) sheet if provided
@@ -1376,47 +1380,8 @@ class _VersesScreenState extends State<VersesScreen> {
         subtitle: xp > 0 ? '+$xp XP' : null,
       );
     }
-
-    // Record chapter read and show completion snackbar if the book was just completed
-    final beforePct = provider.getPlanProgressPercent();
-    final chapterUnlocks = await provider.recordChapterRead(book, chapter);
-    if (!mounted) return;
-    final afterPct = provider.getPlanProgressPercent();
-    if (afterPct > beforePct + 0.0001) {
-      RewardToast.showSuccess(
-        context,
-        title: 'Plan day complete!',
-        subtitle: 'Nice work, keep going.',
-      );
-    }
-    final completedNow = chapterUnlocks.any((a) => a.id.startsWith('book_completed_'));
-    // Streak achievements toast
-    final streakUnlocks = chapterUnlocks.where((a) => a.id.startsWith('bible_streak_')).toList();
-    if (streakUnlocks.isNotEmpty) {
-      final streakAch = streakUnlocks.first;
-      final xp = streakAch.xpReward;
-      RewardToast.showAchievementUnlocked(
-        context,
-        title: streakAch.title,
-        subtitle: xp > 0 ? '+$xp XP' : null,
-      );
-      // Nice-to-have: bonus unlocked toast when hitting 7-day streak
-      final unlockedBonus = streakUnlocks.any((a) => a.id == 'bible_streak_7');
-      if (unlockedBonus) {
-        RewardToast.showClaimed(
-          context,
-          title: 'Streak XP Bonus Unlocked!',
-          subtitle: 'You now gain +10% XP while your Bible streak is active.',
-          icon: Icons.trending_up,
-        );
-      }
-    }
-    if (completedNow) {
-      RewardToast.showSuccess(
-        context,
-        title: 'Completed the Book of $book!',
-      );
-    }
+    // REMOVED: Do NOT mark chapter as completed just by loading passage.
+    // Completion is only via the "Complete Chapter" action.
   }
 
   void _ensurePagerConfigured(AppProvider provider) {
@@ -1443,6 +1408,9 @@ class _VersesScreenState extends State<VersesScreen> {
       if (jump) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || _pageController == null) return;
+          if (kDebugMode) {
+            debugPrint('[BibleNav] navigateTo book=$book chapter=$initialChapter');
+          }
           _pageController!.jumpToPage(target);
           _suppressPageEvents = false;
           _onChapterChanged(provider, initialChapter, persistOnly: true);
@@ -1450,8 +1418,8 @@ class _VersesScreenState extends State<VersesScreen> {
           try {
             provider.recordLastReading('$book:$initialChapter');
           } catch (_) {}
-          // Ensure initial chapter is recorded as read at least once
-          provider.recordChapterRead(book, initialChapter);
+          // REMOVED: Do NOT mark chapter as completed just by viewing it.
+          // Completion is only via the "Complete Chapter" action.
           // Start tracking reading time for daily quest completion
           _startReadingTimer();
         });
@@ -1493,48 +1461,12 @@ class _VersesScreenState extends State<VersesScreen> {
       );
     }
 
-    // Record chapter read and show completion snackbar if applicable
-    final beforePct = provider.getPlanProgressPercent();
-    final chapterUnlocks = await provider.recordChapterRead(_selectedBook ?? '', newChapter);
+    // REMOVED: Do NOT mark chapter as completed just by paging/swiping.
+    // Completion is only via the "Complete Chapter" action.
     // Start/continue reading time tracking (user navigated to a new chapter)
     _startReadingTimer();
-    if (!mounted) return;
-    final afterPct = provider.getPlanProgressPercent();
-    if (afterPct > beforePct + 0.0001) {
-      RewardToast.showSuccess(
-        context,
-        title: 'Plan day complete!',
-        subtitle: 'Nice work, keep going.',
-      );
-    }
-    final completedNow = chapterUnlocks.any((a) => a.id.startsWith('book_completed_'));
-    // Streak achievements toast
-    final streakUnlocks = chapterUnlocks.where((a) => a.id.startsWith('bible_streak_')).toList();
-    if (streakUnlocks.isNotEmpty) {
-      final streakAch = streakUnlocks.first;
-      final xp = streakAch.xpReward;
-      RewardToast.showAchievementUnlocked(
-        context,
-        title: streakAch.title,
-        subtitle: xp > 0 ? '+$xp XP' : null,
-      );
-      // Nice-to-have: bonus unlocked toast when hitting 7-day streak
-      final unlockedBonus = streakUnlocks.any((a) => a.id == 'bible_streak_7');
-      if (unlockedBonus) {
-        RewardToast.showClaimed(
-          context,
-          title: 'Streak XP Bonus Unlocked!',
-          subtitle: 'You now gain +10% XP while your Bible streak is active.',
-          icon: Icons.trending_up,
-        );
-      }
-    }
-    if (completedNow) {
-      final b = _selectedBook ?? '';
-      RewardToast.showSuccess(
-        context,
-        title: 'Completed the Book of $b!',
-      );
+    if (kDebugMode) {
+      debugPrint('[BibleState] current book=${_selectedBook ?? ''} chapter=$newChapter');
     }
   }
 
@@ -2052,11 +1984,17 @@ class _ChapterPageState extends State<_ChapterPage> {
                               child: ElevatedButton(
                                 onPressed: _isEligibleToComplete()
                                     ? () async {
+                                        if (kDebugMode) {
+                                          debugPrint('[CompleteChapter] pressed book=${widget.book} chapter=${widget.chapter} eligible=true');
+                                        }
                                         HapticFeedback.lightImpact();
                                         final app = context.read<AppProvider>();
                                         // Record chapter completion (updates stats, weekly quest only if time threshold met)
                                         final hasMetThreshold = widget.hasMetReadingThreshold();
                                         await app.recordChapterRead(widget.book, widget.chapter, hasMetReadingThreshold: hasMetThreshold);
+                                        if (kDebugMode) {
+                                          debugPrint('[CompleteChapter] persisted=true');
+                                        }
                                         // Notify parent about chapter completion (for daily quest tracking)
                                         widget.onChapterCompleted?.call();
                                         if (!mounted) return;

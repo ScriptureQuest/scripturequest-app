@@ -1,0 +1,72 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+We need to harden the Bible Reader core loop. Fix two user-facing bugs (Psalms chapter selection + premature checkmarks), and add a lightweight debug/test QA sweep to prevent regressions.
+
+ABSOLUTE RULES
+- Do NOT change XP, quest logic, streak rules, rewards, storage schemas, or backend models beyond what is required to correctly represent “chapter completed”.
+- Do NOT mark a chapter completed unless the user explicitly completes it via the “Complete Chapter” action and the completion is accepted.
+- Keep UI style/theme consistent (no redesign).
+
+PART A — FIX: Psalms Chapter Picker Always Opens Chapter 1
+Problem:
+- In the “Chapters in Psalms” (and other books) bottom sheet, tapping ANY chapter still navigates to chapter 1.
+
+Requirements:
+1) Ensure tapping a chapter chip navigates to the exact selected chapter.
+2) Preserve current book.
+3) Ensure the reader updates visually to the selected chapter (title chip at top updates, verses update).
+4) Close the bottom sheet after selecting a chapter.
+5) Add debug logs (kDebugMode only):
+   - [ChaptersSheet] tapped book=<book> chapter=<n>
+   - [BibleNav] navigateTo book=<book> chapter=<n>
+   - [BibleState] current book=<book> chapter=<n>
+
+Likely root cause to look for:
+- The onTap handler passes a constant (1) or uses “initialChapter” instead of the tapped value, OR the state resets to 1 during rebuild/initState because route args are re-applied repeatedly.
+
+Fix it by:
+- Ensuring the selected chapter value is passed through the same navigation/state path used elsewhere.
+- Guard route-arg application so it only applies once (initState) and does not override user taps.
+
+PART B — FIX: Chapter “Completed” Checkmarks Should Only Show After Complete Chapter
+Problem:
+- In the chapter sheet, checkmarks appear even when the user did NOT press “Complete Chapter”.
+- Checkmarks must represent completion, not “visited” or “opened”.
+
+Requirements:
+1) Determine where checkmark/completion state is sourced.
+2) Change the logic so checkmarks are driven ONLY by persisted completion records (whatever your app uses after the “Complete Chapter” flow).
+3) Ensure “opened” chapters do NOT set completion state.
+4) When the user presses “Complete Chapter” and it succeeds:
+   - Persist completion
+   - Update UI so the checkmark appears for that chapter
+5) If completion is not eligible / not accepted, do NOT add completion record and do NOT show checkmark.
+6) Keep any existing “continue reading” / last-read behavior intact, but do not confuse it with completion.
+
+Add debug logs (kDebugMode only):
+- [CompleteChapter] pressed book=<book> chapter=<n> eligible=<true/false>
+- [CompleteChapter] persisted=<true/false>
+- [CompletionState] completedChaptersCount=<n> for book=<book>
+
+PART C — ADD: Small QA Sweep (Debug + 3–6 Widget Tests)
+Goal: Catch these bugs early without manual hunting.
+
+Requirements:
+1) Add 3–6 widget tests max:
+   - Tapping a chapter in chapter picker navigates to that chapter (not always 1).
+   - Completion checkmark does NOT appear just by opening a chapter.
+   - After triggering “Complete Chapter” success, checkmark appears for that chapter.
+   - VOTD tap navigates to correct reference (if easy to test).
+2) If needed, introduce minimal dependency injection / mock BibleService for tests ONLY.
+3) Update replit.md with exact commands:
+   - flutter test
+   - flutter analyze
+   - where to see debug logs
+
+OUTPUT
+- Provide a final STATUS UPDATE in the standard format including:
+  - What files changed
+  - What was fixed for Psalms chapter selection
+  - How completion checkmarks are now determined (must be “only after Complete Chapter”)
+  - Tests added and how to run them
+END PROMPT
