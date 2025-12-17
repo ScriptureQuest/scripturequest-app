@@ -38,6 +38,20 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Quest Start navigation + strict auto-progress rules
+  - Start button now navigates based on quest type:
+    - scripture_reading → Bible reader at quest target (or last-read reference)
+    - reflection/journal/prayer → Journal screen
+    - memorization → Favorites/Memorization screen
+    - service/community → Details sheet (manual completion)
+    - routine → Bible reader
+  - Strict matching in QuestProgressService for onChapterComplete:
+    - Only scripture_reading and routine quests auto-progress from chapter completion
+    - Must match quest's target book/chapter exactly
+    - Psalm quests only credit Psalms book completions
+    - Debug logging added with [QuestProgress] prefix
+  - No XP/backend logic changes
+
 - 2025-12-17: Quest Hub action/reflection separation + sticky chips
   - Today/Tonight filter shows ONLY action quests (scripture_reading, routine, service, community)
   - Reflection filter shows ONLY reflective prompts (reflection, prayer, journal, gratitude, memorization)

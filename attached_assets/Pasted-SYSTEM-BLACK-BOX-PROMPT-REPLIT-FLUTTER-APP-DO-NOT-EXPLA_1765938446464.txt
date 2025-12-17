@@ -1,0 +1,45 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Fix Quest Hub “Start” behavior and make quest auto-progress/crediting strict so quests only complete when the correct action is performed.
+
+Requirements:
+
+1) Start Button Must Always Do Something
+- For every quest card (and the bottom sheet “Start” button), ensure Start triggers a concrete action:
+  A) scripture_reading quests: open the Bible reader to the quest’s intended target reference (book/chapter) when available; if no target is specified, open Bible to last-read reference.
+  B) reflection/journal quests: open the Journal screen with a new entry prompt (or the relevant reflection screen).
+  C) prayer quests: open the prayer/reflection entry screen (or Journal if that is the current implementation).
+  D) service/community quests: open a simple “How to complete” details sheet OR mark as “manual completion only” (Start opens Details).
+  E) memorization quests: navigate to memorization practice screen if available; otherwise open Favorites/Memorization dashboard.
+
+- If any quest lacks a destination/action mapping, Start must open the Details view (never no-op).
+
+2) Strict Auto-Progress Rules (No Wrong Chapter Credit)
+- For scripture_reading quests, auto-progress must only occur when the user completes a chapter that matches the quest target.
+- Implement matching rules:
+  - If quest specifies a target book/chapter (e.g., “John 3”), only credit completion when that exact book+chapter is completed.
+  - If quest is “Read a calming Psalm before bed” or similar, only credit when the completed chapter’s book is Psalms (or the quest-defined allowed books list).
+  - If quest is generic “Read a chapter” with no target, credit any completed chapter (existing behavior can remain for these generic ones).
+
+- Ensure “Complete Chapter” in the Bible reader passes the completed reference (book + chapter) into the quest progress function so matching can be enforced.
+
+3) Manual vs Auto Quests
+- Only scripture_reading and routine quests should auto-progress.
+- Reflection/prayer/memorization/service/community quests must not auto-complete from unrelated Bible reading.
+
+4) No Backend Changes Beyond Correctness
+- Do NOT change quest generation pools, XP values, expiration rules, streak logic, or storage schemas unless required to fix correctness.
+- This is a correctness and wiring fix: Start must navigate, and crediting must be accurate.
+
+5) Add Debug Safety (temporary)
+- Add lightweight debug logs (or in-app debug prints) when a chapter completion attempts to progress a quest:
+  - Print quest id/title, quest type, quest target (if any), completed reference, and whether it matched.
+- Keep logs minimal and behind a debug flag if one exists.
+
+6) Output
+- Provide a final STATUS UPDATE with:
+  - Which files were changed
+  - Exact matching rules implemented
+  - A test checklist including: “Start does something” + “Psalm quest only credits Psalms” + “John chapter does not credit Psalm quest”
+
+Focus on making quest logic foolproof and preventing wrong-credit completions.

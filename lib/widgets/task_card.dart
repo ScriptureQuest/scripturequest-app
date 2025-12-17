@@ -298,19 +298,7 @@ class TaskCard extends StatelessWidget {
                     onPressed: () async {
                       await provider.startQuest(quest.id);
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                Icon(Icons.rocket_launch, color: Theme.of(context).colorScheme.primary),
-                                const SizedBox(width: 8),
-                                Text('Task started: ${quest.title}')
-                              ],
-                            ),
-                            backgroundColor: Theme.of(context).colorScheme.surface,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                        _navigateForQuestType(context, provider);
                       }
                     },
                   ),
@@ -532,6 +520,46 @@ class TaskCard extends StatelessWidget {
     }
   }
 
+  // ---------------------- Quest Type Navigation ----------------------
+  void _navigateForQuestType(BuildContext context, AppProvider provider) {
+    final qt = quest.questType.trim().toLowerCase();
+    final ref = (quest.scriptureReference ?? '').trim();
+
+    switch (qt) {
+      case 'scripture_reading':
+        if (ref.isNotEmpty) {
+          provider.markQuestScriptureOpened(quest.id);
+          final encoded = Uri.encodeComponent(ref);
+          context.go('/verses?ref=$encoded');
+        } else {
+          final lastRef = provider.lastBibleReference ?? 'John 1';
+          final encoded = Uri.encodeComponent(lastRef);
+          context.go('/verses?ref=$encoded');
+        }
+        break;
+      case 'reflection':
+      case 'journal':
+      case 'gratitude':
+      case 'prayer':
+        context.push('/journal');
+        break;
+      case 'memorization':
+      case 'memorize':
+        context.push('/favorites');
+        break;
+      case 'service':
+      case 'community':
+        _showDetailsSheet(context);
+        break;
+      case 'routine':
+        context.go('/verses');
+        break;
+      default:
+        _showDetailsSheet(context);
+        break;
+    }
+  }
+
   // ---------------------- Details Sheet ----------------------
   Future<void> _showDetailsSheet(BuildContext context) async {
     RewardToast.setBottomSheetOpen(true);
@@ -643,7 +671,10 @@ class TaskCard extends StatelessWidget {
                         label: const Text('Start'),
                         onPressed: () async {
                           await provider.startQuest(quest.id);
-                          if (context.mounted) Navigator.of(ctx).pop();
+                          if (context.mounted) {
+                            Navigator.of(ctx).pop();
+                            _navigateForQuestType(context, provider);
+                          }
                         },
                       ),
                     ),
