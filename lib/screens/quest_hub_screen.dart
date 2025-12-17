@@ -7,6 +7,8 @@ import 'package:level_up_your_faith/widgets/task_card.dart';
 import 'package:level_up_your_faith/models/quest_model.dart';
 import 'package:level_up_your_faith/widgets/sacred/sacred_ui.dart';
 
+enum _QuestFilter { today, weekly, reflection, events }
+
 class QuestHubScreen extends StatefulWidget {
   const QuestHubScreen({super.key});
 
@@ -16,6 +18,7 @@ class QuestHubScreen extends StatefulWidget {
 
 class _QuestHubScreenState extends State<QuestHubScreen> {
   bool _onboardingChecked = false;
+  _QuestFilter _filter = _QuestFilter.today;
 
   @override
   void didChangeDependencies() {
@@ -36,6 +39,8 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
     return hour >= 6 && hour < 18;
   }
 
+  String get _todayLabel => _isDaytime() ? 'Today' : 'Tonight';
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AppProvider>(builder: (context, provider, _) {
@@ -55,7 +60,6 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
       final List<TaskModel> reflection = provider.getReflectionTasks();
 
       final List<TaskModel> todayQuests = _isDaytime() ? daily : nightly;
-      final String todayLabel = _isDaytime() ? 'Today' : 'Tonight';
 
       final List<TaskModel> weeklyQuests = provider.quests
           .where((q) => q.isWeekly || q.category == 'weekly' || q.questFrequency == 'weekly')
@@ -66,6 +70,34 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
           .where((q) => q.category == 'event' || q.category == 'seasonal')
           .where((q) => !q.isCompleted)
           .toList();
+
+      List<TaskModel> currentQuests() {
+        switch (_filter) {
+          case _QuestFilter.today:
+            return todayQuests;
+          case _QuestFilter.weekly:
+            return weeklyQuests;
+          case _QuestFilter.reflection:
+            return reflection;
+          case _QuestFilter.events:
+            return eventQuests;
+        }
+      }
+
+      String emptyMessage() {
+        switch (_filter) {
+          case _QuestFilter.today:
+            return _isDaytime()
+                ? "You've finished your quests for today. Well done!"
+                : "You've finished tonight's quests. Rest well!";
+          case _QuestFilter.weekly:
+            return 'No weekly quests available right now.';
+          case _QuestFilter.reflection:
+            return 'All reflection quests completed.';
+          case _QuestFilter.events:
+            return 'No events or seasonal quests active.';
+        }
+      }
 
       final votdRef = provider.getVerseOfTheDay();
       String featuredText = 'For God so loved the world that he gave his one and only Son...';
@@ -78,6 +110,8 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
 
       final last = (provider.lastBibleReference ?? '').trim();
       final continueRef = last.isNotEmpty ? last : (votdRef.isNotEmpty ? votdRef : 'John 1');
+
+      final quests = currentQuests();
 
       return Scaffold(
         appBar: AppBar(
@@ -94,32 +128,13 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
               const SizedBox(height: 16),
               _buildContinueReading(context, provider, continueRef),
               const SizedBox(height: 24),
-              if (todayQuests.isNotEmpty) ...[
-                _buildSectionHeader(context, todayLabel),
-                const SizedBox(height: 8),
-                ...todayQuests.map<Widget>((q) => TaskCard(quest: q)),
-                const SizedBox(height: 16),
-              ],
-              if (reflection.isNotEmpty) ...[
-                _buildSectionHeader(context, 'Reflection'),
-                const SizedBox(height: 8),
-                ...reflection.map<Widget>((q) => TaskCard(quest: q)),
-                const SizedBox(height: 16),
-              ],
-              if (weeklyQuests.isNotEmpty) ...[
-                _buildSectionHeader(context, 'This Week'),
-                const SizedBox(height: 8),
-                ...weeklyQuests.map<Widget>((q) => TaskCard(quest: q)),
-                const SizedBox(height: 16),
-              ],
-              if (eventQuests.isNotEmpty) ...[
-                _buildSectionHeader(context, 'Seasonal / Events'),
-                const SizedBox(height: 8),
-                ...eventQuests.map<Widget>((q) => TaskCard(quest: q)),
-                const SizedBox(height: 16),
-              ],
-              if (todayQuests.isEmpty && reflection.isEmpty && weeklyQuests.isEmpty && eventQuests.isEmpty)
-                _buildEmptyState(context),
+              _buildFilterChips(context),
+              const SizedBox(height: 12),
+              if (quests.isEmpty)
+                _buildEmptyState(context, emptyMessage())
+              else
+                ...quests.map<Widget>((q) => TaskCard(quest: q)),
+              const SizedBox(height: 16),
               _buildQuestsLink(context),
             ],
           ),
@@ -145,12 +160,42 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+  Widget _buildFilterChips(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    Widget chip(_QuestFilter filter, String label) {
+      final selected = _filter == filter;
+      return GestureDetector(
+        onTap: () => setState(() => _filter = filter),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? cs.primary.withValues(alpha: 0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: selected ? cs.primary.withValues(alpha: 0.5) : cs.outline.withValues(alpha: 0.3),
+            ),
           ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: selected ? cs.primary : cs.onSurfaceVariant,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                ),
+          ),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        chip(_QuestFilter.today, _todayLabel),
+        chip(_QuestFilter.weekly, 'Weekly'),
+        chip(_QuestFilter.reflection, 'Reflection'),
+        chip(_QuestFilter.events, 'Events'),
+      ],
     );
   }
 
@@ -260,7 +305,7 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, String message) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 24),
       child: Column(
@@ -271,7 +316,7 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
             size: 40,
           ),
           const SizedBox(height: 12),
-          EmptyState(message: "You're all caught up. Well done!"),
+          EmptyState(message: message),
         ],
       ),
     );

@@ -38,12 +38,12 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
-- 2025-12-17: Quest Hub final structure
-  - Minimal header: "Welcome, Warrior" (Warrior in accent color, no card/subtitle)
-  - Today's Verse always visible, Continue Reading card below
-  - Time-aware "Today/Tonight" section: daily quests 6AM-5:59PM, nightly 6PM-5:59AM
-  - Separate sections: Reflection, This Week (weekly), Seasonal/Events - hidden if empty
-  - Pill labels updated: DAILY QUEST, NIGHTLY QUEST, WEEKLY QUEST, EVENT QUEST, REFLECTION
+- 2025-12-17: Quest Hub filter chips
+  - Default view shows ONLY Today/Tonight quests (time-aware, single list)
+  - Minimal filter chips: Tonight/Today (default), Weekly, Reflection, Events
+  - Only one filter view visible at a time (no stacked sections)
+  - Header flow preserved: Welcome → Today's Verse → Continue Reading
+  - Pill labels: DAILY QUEST, NIGHTLY QUEST, WEEKLY QUEST, REFLECTION, EVENT QUEST
 
 - 2025-12-17: Quest Hub as primary home
   - QuestHubScreen is primary landing page at /
