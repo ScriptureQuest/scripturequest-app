@@ -38,6 +38,17 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: QuestHub filter wiring fix (v2.5)
+  - Fixed filter chips to show mutually exclusive quest lists:
+    - Tonight/Today: ONLY action quests (scripture_reading, routine, service, community) from daily/nightly
+    - Weekly: ONLY quests marked as weekly (isWeekly, category=weekly, questFrequency=weekly)
+    - Reflection: ONLY reflection-type quests (reflection, prayer, journal, gratitude, memorization)
+    - Events: ONLY event/seasonal quests
+  - Added explicit exclusion filters to prevent weekly/event quests from appearing in daily lists
+  - Added isWeeklyQuest() and isEventQuest() helper functions for consistent categorization
+  - Debug logging (kDebugMode) prints filter counts when switching tabs
+  - No changes to quest generation, XP, streaks, or completion flow
+
 - 2025-12-17: Complete Chapter UX polish (v2.4)
   - Replaced toast-based blocking with live countdown on button:
     - Button shows "Complete (Xs)" countdown when not yet eligible

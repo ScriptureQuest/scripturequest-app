@@ -82,11 +82,26 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
       final List<TaskModel> allReflection = provider.getReflectionTasks();
 
       final List<TaskModel> timeQuests = _isDaytime() ? daily : nightly;
-      final List<TaskModel> actionQuests = timeQuests.where(_isActionQuest).toList();
+      /// Helper to check if quest belongs to weekly category
+      bool isWeeklyQuest(TaskModel q) =>
+          q.isWeekly || q.category == 'weekly' || q.questFrequency == 'weekly';
+      
+      /// Helper to check if quest belongs to event/seasonal category
+      bool isEventQuest(TaskModel q) =>
+          q.category == 'event' || q.category == 'seasonal';
+      
+      // Exclude weekly/event quests from today/tonight action list to prevent overlap
+      final List<TaskModel> actionQuests = timeQuests
+          .where(_isActionQuest)
+          .where((q) => !isWeeklyQuest(q) && !isEventQuest(q))
+          .toList();
 
+      // Exclude weekly/event quests from reflection list to prevent overlap
       final List<TaskModel> reflectionQuests = [
-        ...timeQuests.where(_isReflectionQuest),
-        ...allReflection.where((q) => !q.isCompleted),
+        ...timeQuests.where(_isReflectionQuest)
+            .where((q) => !isWeeklyQuest(q) && !isEventQuest(q)),
+        ...allReflection.where((q) => !q.isCompleted)
+            .where((q) => !isWeeklyQuest(q) && !isEventQuest(q)),
       ].toSet().toList();
 
       final List<TaskModel> weeklyQuests = provider.quests
@@ -100,6 +115,12 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
           .toList();
 
       List<TaskModel> currentQuests() {
+        // Debug logging: print counts for each filter list when filter changes (debug builds only)
+        if (kDebugMode) {
+          debugPrint('[QuestHub] Filter counts: todayAction=${actionQuests.length}, weekly=${weeklyQuests.length}, reflection=${reflectionQuests.length}, events=${eventQuests.length}');
+          debugPrint('[QuestHub] Selected filter: $_filter');
+        }
+        
         switch (_filter) {
           case _QuestFilter.today:
             return actionQuests;
