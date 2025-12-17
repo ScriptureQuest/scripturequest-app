@@ -38,6 +38,15 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Complete Chapter UX polish (v2.4)
+  - Replaced toast-based blocking with live countdown on button:
+    - Button shows "Complete (Xs)" countdown when not yet eligible
+    - Button automatically enables when countdown reaches 0
+    - Disabled button state is visually clear (grayed out)
+  - Timer-based updates every second when completion panel is visible
+  - No changes to eligibility rules (still 12s presence + engagement)
+  - No changes to quest progression, XP, or streaks
+
 - 2025-12-17: Core loop reliability fixes (v2.3)
   - Complete Chapter now foolproof for fast readers and short chapters:
     - Eligibility requires: 12s minimum presence + engagement (45s read time OR short chapter OR scrolled OR panel visible)

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
@@ -1677,10 +1678,56 @@ class _ChapterPageState extends State<_ChapterPage> {
   bool _isShortChapter = false; // Content fits viewport (no scroll needed)
   static const int _minPresenceSeconds = 12; // Minimum time on chapter screen
   
+  // Live countdown timer for button label
+  Timer? _countdownTimer;
+  int _remainingSeconds = _minPresenceSeconds;
+  
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+  
+  /// Start or restart the countdown timer when panel becomes visible
+  void _startCountdownTimer() {
+    _countdownTimer?.cancel();
+    _updateRemainingSeconds();
+    if (_remainingSeconds > 0) {
+      _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) {
+          _countdownTimer?.cancel();
+          return;
+        }
+        _updateRemainingSeconds();
+        setState(() {}); // Rebuild to update button label
+        if (_remainingSeconds <= 0) {
+          _countdownTimer?.cancel();
+        }
+      });
+    }
+  }
+  
+  /// Update remaining seconds based on presence time
+  void _updateRemainingSeconds() {
+    if (_chapterLoadedAt == null) {
+      _remainingSeconds = _minPresenceSeconds;
+      return;
+    }
+    final elapsed = DateTime.now().difference(_chapterLoadedAt!).inSeconds;
+    _remainingSeconds = (_minPresenceSeconds - elapsed).clamp(0, _minPresenceSeconds);
+  }
+  
+  /// Get the button label based on eligibility
+  String _getButtonLabel() {
+    if (_isEligibleToComplete()) {
+      return 'Complete Chapter';
+    }
+    _updateRemainingSeconds();
+    if (_remainingSeconds > 0) {
+      return 'Complete (${_remainingSeconds}s)';
+    }
+    return 'Complete Chapter';
   }
   
   /// Check if content fits viewport and mark as short chapter if so
@@ -1701,6 +1748,7 @@ class _ChapterPageState extends State<_ChapterPage> {
             _isShortChapter = true;
             _showEndPanel = true;
           });
+          _startCountdownTimer();
           return;
         }
       }
@@ -1716,6 +1764,7 @@ class _ChapterPageState extends State<_ChapterPage> {
               _isShortChapter = true;
               _showEndPanel = true;
             });
+            _startCountdownTimer();
           }
         }
       });
@@ -1737,6 +1786,8 @@ class _ChapterPageState extends State<_ChapterPage> {
       _chapterLoadedAt = DateTime.now();
       _hasScrolled = false;
       _isShortChapter = false;
+      _countdownTimer?.cancel();
+      _remainingSeconds = _minPresenceSeconds;
       _load();
     }
   }
@@ -1857,6 +1908,8 @@ class _ChapterPageState extends State<_ChapterPage> {
                     _isShortChapter = true;
                     _showEndPanel = true; // Always show panel for viewport-fit chapters
                   });
+                  // Start countdown timer when panel becomes visible
+                  _startCountdownTimer();
                 }
                 return false;
               }
@@ -1868,6 +1921,10 @@ class _ChapterPageState extends State<_ChapterPage> {
               final shouldShow = pct >= 0.92; // Slightly earlier reveal (was 0.95)
               if (shouldShow != _showEndPanel) {
                 setState(() => _showEndPanel = shouldShow);
+                // Start countdown timer when panel becomes visible
+                if (shouldShow) {
+                  _startCountdownTimer();
+                }
               }
               return false;
             },
@@ -1993,53 +2050,42 @@ class _ChapterPageState extends State<_ChapterPage> {
                           children: [
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: () async {
-                                  // Check eligibility before allowing completion
-                                  if (!_isEligibleToComplete()) {
-                                    // Show helpful toast explaining what's needed
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(_getDisabledReason()),
-                                        duration: const Duration(seconds: 2),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  
-                                  final app = context.read<AppProvider>();
-                                  // Record chapter completion (updates stats, weekly quest only if time threshold met)
-                                  final hasMetThreshold = widget.hasMetReadingThreshold();
-                                  await app.recordChapterRead(widget.book, widget.chapter, hasMetReadingThreshold: hasMetThreshold);
-                                  // Notify parent about chapter completion (for daily quest tracking)
-                                  widget.onChapterCompleted?.call();
-                                  if (!mounted) return;
-                                  RewardToast.showSuccess(
-                                    context,
-                                    title: 'Chapter completed',
-                                    subtitle: '${widget.book} ${widget.chapter}',
-                                  );
-                                  try {
-                                    final bookRef = app.bibleService.displayToRef(widget.book);
-                                    await ProgressEngine.instance.emit(
-                                      ProgressEvent.chapterCompleted(
-                                        bookRef,
-                                        widget.book,
-                                        widget.chapter,
-                                      ),
-                                    );
-                                  } catch (_) {}
-                                  // Show a subtle in-page completion banner (+10 XP)
-                                  if (mounted) {
-                                    setState(() => _showCompletionBanner = true);
-                                    Future.delayed(const Duration(milliseconds: 2600), () {
-                                      if (mounted) {
-                                        setState(() => _showCompletionBanner = false);
+                                onPressed: _isEligibleToComplete()
+                                    ? () async {
+                                        final app = context.read<AppProvider>();
+                                        // Record chapter completion (updates stats, weekly quest only if time threshold met)
+                                        final hasMetThreshold = widget.hasMetReadingThreshold();
+                                        await app.recordChapterRead(widget.book, widget.chapter, hasMetReadingThreshold: hasMetThreshold);
+                                        // Notify parent about chapter completion (for daily quest tracking)
+                                        widget.onChapterCompleted?.call();
+                                        if (!mounted) return;
+                                        RewardToast.showSuccess(
+                                          context,
+                                          title: 'Chapter completed',
+                                          subtitle: '${widget.book} ${widget.chapter}',
+                                        );
+                                        try {
+                                          final bookRef = app.bibleService.displayToRef(widget.book);
+                                          await ProgressEngine.instance.emit(
+                                            ProgressEvent.chapterCompleted(
+                                              bookRef,
+                                              widget.book,
+                                              widget.chapter,
+                                            ),
+                                          );
+                                        } catch (_) {}
+                                        // Show a subtle in-page completion banner (+10 XP)
+                                        if (mounted) {
+                                          setState(() => _showCompletionBanner = true);
+                                          Future.delayed(const Duration(milliseconds: 2600), () {
+                                            if (mounted) {
+                                              setState(() => _showCompletionBanner = false);
+                                            }
+                                          });
+                                        }
                                       }
-                                    });
-                                  }
-                                },
-                                child: const Text('Complete Chapter'),
+                                    : null, // Disabled when not eligible
+                                child: Text(_getButtonLabel()),
                               ),
                             ),
                             const SizedBox(width: 8),
