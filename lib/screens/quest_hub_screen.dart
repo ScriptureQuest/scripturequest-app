@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
@@ -153,15 +154,13 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
       String emptyMessage() {
         switch (_filter) {
           case _QuestFilter.today:
-            return _isDaytime()
-                ? "You've finished your action quests for today!"
-                : "You've finished tonight's action quests!";
+            return "You're done for now. Check back later.";
           case _QuestFilter.weekly:
-            return 'No weekly quests available right now.';
+            return 'No weekly quests right now.';
           case _QuestFilter.reflection:
-            return 'All reflection prompts completed.';
+            return 'No reflection prompts right now.';
           case _QuestFilter.events:
-            return 'No events or seasonal quests active.';
+            return 'No events active right now.';
         }
       }
 
@@ -194,45 +193,58 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
           centerTitle: true,
         ),
         body: FadeSlideIn(
-          child: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildWelcomeHeader(context),
-                      const SizedBox(height: 16),
-                      _buildTodaysVerse(context, votdRef, featuredText),
-                      const SizedBox(height: 16),
-                      _buildContinueReading(context, provider, continueRef),
-                      const SizedBox(height: 20),
-                    ],
+          child: RefreshIndicator(
+            onRefresh: () async {
+              // Re-read quests and state from provider (no regeneration)
+              await Future.delayed(const Duration(milliseconds: 350));
+              if (mounted) {
+                // Force re-read of VOTD text
+                _lastVotdRef = '';
+                _triggerVotdLoad(votdRef);
+                setState(() {});
+              }
+            },
+            color: cs.primary,
+            child: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildWelcomeHeader(context),
+                        const SizedBox(height: 16),
+                        _buildTodaysVerse(context, votdRef, featuredText),
+                        const SizedBox(height: 16),
+                        _buildContinueReading(context, provider, continueRef),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _StickyFilterDelegate(
-                  child: Container(
-                    color: cs.surface,
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                    child: _buildFilterChips(context),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickyFilterDelegate(
+                    child: Container(
+                      color: cs.surface,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      child: _buildFilterChips(context),
+                    ),
                   ),
                 ),
-              ),
-            ],
-            body: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-              children: [
-                if (quests.isEmpty)
-                  _buildEmptyState(context, emptyMessage())
-                else
-                  ...quests.map<Widget>((q) => TaskCard(quest: q)),
-                const SizedBox(height: 16),
-                _buildQuestsLink(context),
               ],
+              body: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+                children: [
+                  if (quests.isEmpty)
+                    _buildEmptyState(context, emptyMessage())
+                  else
+                    ...quests.map<Widget>((q) => TaskCard(quest: q)),
+                  const SizedBox(height: 16),
+                  _buildQuestsLink(context),
+                ],
+              ),
             ),
           ),
         ),
@@ -286,9 +298,15 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
     Widget chip(_QuestFilter filter, String label) {
       final selected = _filter == filter;
       return GestureDetector(
-        onTap: () => setState(() => _filter = filter),
+        onTap: () {
+          if (_filter != filter) {
+            HapticFeedback.selectionClick();
+            setState(() => _filter = filter);
+          }
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          constraints: const BoxConstraints(minHeight: 40),
           decoration: BoxDecoration(
             color: selected ? cs.primary.withValues(alpha: 0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
@@ -322,37 +340,42 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
   Widget _buildTodaysVerse(BuildContext context, String reference, String text) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    return GestureDetector(
-      onTap: () {
-        final focus = _extractVerseNumber(reference);
-        final uri = Uri(path: '/verses', queryParameters: {
-          'ref': reference,
-          if (focus != null) 'focus': '$focus',
-        });
-        context.go(uri.toString());
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cs.outline.withValues(alpha: 0.15), width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Today's Verse", style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
-            const SizedBox(height: 6),
-            Text(reference, style: theme.textTheme.titleMedium?.copyWith(color: GamerColors.neonCyan)),
-            const SizedBox(height: 10),
-            Text(
-              text,
-              style: theme.textTheme.bodyLarge?.copyWith(fontStyle: FontStyle.italic),
-              maxLines: 5,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+    return Material(
+      color: cs.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: () {
+          final focus = _extractVerseNumber(reference);
+          final uri = Uri(path: '/verses', queryParameters: {
+            'ref': reference,
+            if (focus != null) 'focus': '$focus',
+          });
+          context.go(uri.toString());
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outline.withValues(alpha: 0.15), width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Today's Verse", style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
+              const SizedBox(height: 6),
+              Text(reference, style: theme.textTheme.titleMedium?.copyWith(color: GamerColors.neonCyan)),
+              const SizedBox(height: 10),
+              Text(
+                text,
+                style: theme.textTheme.bodyLarge?.copyWith(fontStyle: FontStyle.italic),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );

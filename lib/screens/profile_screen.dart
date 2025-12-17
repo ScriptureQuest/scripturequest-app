@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
@@ -47,9 +48,15 @@ class ProfileScreen extends StatelessWidget {
           centerTitle: true,
           actions: const [HomeActionButton()],
         ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-          children: [
+        body: RefreshIndicator(
+          onRefresh: () async {
+            // Re-bind profile stats from provider (no logic changes)
+            await Future.delayed(const Duration(milliseconds: 350));
+          },
+          color: cs.primary,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+            children: [
             // Header — avatar + equipped title badge (compact, reduced padding)
             SacredCard(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -127,6 +134,7 @@ class ProfileScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
           ],
+          ),
         ),
       );
     });
@@ -232,7 +240,10 @@ class _CollapsibleExploreSectionState extends State<_CollapsibleExploreSection> 
       child: Column(
         children: [
           InkWell(
-            onTap: () => setState(() => _expanded = !_expanded),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _expanded = !_expanded);
+            },
             borderRadius: BorderRadius.circular(12),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

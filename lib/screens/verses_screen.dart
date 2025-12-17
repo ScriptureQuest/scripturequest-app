@@ -2052,6 +2052,7 @@ class _ChapterPageState extends State<_ChapterPage> {
                               child: ElevatedButton(
                                 onPressed: _isEligibleToComplete()
                                     ? () async {
+                                        HapticFeedback.lightImpact();
                                         final app = context.read<AppProvider>();
                                         // Record chapter completion (updates stats, weekly quest only if time threshold met)
                                         final hasMetThreshold = widget.hasMetReadingThreshold();

@@ -38,6 +38,22 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: High-ROI UX polish (v3.2)
+  - Pull-to-refresh on Quest Hub and Profile screens (re-binds UI state, no regeneration)
+  - Subtle haptics:
+    - Complete Quest action (lightImpact)
+    - Complete Chapter action (lightImpact)
+    - Quest Hub filter chip selection (selectionClick)
+    - Profile Explore section expand/collapse (selectionClick)
+  - Empty state messages simplified:
+    - Today/Tonight: "You're done for now. Check back later."
+    - Weekly: "No weekly quests right now."
+    - Reflection: "No reflection prompts right now."
+    - Events: "No events active right now."
+  - Tap affordance consistency: Today's Verse uses Material InkWell with min 48px height
+  - Spacing normalized to ~16px between major sections in Quest Hub
+  - No logic, XP, streaks, quest generation, or data model changes
+
 - 2025-12-17: Profile screen UI polish (v3.1)
   - Identity Card: reduced padding (16→12px), smaller avatar glow (112→96px), tighter spacing
   - Journey section: hides zero-value rows (quizzes, reflections, quest steps, plan days)

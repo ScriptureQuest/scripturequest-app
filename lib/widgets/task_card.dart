@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:level_up_your_faith/models/quest_model.dart';
 import 'package:level_up_your_faith/theme.dart';
 import 'package:provider/provider.dart';
@@ -754,6 +755,7 @@ class TaskCard extends StatelessWidget {
 
   // ---------------------- Completion Flow ----------------------
   Future<void> _handleComplete(BuildContext context) async {
+    HapticFeedback.lightImpact();
     final provider = Provider.of<AppProvider>(context, listen: false);
 
     if ((quest.reflectionPrompt ?? '').isNotEmpty) {

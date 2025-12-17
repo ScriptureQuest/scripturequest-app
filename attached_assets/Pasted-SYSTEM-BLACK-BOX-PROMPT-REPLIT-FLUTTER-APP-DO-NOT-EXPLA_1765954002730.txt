@@ -1,0 +1,61 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Add high-ROI UX polish: pull-to-refresh + subtle haptics, plus a few safe micro-polish items that do NOT change logic.
+
+SCOPE RULES (HARD)
+- Do NOT change quest generation, XP/streak logic, expiration rules, completion flow logic, storage schemas, routes, or data models.
+- UI/UX polish only.
+- No new screens. No new features that require backend changes.
+
+A) PULL-TO-REFRESH
+1) Quest Hub
+- Wrap the main scroll view in RefreshIndicator.
+- onRefresh should re-bind state and refresh UI:
+  - re-read quests from existing services/provider
+  - re-read streak display
+  - re-bind VOTD display (do NOT rotate/change the VOTD selection)
+- Do NOT regenerate quests or reset day keys.
+- Use a small 300–500ms await delay only if necessary for smooth UX.
+
+2) Profile
+- Wrap the main scroll view in RefreshIndicator.
+- onRefresh should re-bind profile stats + streak + titles/achievements UI from existing provider/state.
+- No logic changes; just re-render and re-read current values.
+
+B) HAPTICS (SUBTLE ONLY)
+- Use system haptics only (HapticFeedback).
+- Add haptics ONLY to:
+  1) Complete Quest action (lightImpact)
+  2) Complete Chapter action (lightImpact)
+  3) Switching Quest Hub filter chips (selectionClick)
+  4) Expanding/collapsing Explore on Profile (selectionClick)
+- Do NOT add haptics to scrolling, normal navigation taps, or list scrolling.
+
+C) SAFE MICRO-POLISH (BUNDLE TO SAVE CREDITS)
+1) Loading/Empty State Clarity (text-only)
+- If a quest filter shows zero items, show a calm one-liner:
+  - Today/Tonight: “You’re done for now. Check back later.”
+  - Weekly: “No weekly quests right now.”
+  - Reflection: “No reflection prompts right now.”
+  - Events: “No events active right now.”
+- No new logic—just UI text when lists are empty.
+
+2) Tap Affordance Consistency
+- Ensure all tappable cards/rows (Tools items, Explore items, Today’s Verse card, Continue Reading card) use the same InkWell/Ripple behavior and hit target sizing (min 48px height).
+- No visual redesign; just consistent touch behavior.
+
+3) Minor Spacing Normalization
+- Normalize vertical spacing between major sections to ~16px where inconsistent (Quest Hub + Profile).
+- Do not redesign; adjust padding/margins only.
+
+OUTPUT
+Provide a final STATUS UPDATE in the standard format:
+- Goal
+- What changed
+- What did NOT change
+- Files touched (exact paths)
+- Key logic notes
+- Quick test checklist
+- Known risks/edge cases
+
+END PROMPT
