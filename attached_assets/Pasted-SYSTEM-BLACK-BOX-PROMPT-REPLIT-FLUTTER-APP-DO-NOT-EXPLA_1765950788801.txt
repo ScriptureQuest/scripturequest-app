@@ -1,0 +1,76 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Fix “Today’s Verse” so it displays the actual verse text (not “Tap to read this verse”) by using robust reference parsing + Bible content lookup, not fragile string equality against provider.verses.
+
+Requirements
+
+Robust Reference Parsing (must implement)
+
+Add a helper ParsedRef + parseReference(String ref) that extracts:
+
+book (string, normalized)
+
+chapter (int)
+
+verse (int)
+
+It must correctly parse:
+
+“2 Corinthians 12:9”
+
+“John 3:16”
+
+“Song of Songs 2:1”
+
+“1 John 1:9”
+
+Add normalizeBookName(String) that handles common aliases (Psalm/Psalms, Song of Solomon/Song of Songs, Revelation/Revelations) and strips extra whitespace/punctuation.
+
+Source of Truth for VOTD
+
+Keep: final votdRef = provider.getVerseOfTheDay();
+
+Display reference text exactly as before (no UI changes).
+
+Verse Text Retrieval (core fix)
+Replace the current “lookup in provider.verses” approach with this priority order:
+
+A) If you have a Verse lookup service already (ex: BibleService / VerseService):
+
+Retrieve the chapter text for ParsedRef(book, chapter) (from the same source the reader uses).
+
+Extract the specific verse ParsedRef.verse from that chapter content.
+
+Use that as the VOTD text.
+
+B) If the app stores chapter verses in memory (ex: current loaded chapter or cached chapters):
+
+Use the cached chapter and extract the verse number.
+
+C) Only if A and B fail:
+
+Show the placeholder “Tap to read this verse”.
+
+Important: Never show a different verse’s text as fallback. Placeholder is fine if data truly unavailable.
+
+Async Safety / Refresh
+
+If chapter/verse text is loaded asynchronously, ensure QuestHubScreen updates when it arrives:
+
+Use a FutureBuilder for the VOTD text OR store it in state and setState when fetched.
+
+The placeholder should be temporary if the data becomes available.
+
+Tap behavior
+
+Tapping Today’s Verse should ALWAYS navigate to the Bible reader at votdRef, even if text is placeholder.
+
+Safety Constraints
+
+Do NOT change quest logic, XP, streak logic, or any quest progress services.
+
+UI styling stays the same (only text content behavior changes).
+
+Output
+
+Provide final STATUS UPDATE in the standard format, including exactly how verse text is extracted (chapter fetch + verse number).

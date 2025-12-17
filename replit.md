@@ -38,13 +38,21 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Today's Verse actual text display (v2.9)
+  - Fixed VOTD to show actual verse text using robust reference parsing
+  - BibleService enhanced with:
+    - parseReference() now extracts book, chapter, verse, and verseEnd
+    - normalizeBookName() handles aliases (Psalm/Psalms, Song of Songs, Revelations)
+    - getVerseText() async lookup with multi-translation support
+  - Added 8 common VOTD passages to mock data (John 3:16, 2 Cor 12:9, Prov 3:5-6, etc.)
+  - QuestHubScreen uses async state management for VOTD text loading
+  - Placeholder "Tap to read this verse" only shown when data truly unavailable
+  - No changes to quest generation, XP, streaks, or completion logic
+
 - 2025-12-17: Bottom bar polish + Today's Verse sync (v2.8)
   - Quest Hub icon changed from flag to home icon (Icons.home_outlined)
   - Active tab emphasis: soft pill background + subtle border (already present)
   - Bible and Profile icons unchanged
-  - Today's Verse reference/text sync confirmed working:
-    - Reference and text derived from single VOTD source
-    - Safe placeholder shown if verse text not found
   - No changes to quest generation, XP, streaks, or completion logic
 
 - 2025-12-17: Simplified navigation + streak visibility (v2.6)

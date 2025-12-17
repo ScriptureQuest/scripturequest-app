@@ -99,10 +99,10 @@ class BibleService {
   }
 
   /// Parse a reference like "John 3:16", "Psalm 23", "1 Thessalonians 5:1-2".
-  /// Returns a tuple-like map: { 'bookDisplay': String?, 'bookRef': String?, 'chapter': int? }
+  /// Returns a tuple-like map: { 'bookDisplay': String?, 'bookRef': String?, 'chapter': int?, 'verse': int?, 'verseEnd': int? }
   Map<String, dynamic> parseReference(String reference) {
     final raw = reference.trim();
-    if (raw.isEmpty) return {'bookDisplay': null, 'bookRef': null, 'chapter': null};
+    if (raw.isEmpty) return {'bookDisplay': null, 'bookRef': null, 'chapter': null, 'verse': null, 'verseEnd': null};
 
     final refUpper = raw.toUpperCase();
     // Sort ref names by length desc to avoid partial matches like 'John' before '1 John'
@@ -111,15 +111,90 @@ class BibleService {
     for (final refName in refNames) {
       final upper = refName.toUpperCase();
       if (refUpper.startsWith(upper)) {
-        // Extract chapter number after book name
+        // Extract chapter and verse numbers after book name
         final remainder = raw.substring(refName.length).trim();
-        final chapterMatch = RegExp(r'^(\d+)').firstMatch(remainder);
-        final chapter = chapterMatch != null ? int.tryParse(chapterMatch.group(1)!) : null;
+        // Match patterns like "3", "3:16", "3:16-18"
+        final match = RegExp(r'^(\d+)(?::(\d+)(?:-(\d+))?)?').firstMatch(remainder);
+        final chapter = match != null ? int.tryParse(match.group(1)!) : null;
+        final verse = match != null && match.group(2) != null ? int.tryParse(match.group(2)!) : null;
+        final verseEnd = match != null && match.group(3) != null ? int.tryParse(match.group(3)!) : null;
         final display = refToDisplay(refName);
-        return {'bookDisplay': display, 'bookRef': refName, 'chapter': chapter};
+        return {'bookDisplay': display, 'bookRef': refName, 'chapter': chapter, 'verse': verse, 'verseEnd': verseEnd};
       }
     }
-    return {'bookDisplay': null, 'bookRef': null, 'chapter': null};
+    return {'bookDisplay': null, 'bookRef': null, 'chapter': null, 'verse': null, 'verseEnd': null};
+  }
+
+  /// Normalize a book name to handle common aliases
+  String normalizeBookName(String book) {
+    final lower = book.trim().toLowerCase();
+    // Common aliases
+    if (lower == 'psalms' || lower == 'psalm') return 'Psalm';
+    if (lower == 'song of songs' || lower == 'song of solomon') return 'Song of Solomon';
+    if (lower == 'revelations') return 'Revelation';
+    // Try to find matching book
+    for (final b in _books) {
+      if ((b['display'] as String).toLowerCase() == lower ||
+          (b['ref'] as String).toLowerCase() == lower) {
+        return b['ref'] as String;
+      }
+    }
+    return book;
+  }
+
+  /// Get verse text for a reference (for VOTD display)
+  /// Returns the verse text or null if not found
+  Future<String?> getVerseText(String reference, {String versionCode = 'KJV'}) async {
+    // First, try direct normalized reference lookup (simplest case)
+    final directKey = reference.trim().toUpperCase();
+    if (_mockPassages.containsKey(directKey)) {
+      final versions = _mockPassages[directKey]!;
+      return versions[versionCode.toUpperCase()] ?? versions.values.first;
+    }
+    
+    // Parse reference for more sophisticated matching
+    final parsed = parseReference(reference);
+    if (parsed['bookRef'] == null || parsed['chapter'] == null) return null;
+    
+    final bookRef = parsed['bookRef'] as String;
+    final chapter = parsed['chapter'] as int;
+    final verse = parsed['verse'] as int?;
+    final verseEnd = parsed['verseEnd'] as int?;
+    
+    // Build the lookup key
+    String lookupKey;
+    if (verse != null && verseEnd != null) {
+      lookupKey = '$bookRef $chapter:$verse-$verseEnd'.toUpperCase();
+    } else if (verse != null) {
+      lookupKey = '$bookRef $chapter:$verse'.toUpperCase();
+    } else {
+      lookupKey = '$bookRef $chapter'.toUpperCase();
+    }
+    
+    // Try exact match
+    final versions = _mockPassages[lookupKey];
+    if (versions != null) {
+      return versions[versionCode.toUpperCase()] ?? versions.values.first;
+    }
+    
+    // Try normalized book name variations
+    final normalizedBook = normalizeBookName(bookRef);
+    if (normalizedBook != bookRef) {
+      String altKey;
+      if (verse != null && verseEnd != null) {
+        altKey = '$normalizedBook $chapter:$verse-$verseEnd'.toUpperCase();
+      } else if (verse != null) {
+        altKey = '$normalizedBook $chapter:$verse'.toUpperCase();
+      } else {
+        altKey = '$normalizedBook $chapter'.toUpperCase();
+      }
+      final altVersions = _mockPassages[altKey];
+      if (altVersions != null) {
+        return altVersions[versionCode.toUpperCase()] ?? altVersions.values.first;
+      }
+    }
+    
+    return null;
   }
   // Map<referenceUppercase, Map<versionCode, text>>
   final Map<String, Map<String, String>> _mockPassages = {
@@ -130,6 +205,62 @@ class BibleService {
       'NLT': 'For this is how God loved the world: He gave his one and only Son, so that everyone who believes in him will not perish but have eternal life.',
       'CSB': 'For God loved the world in this way: He gave his one and only Son, so that everyone who believes in him will not perish but have eternal life.',
       'NKJV': 'For God so loved the world that He gave His only begotten Son, that whoever believes in Him should not perish but have everlasting life.',
+    },
+    '2 CORINTHIANS 12:9': {
+      'KJV': 'And he said unto me, My grace is sufficient for thee: for my strength is made perfect in weakness. Most gladly therefore will I rather glory in my infirmities, that the power of Christ may rest upon me.',
+      'NIV': 'But he said to me, "My grace is sufficient for you, for my power is made perfect in weakness." Therefore I will boast all the more gladly about my weaknesses, so that Christ\'s power may rest on me.',
+      'ESV': 'But he said to me, "My grace is sufficient for you, for my power is made perfect in weakness." Therefore I will boast all the more gladly of my weaknesses, so that the power of Christ may rest upon me.',
+      'NLT': 'Each time he said, "My grace is all you need. My power works best in weakness." So now I am glad to boast about my weaknesses, so that the power of Christ can work through me.',
+      'CSB': 'But he said to me, "My grace is sufficient for you, for my power is perfected in weakness." Therefore, I will most gladly boast all the more about my weaknesses, so that Christ\'s power may reside in me.',
+      'NKJV': 'And He said to me, "My grace is sufficient for you, for My strength is made perfect in weakness." Therefore most gladly I will rather boast in my infirmities, that the power of Christ may rest upon me.',
+    },
+    'PROVERBS 3:5-6': {
+      'KJV': 'Trust in the LORD with all thine heart; and lean not unto thine own understanding. In all thy ways acknowledge him, and he shall direct thy paths.',
+      'NIV': 'Trust in the LORD with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight.',
+      'ESV': 'Trust in the LORD with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths.',
+      'NLT': 'Trust in the LORD with all your heart; do not depend on your own understanding. Seek his will in all you do, and he will show you which path to take.',
+      'CSB': 'Trust in the LORD with all your heart, and do not rely on your own understanding; in all your ways know him, and he will make your paths straight.',
+      'NKJV': 'Trust in the LORD with all your heart, And lean not on your own understanding; In all your ways acknowledge Him, And He shall direct your paths.',
+    },
+    'JEREMIAH 29:11': {
+      'KJV': 'For I know the thoughts that I think toward you, saith the LORD, thoughts of peace, and not of evil, to give you an expected end.',
+      'NIV': '"For I know the plans I have for you," declares the LORD, "plans to prosper you and not to harm you, plans to give you hope and a future."',
+      'ESV': 'For I know the plans I have for you, declares the LORD, plans for welfare and not for evil, to give you a future and a hope.',
+      'NLT': 'For I know the plans I have for you," says the LORD. "They are plans for good and not for disaster, to give you a future and a hope.',
+      'CSB': 'For I know the plans I have for you"—this is the LORD\'s declaration—"plans for your well-being, not for disaster, to give you a future and a hope.',
+      'NKJV': 'For I know the thoughts that I think toward you, says the LORD, thoughts of peace and not of evil, to give you a future and a hope.',
+    },
+    'ISAIAH 41:10': {
+      'KJV': 'Fear thou not; for I am with thee: be not dismayed; for I am thy God: I will strengthen thee; yea, I will help thee; yea, I will uphold thee with the right hand of my righteousness.',
+      'NIV': 'So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you; I will uphold you with my righteous right hand.',
+      'ESV': 'Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you, I will uphold you with my righteous right hand.',
+      'NLT': 'Don\'t be afraid, for I am with you. Don\'t be discouraged, for I am your God. I will strengthen you and help you. I will hold you up with my victorious right hand.',
+      'CSB': 'Do not fear, for I am with you; do not be afraid, for I am your God. I will strengthen you; I will help you; I will hold on to you with my righteous right hand.',
+      'NKJV': 'Fear not, for I am with you; Be not dismayed, for I am your God. I will strengthen you, Yes, I will help you, I will uphold you with My righteous right hand.',
+    },
+    'ROMANS 8:28': {
+      'KJV': 'And we know that all things work together for good to them that love God, to them who are the called according to his purpose.',
+      'NIV': 'And we know that in all things God works for the good of those who love him, who have been called according to his purpose.',
+      'ESV': 'And we know that for those who love God all things work together for good, for those who are called according to his purpose.',
+      'NLT': 'And we know that God causes everything to work together for the good of those who love God and are called according to his purpose for them.',
+      'CSB': 'We know that all things work together for the good of those who love God, who are called according to his purpose.',
+      'NKJV': 'And we know that all things work together for good to those who love God, to those who are the called according to His purpose.',
+    },
+    'JOSHUA 1:9': {
+      'KJV': 'Have not I commanded thee? Be strong and of a good courage; be not afraid, neither be thou dismayed: for the LORD thy God is with thee whithersoever thou goest.',
+      'NIV': 'Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the LORD your God will be with you wherever you go.',
+      'ESV': 'Have I not commanded you? Be strong and courageous. Do not be frightened, and do not be dismayed, for the LORD your God is with you wherever you go.',
+      'NLT': 'This is my command—be strong and courageous! Do not be afraid or discouraged. For the LORD your God is with you wherever you go.',
+      'CSB': 'Haven\'t I commanded you: be strong and courageous? Do not be afraid or discouraged, for the LORD your God is with you wherever you go.',
+      'NKJV': 'Have I not commanded you? Be strong and of good courage; do not be afraid, nor be dismayed, for the LORD your God is with you wherever you go.',
+    },
+    '1 JOHN 1:9': {
+      'KJV': 'If we confess our sins, he is faithful and just to forgive us our sins, and to cleanse us from all unrighteousness.',
+      'NIV': 'If we confess our sins, he is faithful and just and will forgive us our sins and purify us from all unrighteousness.',
+      'ESV': 'If we confess our sins, he is faithful and just to forgive us our sins and to cleanse us from all unrighteousness.',
+      'NLT': 'But if we confess our sins to him, he is faithful and just to forgive us our sins and to cleanse us from all wickedness.',
+      'CSB': 'If we confess our sins, he is faithful and righteous to forgive us our sins and to cleanse us from all unrighteousness.',
+      'NKJV': 'If we confess our sins, He is faithful and just to forgive us our sins and to cleanse us from all unrighteousness.',
     },
     'PSALM 23:1-4': {
       'KJV': 'The LORD is my shepherd; I shall not want. He maketh me to lie down in green pastures: he leadeth me beside the still waters. He restoreth my soul: he leadeth me in the paths of righteousness for his name\'s sake. Yea, though I walk through the valley of the shadow of death, I will fear no evil: for thou art with me; thy rod and thy staff they comfort me.',

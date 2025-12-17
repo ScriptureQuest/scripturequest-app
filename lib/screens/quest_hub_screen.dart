@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
+import 'package:level_up_your_faith/services/bible_service.dart';
 import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/widgets/task_card.dart';
 import 'package:level_up_your_faith/models/quest_model.dart';
@@ -20,6 +21,8 @@ class QuestHubScreen extends StatefulWidget {
 class _QuestHubScreenState extends State<QuestHubScreen> {
   bool _onboardingChecked = false;
   _QuestFilter _filter = _QuestFilter.today;
+  String? _votdText;
+  String _lastVotdRef = '';
 
   @override
   void didChangeDependencies() {
@@ -33,6 +36,20 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
         });
       }
     }
+  }
+
+  void _triggerVotdLoad(String votdRef) {
+    if (votdRef.isEmpty || votdRef == _lastVotdRef) return;
+    _lastVotdRef = votdRef;
+    
+    BibleService.instance.getVerseText(votdRef).then((text) {
+      if (mounted && text != null) {
+        setState(() => _votdText = text);
+      }
+      if (kDebugMode) {
+        debugPrint('[QuestHub] VOTD lookup: ref="$votdRef", text=${text != null ? "found (${text.length} chars)" : "NOT FOUND"}');
+      }
+    });
   }
 
   bool _isDaytime() {
@@ -150,39 +167,11 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
 
       // Today's Verse: Single source of truth for reference + text
       final votdRef = provider.getVerseOfTheDay();
-      String? votdText;
-      // Look up verse text that matches the VOTD reference exactly
-      if (provider.verses.isNotEmpty && votdRef.isNotEmpty) {
-        try {
-          final verse = provider.verses.firstWhere((v) => v.reference == votdRef);
-          if (verse.text.isNotEmpty) {
-            votdText = verse.text;
-          }
-        } catch (_) {
-          // Verse not found in cache - try alternative lookup methods
-        }
-      }
-      // If exact match failed, try partial reference matching (book + chapter + verse)
-      if (votdText == null && provider.verses.isNotEmpty && votdRef.isNotEmpty) {
-        try {
-          // Normalize comparison: strip extra spaces, handle case differences
-          final normalizedRef = votdRef.trim().toLowerCase();
-          final verse = provider.verses.firstWhere(
-            (v) => v.reference.trim().toLowerCase() == normalizedRef,
-            orElse: () => provider.verses.first, // Will be caught by text check
-          );
-          if (verse.reference.trim().toLowerCase() == normalizedRef && verse.text.isNotEmpty) {
-            votdText = verse.text;
-          }
-        } catch (_) {}
-      }
+      // Trigger async VOTD text lookup (will setState when complete)
+      _triggerVotdLoad(votdRef);
+      // Use state-managed VOTD text (loaded via BibleService)
       // Defensive: If no matching text found, show safe placeholder (never mismatched text)
-      final featuredText = votdText ?? 'Tap to read this verse';
-      
-      // Debug logging for VOTD reference/text sync verification
-      if (kDebugMode) {
-        debugPrint('[QuestHub] VOTD ref="$votdRef", text=${votdText != null ? "found (${votdText.length} chars)" : "NOT FOUND - using placeholder"}');
-      }
+      final featuredText = _votdText ?? 'Tap to read this verse';
 
       // Continue Reading: separate source (last-read reference, fallback to VOTD)
       final last = (provider.lastBibleReference ?? '').trim();
