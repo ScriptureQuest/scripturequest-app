@@ -1,0 +1,150 @@
+SYSTEM / BLACK-BOX PROMPT — ONBOARDING REFINEMENT (FLUTTER / REPLIT)
+
+DO NOT EXPLAIN. IMPLEMENT ONLY.
+
+Refine the onboarding experience to match the current calm, confident, and minimal tone of the app. Onboarding should feel reassuring, respectful of attention, and aligned with the Quest Hub + Bible Reader flow — not promotional or overwhelming.
+
+Core Principles
+
+Calm, grounded, faith-forward tone
+
+Minimal steps (no more than necessary)
+
+No feature overload
+
+Respect user agency and pace
+
+Match current UI density, spacing, and typography
+
+STRUCTURE (Recommended Flow)
+1) Welcome Screen (Purpose, Not Features)
+
+Goal: Reassure the user, not sell them.
+
+Title:
+“Welcome to Scripture Quest”
+
+Subtitle (low-contrast, supportive):
+“A gentle way to build a daily rhythm with Scripture.”
+
+No lists, no icons, no feature grid
+
+Single primary button:
+“Begin”
+
+2) Reading Comfort Setup (Essential Only)
+
+Goal: Let users feel comfortable immediately.
+
+Text size selector (default = current app default, ~130%)
+
+Reading style preview (Paper / Sepia / Night)
+
+Jesus’ words in red toggle
+
+Live preview sample verse (short, 1–2 lines)
+
+Copy tone:
+
+“Choose what feels easiest on your eyes. You can change this anytime.”
+
+No advanced settings. No tooltips.
+
+3) Reading Rhythm (One Question Only)
+
+Goal: Personalize without pressure.
+
+Single choice:
+
+“Daily”
+
+“A few times a week”
+
+“I’ll explore at my own pace”
+
+Subtext:
+
+“This helps shape your quests. There’s no wrong choice.”
+
+Do not show streaks, XP, or rewards here.
+
+4) Optional Identity Touch (Lightweight)
+
+Goal: Create ownership without friction.
+
+Optional name field (or “Continue as Guest”)
+
+Optional title preview (e.g., Pilgrim)
+
+Skip button clearly visible
+
+Copy:
+
+“This is how your journey will be shown. You can change it later.”
+
+5) Gentle Close (No Pressure CTA)
+
+Goal: Transition into the app calmly.
+
+Message:
+
+“Your path is simple. Faithfulness grows in small steps.”
+
+Primary button:
+“Enter Quest Hub”
+
+No animations beyond subtle fade/slide.
+
+DESIGN & UX RULES
+
+Match current spacing (~16px vertical rhythm)
+
+No scrolling onboarding screens
+
+One primary action per screen
+
+Secondary actions are text buttons only
+
+Maintain existing theme, colors, and typography
+
+Avoid gamified language (XP, streaks, rewards) during onboarding
+
+WHAT NOT TO ADD
+
+No feature tours
+
+No checklists
+
+No account creation requirement
+
+No notifications permission request
+
+No social or community prompts
+
+No monetization language
+
+TECHNICAL CONSTRAINTS
+
+Do not change routing logic beyond onboarding flow
+
+Do not alter existing data models
+
+Do not introduce new required fields
+
+Store onboarding completion flag as already implemented
+
+Onboarding should be skippable and non-blocking
+
+SUCCESS CRITERIA
+
+Onboarding should feel:
+
+Calm
+
+Clear
+
+Respectful
+
+Aligned with the current app experience
+
+Finished in under 60 seconds without rushing

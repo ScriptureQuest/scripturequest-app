@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
+import 'package:level_up_your_faith/providers/settings_provider.dart';
 import 'package:level_up_your_faith/theme.dart';
-import 'package:level_up_your_faith/widgets/soul_avatar.dart';
 import 'package:level_up_your_faith/config/build_flags.dart';
-
-// Build flags are centralized in lib/config/build_flags.dart
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -21,53 +19,83 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _page = 0;
   bool _busy = false;
   final TextEditingController _nameCtrl = TextEditingController();
-  String? _pendingName; // apply just before final setup
 
-  // Updated totals: 5 steps in beta, 4 in non-beta.
-  int get _totalPages => kIsBetaBuild ? 5 : 4; // Beta adds one page
+  // Reading comfort state (local until saved)
+  String _selectedTheme = 'paper';
+  double _selectedScale = 1.3;
+  bool _redLetters = true;
+
+  // Reading rhythm choice
+  String? _rhythmChoice;
+
+  int get _totalPages => kIsBetaBuild ? 6 : 5;
 
   void _next() {
     if (_page < _totalPages - 1) {
-      _controller.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+      _controller.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize from current settings
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settings = context.read<SettingsProvider>();
+      setState(() {
+        _selectedTheme = settings.settings.bibleReaderTheme;
+        _selectedScale = settings.settings.bibleFontScale;
+        _redLetters = settings.settings.redLettersEnabled;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _nameCtrl.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    // Build pages list (shortened):
-    // Beta: 5 steps => Welcome, Beta, Daily Rhythm (merged), Soul Avatar, Summary/Enter
-    // Non-beta: 4 steps => Welcome, Daily Rhythm (merged), Soul Avatar, Summary/Enter
+
     final pages = <Widget>[
       _pageWelcome(context),
       if (kIsBetaBuild) _pageBeta(context),
-      _pageRhythm(context),
-      _pageSoulAvatar(context),
-      _pageSetup(context),
+      _pageReadingComfort(context),
+      _pageReadingRhythm(context),
+      _pageIdentity(context),
+      _pageGentleClose(context),
     ];
+
     return Scaffold(
       backgroundColor: cs.surface,
       body: SafeArea(
         child: Column(
           children: [
-            // Minimal top skip for future versions (hidden for v2.0 to keep focus)
             Expanded(
               child: PageView(
                 controller: _controller,
+                physics: const NeverScrollableScrollPhysics(),
                 onPageChanged: (i) => setState(() => _page = i),
                 children: pages,
               ),
             ),
             _dots(theme, total: pages.length),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
           ],
         ),
       ),
     );
   }
 
-  Widget _dots(ThemeData theme, {int total = 3}) {
+  Widget _dots(ThemeData theme, {required int total}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(total, (i) {
@@ -86,26 +114,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // 1) Welcome Screen - Purpose, not features
+  // ─────────────────────────────────────────────────────────────────────────
   Widget _pageWelcome(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Spacer(),
-          Text('Welcome to Scripture Quest', style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 8),
+          const Spacer(flex: 2),
           Text(
-            'Build a daily rhythm in God\'s Word with reading, tasks, and gentle challenges.',
-            style: theme.textTheme.bodyLarge,
+            'Welcome to Scripture Quest',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _next,
-            icon: Icon(Icons.nightlight_round, color: cs.onPrimary),
-            label: const Text('Begin'),
+          const SizedBox(height: 12),
+          Text(
+            'A gentle way to build a daily rhythm with Scripture.',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          const Spacer(flex: 3),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _next,
+              child: const Text('Begin'),
+            ),
           ),
           const Spacer(),
         ],
@@ -113,225 +153,45 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // Beta-only page; included when kIsBetaBuild == true.
+  // ─────────────────────────────────────────────────────────────────────────
+  // Beta page (only shown when kIsBetaBuild)
+  // ─────────────────────────────────────────────────────────────────────────
   Widget _pageBeta(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Spacer(),
-          Text('Welcome to the Scripture Quest Beta', style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          _calmCard(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'You\'re helping shape the very first version of Scripture Quest.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Things may change, and some features are still in progress.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Thank you for testing, sharing feedback, and praying with us.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _next,
-            icon: Icon(Icons.chevron_right, color: cs.onPrimary),
-            label: const Text('Continue'),
-          ),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-
-  Widget _pageRhythm(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Spacer(),
-          Text('Your Daily Rhythm', style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 8),
+          const Spacer(flex: 2),
           Text(
-            'Grow step by step with a calm, clear rhythm.',
-            style: theme.textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 16),
-          _calmCard(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _line(theme, icon: Icons.auto_stories_rounded, text: 'Read the Bible with a calm reader.'),
-                const SizedBox(height: 8),
-                _line(theme, icon: Icons.checklist_rounded, text: 'Complete Daily & Nightly Tasks.'),
-                const SizedBox(height: 8),
-                _line(theme, icon: Icons.alt_route_rounded, text: 'Follow Questlines and Reading Plans.'),
-                const SizedBox(height: 8),
-                _line(theme, icon: Icons.extension_rounded, text: 'Play games and practice verses in Play & Learn.'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _next,
-            icon: Icon(Icons.chevron_right, color: cs.onPrimary),
-            label: const Text('Continue'),
-          ),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-
-  Widget _pageSoulAvatar(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Spacer(),
-          Text('Your Soul Avatar', style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          Text(
-            'This is a simple way to track your journey with God inside Scripture Quest. You can adjust themes and reading preferences anytime in Settings.',
-            style: theme.textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 24),
-          Center(
-            child: SoulAvatarViewV2(level: 1, faithPower: 1.0, size: SoulAvatarSize.large),
-          ),
-          const SizedBox(height: 20),
-          _calmCard(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _line(theme, icon: Icons.workspace_premium_rounded, text: 'Equip artifacts you earn from reading and quests.'),
-                const SizedBox(height: 8),
-                _line(theme, icon: Icons.local_fire_department_rounded, text: 'Your Faith Power grows as you stay consistent.'),
-                const SizedBox(height: 8),
-                _line(theme, icon: Icons.favorite_rounded, text: 'It’s not about performance, it’s about your journey with God.'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _next,
-            icon: Icon(Icons.chevron_right, color: cs.onPrimary),
-            label: const Text('Continue'),
-          ),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-
-  Widget _pageChooseName(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Spacer(),
-          Text('What should we call you?', style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          Text('This name will appear on your profile and journey.', style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nameCtrl,
-            textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              labelText: 'Display name (optional)',
-              hintText: 'e.g., Grace, Daniel, FaithSeeker',
-            ),
-            onSubmitted: (_) {
-              _pendingName = _nameCtrl.text.trim();
-              _next();
-            },
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: () {
-                    _pendingName = _nameCtrl.text.trim();
-                    _next();
-                  },
-                  icon: Icon(Icons.check_rounded, color: cs.onPrimary),
-                  label: const Text('Continue'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              TextButton(
-                onPressed: _next,
-                child: const Text('Skip'),
-              ),
-            ],
-          ),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-
-  Widget _pageHowItWorks(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Spacer(),
-          Text('How Scripture Quest works', style: theme.textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          Text('Simple steps to help you grow.', style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 16),
-          _calmCard(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _line(theme, icon: Icons.menu_book_rounded, text: 'Read the Bible with a calm reader.'),
-                const SizedBox(height: 8),
-                _line(theme, icon: Icons.checklist_rounded, text: 'Complete Daily & Nightly Tasks.'),
-                const SizedBox(height: 8),
-                _line(theme, icon: Icons.alt_route_rounded, text: 'Follow Questlines and Reading Plans.'),
-                const SizedBox(height: 8),
-                _line(theme, icon: Icons.school_rounded, text: 'Practice and memorize key verses.'),
-              ],
+            'Welcome to the Beta',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 12),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _next,
-            icon: Icon(Icons.chevron_right, color: cs.onPrimary),
-            label: const Text('Continue'),
+          Text(
+            "You're helping shape the very first version of Scripture Quest. Things may change, and some features are still in progress.",
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Thank you for testing and sharing feedback.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+          ),
+          const Spacer(flex: 3),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _next,
+              child: const Text('Continue'),
+            ),
           ),
           const Spacer(),
         ],
@@ -339,56 +199,246 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _pageSetup(BuildContext context) {
+  // ─────────────────────────────────────────────────────────────────────────
+  // 2) Reading Comfort Setup - Essential only
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _pageReadingComfort(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+
+    // Theme colors for preview
+    Color bgColor;
+    Color textColor;
+    switch (_selectedTheme) {
+      case 'sepia':
+        bgColor = const Color(0xFFF5ECD7);
+        textColor = const Color(0xFF3D3425);
+        break;
+      case 'night':
+        bgColor = const Color(0xFF1A1A1A);
+        textColor = const Color(0xFFE0E0E0);
+        break;
+      default:
+        bgColor = const Color(0xFFFAFAFA);
+        textColor = const Color(0xFF1A1A1A);
+    }
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Spacer(),
-          Text("Let's Start Your Journey", style: theme.textTheme.headlineMedium),
+          Text(
+            'Reading Comfort',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
-          _calmCard(
-            context,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _line(theme, icon: Icons.explore, text: 'Assigns your first Quest automatically'),
-                const SizedBox(height: 8),
-                _line(theme, icon: Icons.flag, text: 'Adds two starter tasks'),
-                const SizedBox(height: 8),
-                _line(theme, icon: Icons.auto_awesome, text: 'Grants a simple starter artifact + title'),
-              ],
+          Text(
+            'Choose what feels easiest on your eyes. You can change this anytime.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: _busy
-                ? null
-                : () async {
-                    setState(() => _busy = true);
-                    try {
-                      final app = context.read<AppProvider>();
-                      // Apply optional name now so it appears in next flow too
-                      final raw = (_pendingName ?? _nameCtrl.text).trim();
-                      if (raw.isNotEmpty) {
-                        try {
-                          final user = app.currentUser ?? await app.userService.getCurrentUser();
-                          final updated = user.copyWith(username: raw);
-                          await app.userService.updateUser(updated);
-                          await app.loadData();
-                        } catch (e) {
-                          debugPrint('onboarding name save error: $e');
-                        }
+
+          // Live preview
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+            ),
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'For God so loved the world, that he gave his only Son, ',
+                    style: TextStyle(color: textColor, fontSize: 16 * _selectedScale, height: 1.5),
+                  ),
+                  if (_redLetters)
+                    TextSpan(
+                      text: 'that whoever believes in him should not perish but have eternal life.',
+                      style: TextStyle(color: Colors.red.shade700, fontSize: 16 * _selectedScale, height: 1.5),
+                    )
+                  else
+                    TextSpan(
+                      text: 'that whoever believes in him should not perish but have eternal life.',
+                      style: TextStyle(color: textColor, fontSize: 16 * _selectedScale, height: 1.5),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Theme selector
+          Text('Reading Style', style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _themeChip('Paper', 'paper', const Color(0xFFFAFAFA), Colors.black87),
+              const SizedBox(width: 8),
+              _themeChip('Sepia', 'sepia', const Color(0xFFF5ECD7), const Color(0xFF3D3425)),
+              const SizedBox(width: 8),
+              _themeChip('Night', 'night', const Color(0xFF1A1A1A), Colors.white70),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Text size slider
+          Row(
+            children: [
+              Text('Text Size', style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
+              const Spacer(),
+              Text('${(_selectedScale * 100).round()}%', style: theme.textTheme.labelMedium),
+            ],
+          ),
+          Slider(
+            value: _selectedScale,
+            min: 0.8,
+            max: 1.6,
+            divisions: 8,
+            onChanged: (v) {
+              HapticFeedback.selectionClick();
+              setState(() => _selectedScale = v);
+            },
+          ),
+          const SizedBox(height: 8),
+
+          // Red letters toggle
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  "Show Jesus' words in red",
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              Switch(
+                value: _redLetters,
+                onChanged: (v) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _redLetters = v);
+                },
+              ),
+            ],
+          ),
+
+          const Spacer(),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () async {
+                // Save reading preferences
+                final settings = context.read<SettingsProvider>();
+                await settings.setBibleReaderTheme(_selectedTheme);
+                await settings.setBibleFontScale(_selectedScale);
+                await settings.setRedLettersEnabled(_redLetters);
+                _next();
+              },
+              child: const Text('Continue'),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _themeChip(String label, String value, Color bg, Color fg) {
+    final selected = _selectedTheme == value;
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _selectedTheme = value);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: selected ? cs.primary : cs.outlineVariant.withValues(alpha: 0.5),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: fg,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 3) Reading Rhythm - One question only
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _pageReadingRhythm(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Spacer(flex: 2),
+          Text(
+            'Your Reading Rhythm',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "This helps shape your quests. There's no wrong choice.",
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          _buildRhythmOption('daily', 'Daily'),
+          const SizedBox(height: 12),
+          _buildRhythmOption('fewTimes', 'A few times a week'),
+          const SizedBox(height: 12),
+          _buildRhythmOption('ownPace', "I'll explore at my own pace"),
+
+          const Spacer(flex: 3),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _rhythmChoice == null
+                  ? null
+                  : () async {
+                      final settings = context.read<SettingsProvider>();
+                      // Map to existing settings
+                      switch (_rhythmChoice) {
+                        case 'daily':
+                          await settings.setBibleExperienceLevel('comfortable');
+                          await settings.setDailyRhythmStyle('daily');
+                          break;
+                        case 'fewTimes':
+                          await settings.setBibleExperienceLevel('gettingTheHang');
+                          await settings.setDailyRhythmStyle('fewTimes');
+                          break;
+                        case 'ownPace':
+                          await settings.setBibleExperienceLevel('beginner');
+                          await settings.setDailyRhythmStyle('flexible');
+                          break;
                       }
-                    } catch (_) {}
-                    if (!mounted) return;
-                    context.go('/onboarding/personalized');
-                  },
-            icon: Icon(Icons.check_circle, color: cs.onPrimary),
-            label: _busy ? const Text('Preparing...') : const Text('Enter Scripture Quest'),
+                      _next();
+                    },
+              child: const Text('Continue'),
+            ),
           ),
           const Spacer(),
         ],
@@ -396,26 +446,213 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _calmCard(BuildContext context, {required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: GamerColors.darkCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.25), width: 1),
+  Widget _buildRhythmOption(String value, String label) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final selected = _rhythmChoice == value;
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _rhythmChoice = value);
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: selected ? cs.primary.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? cs.primary : cs.outlineVariant.withValues(alpha: 0.5),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  color: selected ? cs.primary : cs.onSurface,
+                ),
+              ),
+            ),
+            if (selected)
+              Icon(Icons.check_circle, color: cs.primary, size: 22),
+          ],
+        ),
       ),
-      child: child,
     );
   }
 
-  Widget _line(ThemeData theme, {required IconData icon, required String text}) {
-    return Row(
-      children: [
-        Icon(icon, color: theme.colorScheme.primary),
-        const SizedBox(width: 8),
-        Expanded(child: Text(text, style: theme.textTheme.bodyMedium)),
-      ],
+  // ─────────────────────────────────────────────────────────────────────────
+  // 4) Optional Identity - Lightweight
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _pageIdentity(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Spacer(flex: 2),
+          Text(
+            'Your Journey Name',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'This is how your journey will be shown. You can change it later.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          TextField(
+            controller: _nameCtrl,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.done,
+            keyboardType: TextInputType.name,
+            maxLength: 30,
+            decoration: InputDecoration(
+              hintText: 'Enter your name (optional)',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              counterText: '',
+            ),
+            onSubmitted: (_) => _saveNameAndContinue(),
+          ),
+          const SizedBox(height: 12),
+
+          // Title preview
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: GamerColors.darkCard,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.workspace_premium, color: cs.primary, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Title: Pilgrim',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(flex: 3),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _busy ? null : _saveNameAndContinue,
+              child: _busy ? const Text('Saving...') : const Text('Continue'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton(
+              onPressed: _busy ? null : _next,
+              child: Text(
+                'Skip',
+                style: TextStyle(color: cs.onSurfaceVariant),
+              ),
+            ),
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveNameAndContinue() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) {
+      _next();
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      final app = context.read<AppProvider>();
+      final user = app.currentUser ?? await app.userService.getCurrentUser();
+      final updated = user.copyWith(username: name);
+      await app.userService.updateUser(updated);
+      await app.loadData();
+    } catch (e) {
+      debugPrint('onboarding name save error: $e');
+    }
+    if (mounted) {
+      setState(() => _busy = false);
+      _next();
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 5) Gentle Close - No pressure CTA
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _pageGentleClose(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Spacer(flex: 2),
+          Text(
+            "You're Ready",
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Your path is simple. Faithfulness grows in small steps.',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          const Spacer(flex: 3),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _busy
+                  ? null
+                  : () async {
+                      setState(() => _busy = true);
+                      try {
+                        // Mark onboarding complete and run setup
+                        await context.read<SettingsProvider>().onboardingPersonalizedComplete();
+                        await context.read<AppProvider>().completeOnboardingSetup();
+                      } catch (e) {
+                        debugPrint('onboarding finalize error: $e');
+                      }
+                      if (!mounted) return;
+                      context.go('/home');
+                    },
+              child: _busy
+                  ? const Text('Preparing...')
+                  : const Text('Enter Quest Hub'),
+            ),
+          ),
+          const Spacer(),
+        ],
+      ),
     );
   }
 }

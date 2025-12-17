@@ -38,6 +38,19 @@ The application is built with Flutter 3.32.0 and Dart 3.8.0, utilizing the Provi
 - **Web Server:** Python's `http.server` (for local development/serving web build)
 
 ## Recent Changes
+- 2025-12-17: Refined Onboarding Experience
+  - Complete rewrite of OnboardingScreen with 5 calm, minimal screens:
+    1. Welcome (purpose statement, not feature list)
+    2. Reading Comfort (text size slider, Paper/Sepia/Night theme, red letters toggle with live preview)
+    3. Reading Rhythm (single choice: Daily / Few times a week / Own pace)
+    4. Identity (optional name + title preview, clear skip option)
+    5. Gentle Close (reassurance message, "Enter Quest Hub" button)
+  - Design: No scrolling, one action per screen, calm typography
+  - Tone: Faith-forward, no gamified language (XP/streaks hidden during onboarding)
+  - Navigation: Onboarding now goes directly to Quest Hub (skips PersonalizedSetupFlow)
+  - Settings saved: Theme, text size, red letters, experience level, rhythm style
+  - No data model changes
+
 - 2025-12-17: UI/UX Calmness & Readability Polish
   - Quest Hub: Added subtle reassurance line under Welcome header - "Today's path is simple. Stay faithful in small steps."
   - Bible Reader: Default text size now 130% (was 100%) for improved readability out of the box
