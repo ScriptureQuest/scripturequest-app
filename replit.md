@@ -38,12 +38,14 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
-- 2025-12-17: Quest Hub UI merge
+- 2025-12-17: Quest Hub as primary home
   - Created new QuestHubScreen as primary landing page (/)
   - Header shows: "Welcome Back, Warrior", Today's Verse (always visible), Continue Reading card
   - Tasks (Daily/Nightly/Reflection) are the main content below header
   - Moved Reading Plans entry to Community screen (first in "Get involved" section)
-  - Home screen preserved at /home but no longer default route
+  - Bottom-left nav tab renamed from "Tasks" to "Quest Hub", routes to "/" 
+  - AppBar has no home icon - users return via bottom tab
+  - Home screen preserved at /home but not in primary navigation
   
 - 2025-12-17: Initial Replit environment setup
   - Installed Flutter via nix packages

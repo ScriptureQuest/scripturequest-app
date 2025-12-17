@@ -269,8 +269,8 @@ class _BottomNavBarState extends State<_BottomNavBar> {
     final location = GoRouterState.of(context).uri.toString();
     int currentIndex = -1;
     // Map current route to 5-tab layout (center Bible):
-    // 0: Tasks, 1: Avatar, 2: Bible, 3: Community, 4: Profile
-    if (location.startsWith('/tasks')) {
+    // 0: Quest Hub, 1: Avatar, 2: Bible, 3: Community, 4: Profile
+    if (location == '/' || location.startsWith('/tasks')) {
       currentIndex = 0;
     } else if (location.startsWith('/avatar') || location.startsWith('/equip') || location.startsWith('/inventory')) {
       currentIndex = 1;
@@ -309,9 +309,9 @@ class _BottomNavBarState extends State<_BottomNavBar> {
             children: [
               _NavItem(
                 icon: Icons.flag_outlined,
-                label: 'Tasks',
+                label: 'Quest Hub',
                 isSelected: currentIndex == 0,
-                onTap: () => context.go('/tasks'),
+                onTap: () => context.go('/'),
                 scale: _nudgeActive ? 1.12 : 1.0,
               ),
               _NavItem(
