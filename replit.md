@@ -38,6 +38,15 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Profile screen beta polish (v3.0)
+  - Simplified Profile for beta focus - clarity and calm over feature breadth
+  - Tightened vertical spacing (24/28px → 16/12px between sections)
+  - Replaced large tools grid with simple list: Journal, Favorites, Settings, Friends (Beta)
+  - Added collapsible "Explore (Coming Soon)" section - collapsed by default
+  - Explore contains: Reading Plans, Avatar & Cosmetics, Community, Play & Learn
+  - Moved "Your Titles" and "Achievements" below Explore with reduced padding
+  - No routes removed, no XP/streak/quest logic changes
+
 - 2025-12-17: Today's Verse actual text display (v2.9)
   - Fixed VOTD to show actual verse text using robust reference parsing
   - BibleService enhanced with:

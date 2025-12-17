@@ -48,11 +48,11 @@ class ProfileScreen extends StatelessWidget {
           actions: const [HomeActionButton()],
         ),
         body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
           children: [
-            // Header — avatar + equipped title badge
+            // Header — avatar + equipped title badge (compact)
             SacredCard(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -65,14 +65,13 @@ class ProfileScreen extends StatelessWidget {
                     hasAura: (provider.equippedCosmetics['aura'] ?? '').toString().isNotEmpty,
                     hasFrame: (provider.equippedCosmetics['frame'] ?? '').toString().isNotEmpty,
                   ),
-                  const SizedBox(height: 12),
-                  // Equipped title as sacred-card style pill
+                  const SizedBox(height: 10),
                   _EquippedTitlePill(title: (equippedTitleName == null || equippedTitleName.trim().isEmpty) ? provider.faithTitle : equippedTitleName),
                 ],
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             const SectionHeader('Your Journey so far', icon: Icons.insights_rounded),
             FutureBuilder<Map<String, int>>(
               future: provider.getUserStats(),
@@ -105,44 +104,159 @@ class ProfileScreen extends StatelessWidget {
               },
             ),
 
-            const SizedBox(height: 28),
-            const SectionHeader('Your Tools', icon: Icons.apps_rounded),
-            const SizedBox(height: 20),
-            // Two-per-row large Sacred-Dark tiles per spec
+            const SizedBox(height: 16),
+            const SectionHeader('Tools', icon: Icons.apps_rounded),
+            const SizedBox(height: 8),
+            // Simplified tools list (beta focus)
             FadeSlideIn(
-              child: _ToolsLargeGrid(
-                items: [
-                  _ToolLargeItem(label: 'Book Mastery', icon: Icons.workspace_premium_rounded, route: '/book-mastery'),
-                  _ToolLargeItem(label: 'Codex', icon: Icons.menu_book_outlined, route: '/collection'),
-                  _ToolLargeItem(label: 'Quests', icon: Icons.flag_rounded, route: '/quests'),
-                  _ToolLargeItem(label: 'Favorites', icon: Icons.favorite_rounded, route: '/favorite-verses'),
-                  _ToolLargeItem(label: 'Journal', icon: Icons.edit_rounded, route: '/journal'),
-                  _ToolLargeItem(label: 'Friends', icon: Icons.people_alt_rounded, route: '/friends'),
-                  _ToolLargeItem(label: 'Settings', icon: Icons.settings_rounded, route: '/settings'),
-                  // Row 5 — Cosmetics (disabled)
-                  _ToolLargeItem(label: 'Cosmetics (Coming Soon)', icon: Icons.brush_rounded, enabled: false),
-                ],
-              ),
+              child: _SimpleToolsList(),
             ),
 
-            const SizedBox(height: 28),
+            const SizedBox(height: 16),
+            // Collapsible Explore section
+            FadeSlideIn(
+              child: _CollapsibleExploreSection(),
+            ),
+
+            const SizedBox(height: 12),
+            // Secondary sections with reduced emphasis
             FadeSlideIn(child: _TitlesCard()),
 
-            const SizedBox(height: 28),
-            // Achievements — polished preview card
+            const SizedBox(height: 12),
             FadeSlideIn(child: _AchievementsPreviewCard()),
 
-            const SizedBox(height: 28),
-            const SectionHeader('Explore', icon: Icons.explore_rounded),
-            const SizedBox(height: 12),
-            FadeSlideIn(
-              child: _ExploreSection(),
-            ),
             const SizedBox(height: 12),
           ],
         ),
       );
     });
+  }
+}
+
+/// Simplified tools list for beta focus - only essential items
+class _SimpleToolsList extends StatelessWidget {
+  const _SimpleToolsList();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return SacredCard(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Column(
+        children: [
+          _ExploreRow(
+            icon: Icons.edit_rounded,
+            label: 'Journal',
+            onTap: () => context.go('/journal'),
+          ),
+          Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
+          _ExploreRow(
+            icon: Icons.favorite_rounded,
+            label: 'Favorites',
+            onTap: () => context.go('/favorite-verses'),
+          ),
+          Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
+          _ExploreRow(
+            icon: Icons.settings_rounded,
+            label: 'Settings',
+            onTap: () => context.go('/settings'),
+          ),
+          Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
+          _ExploreRow(
+            icon: Icons.people_alt_rounded,
+            label: 'Friends (Beta)',
+            onTap: () => context.go('/friends'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Collapsible Explore section - collapsed by default
+class _CollapsibleExploreSection extends StatefulWidget {
+  const _CollapsibleExploreSection();
+
+  @override
+  State<_CollapsibleExploreSection> createState() => _CollapsibleExploreSectionState();
+}
+
+class _CollapsibleExploreSectionState extends State<_CollapsibleExploreSection> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return SacredCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(Icons.explore_rounded, color: cs.primary, size: 22),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Explore (Coming Soon)',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: cs.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    color: cs.onSurfaceVariant,
+                    size: 22,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: Column(
+                children: [
+                  Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
+                  _ExploreRow(
+                    icon: Icons.auto_stories_rounded,
+                    label: 'Reading Plans',
+                    onTap: () => context.go('/reading-plans'),
+                  ),
+                  Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
+                  _ExploreRow(
+                    icon: Icons.self_improvement_rounded,
+                    label: 'Avatar & Cosmetics',
+                    onTap: () => context.go('/avatar'),
+                  ),
+                  Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
+                  _ExploreRow(
+                    icon: Icons.people_rounded,
+                    label: 'Community',
+                    onTap: () => context.go('/community'),
+                  ),
+                  Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
+                  _ExploreRow(
+                    icon: Icons.games_rounded,
+                    label: 'Play & Learn',
+                    onTap: () => context.go('/play-learn'),
+                  ),
+                ],
+              ),
+            ),
+            crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+        ],
+      ),
+    );
   }
 }
 

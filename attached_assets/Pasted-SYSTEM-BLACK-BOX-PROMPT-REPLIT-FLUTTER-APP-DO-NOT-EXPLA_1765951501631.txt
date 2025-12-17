@@ -1,0 +1,65 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+We are preparing the app for beta retention. Focus is clarity and calm, not feature breadth.
+
+TASK 1 — Fix Verse of the Day Text (must show real verse when available)
+
+Problem:
+- Quest Hub shows a Verse of the Day reference (e.g. “2 Corinthians 12:9”)
+- But often shows placeholder text: “Tap to read this verse”
+- The verse text exists elsewhere in the Bible data, but is not being resolved
+
+Fix:
+- Parse the Verse of the Day reference into book, chapter, verse
+- Retrieve the verse text from the same data source used by the Bible reader
+- Display the actual verse text when found
+- Only show “Tap to read this verse” if the verse truly cannot be resolved
+
+Rules:
+- Do NOT substitute a different verse (no mismatches ever)
+- Do NOT add external APIs
+- Do NOT change how the Verse of the Day reference is chosen
+- Add debug logging in kDebugMode if verse text cannot be found
+
+TASK 2 — Simplify Profile Screen for Beta Focus
+
+Goal:
+Make Profile feel optional, calm, and non-overwhelming.
+
+Changes:
+- Keep the top identity card (avatar, name, XP, title)
+- Slightly tighten vertical spacing only (no redesign)
+
+Reduce clutter:
+- Remove the large multi-tile “tools” grid OR convert it to a simple list with ONLY:
+  - Journal
+  - Favorites
+  - Settings
+  - Friends (label “Friends (Beta)” if not fully functional)
+
+Explore section:
+- Move Reading Plans / Avatar & Cosmetics / Community / Play & Learn into a single section
+- Title: “Explore (Coming Soon)”
+- Default state: collapsed
+- When expanded: show existing navigation rows
+- Do NOT create new routes or screens
+
+De-emphasize:
+- Keep “Your Titles” and “Achievements”
+- Move them below Explore
+- Reduce padding so they feel secondary
+
+Safety:
+- Do NOT remove routes
+- Do NOT change XP, streaks, quests, or backend logic
+- UI/presentation changes only
+
+OUTPUT:
+Provide a STATUS UPDATE with:
+- Goal
+- What changed
+- What did NOT change
+- Files touched
+- Quick test checklist
+
+END PROMPT
