@@ -38,6 +38,13 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Quest Hub UI merge
+  - Created new QuestHubScreen as primary landing page (/)
+  - Header shows: "Welcome Back, Warrior", Today's Verse (always visible), Continue Reading card
+  - Tasks (Daily/Nightly/Reflection) are the main content below header
+  - Moved Reading Plans entry to Community screen (first in "Get involved" section)
+  - Home screen preserved at /home but no longer default route
+  
 - 2025-12-17: Initial Replit environment setup
   - Installed Flutter via nix packages
   - Configured web build and serving on port 5000

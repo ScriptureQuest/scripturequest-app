@@ -50,6 +50,7 @@ import 'package:level_up_your_faith/screens/book_order_game_screen.dart';
 import 'package:level_up_your_faith/screens/emoji_parables_screen.dart';
 import 'package:level_up_your_faith/screens/support_screen.dart';
 import 'package:level_up_your_faith/screens/play_learn_hub_screen.dart';
+import 'package:level_up_your_faith/screens/quest_hub_screen.dart';
 
 void main() {
   // Capture and log framework errors early so we can diagnose startup issues.
@@ -139,7 +140,7 @@ final _router = GoRouter(
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const HomeScreen(),
+          builder: (context, state) => const QuestHubScreen(),
         ),
             // Convenience alias to always navigate Home via /home
             GoRoute(

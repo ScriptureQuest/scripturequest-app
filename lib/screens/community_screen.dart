@@ -44,17 +44,17 @@ class CommunityScreen extends StatelessWidget {
               // 2) Primary actions
               const SectionHeader('Get involved', icon: Icons.handshake_outlined),
               _PrimaryActionCard(
-                icon: Icons.extension_outlined,
-                title: 'Play & Learn',
-                subtitle: 'Games to strengthen your journey.',
-                onTap: () => context.push('/play-learn'),
-              ),
-              const SizedBox(height: 12),
-              _PrimaryActionCard(
                 icon: Icons.menu_book_outlined,
                 title: 'Reading Plans',
                 subtitle: 'Explore guided reading journeys.',
                 onTap: () => context.push('/reading-plans'),
+              ),
+              const SizedBox(height: 12),
+              _PrimaryActionCard(
+                icon: Icons.extension_outlined,
+                title: 'Play & Learn',
+                subtitle: 'Games to strengthen your journey.',
+                onTap: () => context.push('/play-learn'),
               ),
               const SizedBox(height: 12),
               if (!kIsBetaBuild) ...[
