@@ -551,9 +551,29 @@ class TaskCard extends StatelessWidget {
           final encoded = Uri.encodeComponent(ref);
           context.go('/verses?ref=$encoded');
         } else if ((quest.targetBook ?? '').trim().isNotEmpty) {
-          // targetBook specified but no exact reference -> open that book (chapter 1)
+          // targetBook specified but no exact reference
+          // Use last-read chapter within that book if available, else chapter 1
           provider.markQuestScriptureOpened(quest.id);
-          final target = '${quest.targetBook!.trim()} 1';
+          final bookName = quest.targetBook!.trim();
+          int targetChapter = 1;
+          // Check if last-read reference is in the same book
+          final lastRef = (provider.lastBibleReference ?? '').trim();
+          if (lastRef.isNotEmpty) {
+            final lastBookLower = lastRef.split(RegExp(r'\s+\d'))[0].trim().toLowerCase();
+            if (lastBookLower == bookName.toLowerCase() || 
+                lastBookLower.replaceAll(' ', '') == bookName.toLowerCase().replaceAll(' ', '')) {
+              // Extract chapter from last reference (handles "Psalms 23:1" → 23)
+              // Match first number after book name, stopping at colon if present
+              final chapterMatch = RegExp(r'\s(\d+)(?::|$|\s|$)').firstMatch(lastRef);
+              if (chapterMatch != null) {
+                targetChapter = int.tryParse(chapterMatch.group(1)!) ?? 1;
+              }
+            }
+          }
+          final target = '$bookName $targetChapter';
+          if (kDebugMode) {
+            debugPrint('[TaskCard.Start] targetBook=$bookName, using chapter $targetChapter');
+          }
           final encoded = Uri.encodeComponent(target);
           context.go('/verses?ref=$encoded');
         } else {

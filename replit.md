@@ -38,6 +38,20 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Core loop reliability fixes (v2.3)
+  - Complete Chapter now foolproof for fast readers and short chapters:
+    - Eligibility requires: 12s minimum presence + engagement (45s read time OR short chapter OR scrolled OR panel visible)
+    - Short chapters (≤8 verses) auto-detected and panel shown immediately
+    - Toast/snackbar shown when tapped while ineligible with helpful message
+    - ScrollStartNotification tracks user interaction for engagement
+  - Psalms quest Start navigation improved:
+    - If last-read reference is in target book, open that chapter (not always chapter 1)
+    - E.g., Psalms quest with lastRef="Psalms 23" → opens Psalms 23
+  - Bottom padding increased (90px → 140px) so Complete Chapter never blocks last verses
+  - Panel reveal threshold lowered (95% → 92%) for earlier access
+  - Cached chapters now also run short chapter detection
+  - No XP, rewards, or quest logic changes
+
 - 2025-12-17: Nightly quest completion + Psalms targeting fixes (v2 wiring fix)
   - Added targetBook field to TaskModel for book-level targeting without exact reference
   - Nightly quest templates updated:

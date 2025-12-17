@@ -1,0 +1,72 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Fix the Scripture Quest core loop so quests reliably progress and “Complete Chapter” never fails for fast readers or short chapters, while keeping strict quest matching and not changing XP/rewards/streak systems.
+
+Observed issues to fix:
+- Nightly “read any chapter” quest does not progress after completing a chapter.
+- Psalms-themed quest Start opens last-read (e.g., John) instead of Psalms, and often always opens Psalms 1.
+- Short chapters (e.g., Psalms 1) can’t be completed because completion is blocked by scroll/length.
+- “Complete Chapter” UI blocks the last verses and sometimes appears too early.
+
+Requirements:
+
+1) Nightly “Any Chapter” Quest Progress (Correctness)
+- Ensure the generic nightly reading quest (“read any chapter tonight” / “Nightly Reading”) is questType = scripture_reading (NOT routine).
+- When the user taps “Complete Chapter”, always call the correct persistence-backed quest progress method with:
+  - completedBook + completedChapter
+  - eligibility flag (see section 4)
+- A scripture_reading quest with no scriptureReference/targetBook/allowedBooks must match ANY completed chapter.
+- Keep strict matching rules for targeted quests (book-only must match exact book; book+chapter must match exactly; no substring book matching).
+
+2) Psalms Quest Start Targeting + Matching (Correctness)
+- Psalms-themed reading quests must have explicit metadata:
+  - targetBook = Psalms OR allowedBooks includes Psalms OR scriptureReference points to a Psalm.
+- Start navigation priority for scripture_reading quests:
+  A) scriptureReference exists → open that exact reference
+  B) else if targetBook/allowedBooks exists → open Bible to that book at:
+     - last-read chapter within that same book if available, else chapter 1
+  C) else fallback to last-read reference
+- Psalms quests must only progress from completed chapters in Psalms (unless an exact target reference is specified).
+
+3) Routine Quests (No Regression)
+- Routine quests must NOT progress from chapter completion.
+- Routine quests should continue to progress only from:
+  - onBibleOpened
+  - onReadingTimerComplete
+- Do not reintroduce routine completion via onChapterComplete.
+
+4) Make “Complete Chapter” Foolproof (Fast readers + Short chapters)
+Enable “Complete Chapter” when BOTH are true:
+A) Minimum presence time on chapter screen >= 12 seconds
+B) AND at least ONE engagement condition is true:
+   - existing reading time threshold met (45 seconds), OR
+   - chapter is short (content does not require scrolling / fits viewport), OR
+   - user interaction occurred (scrolled a small distance OR tapped the text area once)
+
+Notes:
+- Remove any requirement that the user must scroll to the bottom to complete.
+- “Complete Chapter” must never no-op:
+  - If tapped while disabled, show a small toast/snackbar explaining what’s missing (e.g., “Keep reading a bit longer”).
+
+5) Prevent UI from Blocking Scripture Text
+- Ensure the “Complete Chapter” UI never covers the last lines of scripture:
+  - add bottom padding/spacer equal to the button height OR move CTA outside the scrollable text.
+- Result: last verses are always readable.
+
+6) Debug / Verification (Debug builds only)
+- Add/keep debug logs gated by kDebugMode for:
+  - Quest evaluation on chapter complete (quest title/type/target metadata, completed ref, matched true/false)
+  - Start navigation resolution (which priority branch used; fallback warning if Details is used)
+
+7) Do NOT change
+- XP values, rewards, streak logic, expiration rules, quest pools/randomness (except correcting questType/metadata assignment for the nightly any-chapter and psalms-themed quests if currently wrong), storage schemas, or overall Quest Hub layout beyond the needed UI padding/toast.
+
+8) Output
+- Provide a final STATUS UPDATE including:
+  - Files changed
+  - Where eligibility logic lives and how “short chapter” + “interaction” are detected
+  - How Psalms Start chooses chapter
+  - Confirmation that nightly any-chapter progresses
+  - A test checklist covering: fast reader on short chapter, normal reader on long chapter, psalms quest strictness, nightly any-chapter quest, and no blocked last verses.
+
+Make minimal changes and prioritize core loop reliability and user trust.

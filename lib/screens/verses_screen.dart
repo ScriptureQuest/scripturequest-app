@@ -1669,10 +1669,63 @@ class _ChapterPageState extends State<_ChapterPage> {
   final Map<int, GlobalKey> _verseKeys = {};
   int? _focusedVerse;
   bool _didInitialFocus = false;
+  final ScrollController _scrollController = ScrollController();
+  
+  // Complete Chapter eligibility tracking (v2.2)
+  DateTime? _chapterLoadedAt; // Presence timer start
+  bool _hasScrolled = false; // User started scrolling (via ScrollStartNotification)
+  bool _isShortChapter = false; // Content fits viewport (no scroll needed)
+  static const int _minPresenceSeconds = 12; // Minimum time on chapter screen
+  
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+  
+  /// Check if content fits viewport and mark as short chapter if so
+  /// Uses actual scroll metrics from ScrollController after layout
+  void _checkIfViewportFit() {
+    if (!mounted || _isShortChapter || _showEndPanel) return;
+    
+    // Schedule check after layout is complete
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _isShortChapter || _showEndPanel) return;
+      
+      // Check if scroll controller has position and if content fits viewport
+      if (_scrollController.hasClients) {
+        final maxExtent = _scrollController.position.maxScrollExtent;
+        // If content requires minimal or no scrolling, it's a viewport-fit chapter
+        if (maxExtent <= 100) { // 100px threshold covers chapters that barely need scrolling
+          setState(() {
+            _isShortChapter = true;
+            _showEndPanel = true;
+          });
+          return;
+        }
+      }
+      
+      // Fallback: If scroll controller not ready, retry after a short delay
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (!mounted || _isShortChapter || _showEndPanel) return;
+        
+        if (_scrollController.hasClients) {
+          final maxExtent = _scrollController.position.maxScrollExtent;
+          if (maxExtent <= 100) {
+            setState(() {
+              _isShortChapter = true;
+              _showEndPanel = true;
+            });
+          }
+        }
+      });
+    });
+  }
 
   @override
   void initState() {
     super.initState();
+    _chapterLoadedAt = DateTime.now(); // Start presence timer
     _load();
   }
 
@@ -1680,8 +1733,44 @@ class _ChapterPageState extends State<_ChapterPage> {
   void didUpdateWidget(covariant _ChapterPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.book != widget.book || oldWidget.chapter != widget.chapter) {
+      // Reset engagement tracking for new chapter
+      _chapterLoadedAt = DateTime.now();
+      _hasScrolled = false;
+      _isShortChapter = false;
       _load();
     }
+  }
+  
+  /// Check if Complete Chapter is eligible (v2.2 foolproof logic)
+  /// Eligible when BOTH conditions met:
+  /// A) Minimum presence time >= 12 seconds
+  /// B) At least ONE engagement condition:
+  ///    - reading threshold met (45s), OR
+  ///    - short chapter (no scroll needed), OR
+  ///    - user scrolled (detected via ScrollStartNotification), OR
+  ///    - panel is visible (user reached end of content)
+  bool _isEligibleToComplete() {
+    // Condition A: minimum presence time
+    if (_chapterLoadedAt == null) return false;
+    final presence = DateTime.now().difference(_chapterLoadedAt!).inSeconds;
+    if (presence < _minPresenceSeconds) return false;
+    
+    // Condition B: at least one engagement
+    // Panel visibility (_showEndPanel) is an engagement signal - user either scrolled
+    // to 92% of content or it's a short chapter that auto-revealed the panel
+    final hasReadingThreshold = widget.hasMetReadingThreshold();
+    return hasReadingThreshold || _isShortChapter || _hasScrolled || _showEndPanel;
+  }
+  
+  /// Get message for why completion is disabled
+  String _getDisabledReason() {
+    if (_chapterLoadedAt == null) return 'Loading...';
+    final presence = DateTime.now().difference(_chapterLoadedAt!).inSeconds;
+    if (presence < _minPresenceSeconds) {
+      final remaining = _minPresenceSeconds - presence;
+      return 'Keep reading for $remaining more seconds';
+    }
+    return 'Scroll through the passage to continue';
   }
 
   Future<void> _load() async {
@@ -1689,9 +1778,14 @@ class _ChapterPageState extends State<_ChapterPage> {
     final chapter = widget.chapter;
     final perBook = widget.cache[book];
     if (perBook != null && perBook.containsKey(chapter)) {
+      final cached = perBook[chapter]!;
       setState(() {
-        _text = perBook[chapter];
+        _text = cached;
         _loading = false;
+      });
+      // Short chapter detection for cached chapters - check actual scroll metrics
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkIfViewportFit();
       });
       return;
     }
@@ -1702,6 +1796,10 @@ class _ChapterPageState extends State<_ChapterPage> {
     setState(() {
       _text = t;
       _loading = false;
+    });
+    // Schedule short chapter detection after layout - check actual scroll metrics
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkIfViewportFit();
     });
     // After load, if an initial focus verse is present, schedule ensureVisible
     if (widget.initialFocusVerse != null && !_didInitialFocus) {
@@ -1747,17 +1845,36 @@ class _ChapterPageState extends State<_ChapterPage> {
         children: [
           NotificationListener<ScrollNotification>(
             onNotification: (n) {
-              if (n.metrics.maxScrollExtent <= 0) return false;
+              // Track scroll start as engagement (user started interacting)
+              if (n is ScrollStartNotification && !_hasScrolled) {
+                setState(() => _hasScrolled = true);
+              }
+              // Detect chapters that fit viewport (short or medium chapters)
+              // maxScrollExtent <= small threshold means content doesn't require scrolling
+              if (n.metrics.maxScrollExtent <= 50) {
+                if (!_isShortChapter) {
+                  setState(() {
+                    _isShortChapter = true;
+                    _showEndPanel = true; // Always show panel for viewport-fit chapters
+                  });
+                }
+                return false;
+              }
+              // Also track scroll distance as engagement (backup)
+              if (!_hasScrolled && n.metrics.pixels > 20) {
+                _hasScrolled = true;
+              }
               final pct = n.metrics.pixels / n.metrics.maxScrollExtent;
-              final shouldShow = pct >= 0.95;
+              final shouldShow = pct >= 0.92; // Slightly earlier reveal (was 0.95)
               if (shouldShow != _showEndPanel) {
                 setState(() => _showEndPanel = shouldShow);
               }
               return false;
             },
             child: ListView.builder(
+              controller: _scrollController,
               key: ValueKey('${widget.book}-${widget.chapter}-${text.hashCode}'),
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 90),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 140),
               itemCount: verses.length,
               itemBuilder: (context, index) {
                 final v = verses[index];
@@ -1877,6 +1994,19 @@ class _ChapterPageState extends State<_ChapterPage> {
                             Expanded(
                               child: ElevatedButton(
                                 onPressed: () async {
+                                  // Check eligibility before allowing completion
+                                  if (!_isEligibleToComplete()) {
+                                    // Show helpful toast explaining what's needed
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(_getDisabledReason()),
+                                        duration: const Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  
                                   final app = context.read<AppProvider>();
                                   // Record chapter completion (updates stats, weekly quest only if time threshold met)
                                   final hasMetThreshold = widget.hasMetReadingThreshold();
