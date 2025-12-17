@@ -228,9 +228,9 @@ class QuestProgressService {
                 completedChapter: chapter,
                 questScriptureReference: q.scriptureReference,
                 questTitle: q.title,
-                // Future: pass allowedBooks/targetBook from quest metadata when available
+                // Pass targetBook metadata from quest model
                 allowedBooks: null,
-                targetBook: null,
+                targetBook: q.targetBook,
               );
             } else {
               // Non-scripture quests (including routine) should NOT auto-progress from chapter completion

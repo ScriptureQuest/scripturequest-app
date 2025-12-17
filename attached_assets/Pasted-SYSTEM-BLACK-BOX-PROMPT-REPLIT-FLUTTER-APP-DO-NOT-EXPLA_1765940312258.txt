@@ -1,0 +1,47 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Fix Nightly “read any chapter” quest completion and Psalms quest Start targeting so both behave correctly and consistently.
+
+Problem observed:
+- A Nightly quest that says “read any chapter tonight” did NOT complete after 45+ seconds and tapping “Complete Chapter”.
+- A Psalms-themed Nightly reading quest “Start” opened the last-read chapter (John) instead of Psalms.
+
+Requirements:
+
+1) Ensure “Read any chapter tonight” quests complete via chapter completion
+- Any quest whose intent is “read any chapter” (daily or nightly) must be treated as a scripture-reading quest that progresses from the Bible reader’s “Complete Chapter” event.
+- These quests must have questType = scripture_reading (NOT routine).
+- They may have no scriptureReference/target, meaning ANY completed chapter counts.
+- Keep the existing 45-second threshold gating exactly as-is.
+
+2) Ensure Psalms-themed reading quests open the correct target on Start and match correctly
+- Any quest whose intent is “read a Psalm / calming Psalm / Psalms before bed” must include explicit metadata so Start can navigate correctly:
+  - Set targetBook = Psalms OR allowedBooks = [Psalms] (prefer metadata over title keywords).
+- Update Start navigation for scripture_reading quests:
+  - If scriptureReference exists → open that exact reference
+  - Else if targetBook/allowedBooks exists → open Bible to that book (default chapter 1 or last-read chapter within that book)
+  - Else fallback to last-read reference (existing behavior)
+
+3) Keep routine quests consistent
+- Routine quests should remain isolated to onBibleOpened and onReadingTimerComplete only.
+- Do NOT re-enable routine completion via onChapterComplete.
+
+4) Do NOT change
+- XP values, rewards, streak logic, expiration rules, completion UI, storage schemas, or quest generation randomness beyond ensuring the correct questType/metadata is assigned to these specific nightly reading quests.
+
+5) Verification / Debug
+- Ensure debug logs clearly show why a chapter completion did or did not match a quest:
+  - quest title, questType, any target metadata, completed book+chapter, matched true/false.
+- Add/adjust logs only in debug builds (kDebugMode).
+
+6) Output
+- Provide a final STATUS UPDATE including:
+  - Which quest templates/prompts were adjusted (and how they now map to questType + metadata)
+  - Which files were changed
+  - A test checklist that includes:
+    a) Nightly “read any chapter” completes after 45s + Complete Chapter
+    b) Psalms quest Start opens Psalms
+    c) John completion does NOT credit Psalms quest
+    d) Routine quests still do NOT complete from chapter completion
+
+Make minimal changes and prioritize correctness of quest completion.

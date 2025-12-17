@@ -537,10 +537,18 @@ class TaskCard extends StatelessWidget {
     switch (qt) {
       case 'scripture_reading':
         if (ref.isNotEmpty) {
+          // Exact scripture reference specified -> open that reference
           provider.markQuestScriptureOpened(quest.id);
           final encoded = Uri.encodeComponent(ref);
           context.go('/verses?ref=$encoded');
+        } else if ((quest.targetBook ?? '').trim().isNotEmpty) {
+          // targetBook specified but no exact reference -> open that book (chapter 1)
+          provider.markQuestScriptureOpened(quest.id);
+          final target = '${quest.targetBook!.trim()} 1';
+          final encoded = Uri.encodeComponent(target);
+          context.go('/verses?ref=$encoded');
         } else {
+          // No target specified -> open last-read reference or default
           final lastRef = provider.lastBibleReference ?? 'John 1';
           final encoded = Uri.encodeComponent(lastRef);
           context.go('/verses?ref=$encoded');

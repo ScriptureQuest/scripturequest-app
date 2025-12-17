@@ -24,6 +24,9 @@ class TaskModel {
   final String questFrequency;
   // Optional scripture reference such as "John 3:16"
   final String? scriptureReference;
+  // Optional target book for quests without specific reference (e.g., "Psalms")
+  // Used for Start navigation and matching when no specific scriptureReference
+  final String? targetBook;
   // Difficulty: Easy / Medium / Hard
   final String difficulty;
   // Faith-focused enhancements
@@ -77,6 +80,7 @@ class TaskModel {
     this.taskCategory,
     this.questFrequency = 'once',
     this.scriptureReference,
+    this.targetBook,
     this.difficulty = 'Easy',
     this.questType = 'scripture_reading',
     this.spiritualFocus,
@@ -143,6 +147,7 @@ class TaskModel {
     'taskCategory': taskCategory?.name,
     'questFrequency': questFrequency,
     'scriptureReference': scriptureReference,
+    'targetBook': targetBook,
     'difficulty': difficulty,
     'questType': questType,
     'spiritualFocus': spiritualFocus,
@@ -178,6 +183,7 @@ class TaskModel {
     taskCategory: _parseTaskCategory(json['taskCategory']),
     questFrequency: (json['questFrequency'] ?? 'once').toString(),
     scriptureReference: json['scriptureReference'],
+    targetBook: json['targetBook'],
     difficulty: (json['difficulty'] ?? 'Easy').toString(),
     questType: (json['questType'] ?? 'scripture_reading').toString(),
     spiritualFocus: json['spiritualFocus'],
@@ -250,6 +256,7 @@ class TaskModel {
     TaskCategory? taskCategory,
     String? questFrequency,
     String? scriptureReference,
+    String? targetBook,
     String? difficulty,
     String? questType,
     String? spiritualFocus,
@@ -283,6 +290,7 @@ class TaskModel {
     taskCategory: taskCategory ?? this.taskCategory,
     questFrequency: questFrequency ?? this.questFrequency,
     scriptureReference: scriptureReference ?? this.scriptureReference,
+    targetBook: targetBook ?? this.targetBook,
     difficulty: difficulty ?? this.difficulty,
     questType: questType ?? this.questType,
     spiritualFocus: spiritualFocus ?? this.spiritualFocus,

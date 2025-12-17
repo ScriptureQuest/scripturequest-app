@@ -803,11 +803,17 @@ extension _TaskGenerationHelpers on TaskService {
   }
 
   List<TaskModel> _nightlyTaskPool(DateTime now, DateTime endOfNight) {
+    // Nightly quest template builder.
+    // questType determines auto-progress behavior:
+    // - 'scripture_reading': auto-tracked via chapter completion (onChapterComplete)
+    // - 'reflection', 'prayer': manual completion only
+    // targetBook: optional book name for Start navigation and matching
     TaskModel n({
       required String title,
       required String description,
       String questType = 'reflection',
       String spiritualFocus = 'Peace',
+      String? targetBook,
       int xp = 20,
     }) => TaskModel(
           id: _uuid.v4(),
@@ -819,6 +825,7 @@ extension _TaskGenerationHelpers on TaskService {
           questFrequency: 'daily',
           questType: questType,
           spiritualFocus: spiritualFocus,
+          targetBook: targetBook,
           isAutoTracked: questType == 'scripture_reading',
           isDaily: true,
           targetCount: 1,
@@ -836,12 +843,13 @@ extension _TaskGenerationHelpers on TaskService {
       n(title: 'Reflect on one good moment from today.', description: 'Thank God for that gift.', questType: 'reflection', spiritualFocus: 'Gratitude', xp: 20),
       n(title: 'Thank God for carrying you through the day.', description: 'Offer a short prayer of thanks.', questType: 'prayer', spiritualFocus: 'Thankfulness', xp: 15),
       n(title: 'Ask God for rest and peace tonight.', description: 'Release worries into His hands.', questType: 'prayer', spiritualFocus: 'Peace', xp: 15),
-      n(title: 'Read a calming Psalm before bed.', description: 'Let Scripture settle your heart.', questType: 'scripture_reading', spiritualFocus: 'Comfort', xp: 20),
+      // Psalms reading quest: targetBook = 'Psalms' for Start navigation and matching
+      n(title: 'Read a calming Psalm before bed.', description: 'Let Scripture settle your heart.', questType: 'scripture_reading', targetBook: 'Psalms', spiritualFocus: 'Comfort', xp: 20),
       n(title: 'Release any stress or frustration to God.', description: 'Breathe and let go.', questType: 'reflection', spiritualFocus: 'Surrender', xp: 20),
       n(title: 'Think of one way you grew today.', description: 'Notice progress, however small.', questType: 'reflection', spiritualFocus: 'Growth', xp: 20),
       n(title: 'Pray for tomorrow’s challenges.', description: 'Ask for wisdom and courage.', questType: 'prayer', spiritualFocus: 'Courage', xp: 15),
       n(title: 'Journal a short gratitude note.', description: 'Write one line of thanks.', questType: 'reflection', spiritualFocus: 'Gratitude', xp: 20),
-      n(title: 'Read a verse about God’s protection.', description: 'Rest in His care.', questType: 'scripture_reading', spiritualFocus: 'Trust', xp: 20),
+      n(title: 'Read a verse about God’s protection.', description: 'Rest in His care.', questType: 'scripture_reading', targetBook: 'Psalms', spiritualFocus: 'Trust', xp: 20),
       n(title: 'Ask God to renew your mind tonight.', description: 'Invite Him to bring peace.', questType: 'prayer', spiritualFocus: 'Renewal', xp: 15),
       n(title: 'Reflect on someone you want to forgive.', description: 'Pray for grace to release it.', questType: 'reflection', spiritualFocus: 'Forgiveness', xp: 20),
       n(title: 'Think about a moment you felt God near today.', description: 'Hold that memory with gratitude.', questType: 'reflection', spiritualFocus: 'Awareness', xp: 20),

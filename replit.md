@@ -38,6 +38,16 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Nightly quest completion + Psalms targeting fixes
+  - Added targetBook field to TaskModel for book-level targeting without exact reference
+  - Nightly quest templates updated:
+    - "Nightly Reading" (generic): questType=scripture_reading, no target → any chapter completes
+    - "Read a calming Psalm before bed": questType=scripture_reading, targetBook=Psalms → only Psalms chapters complete
+    - "Read a verse about God's protection": questType=scripture_reading, targetBook=Psalms
+  - Start button navigation now uses priority: scriptureReference > targetBook > lastBibleReference
+  - QuestProgressService passes q.targetBook to matchesQuestTarget()
+  - No XP, rewards, or UI layout changes
+
 - 2025-12-17: Quest correctness system v2.1 (safety refinements)
   - Priority-based scripture detection in matchesQuestTarget():
     - A) scriptureReference → source of truth
