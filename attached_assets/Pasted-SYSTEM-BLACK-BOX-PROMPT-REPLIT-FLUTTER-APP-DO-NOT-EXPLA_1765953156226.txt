@@ -1,0 +1,122 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Refine the Profile screen UI to improve clarity, density, and calmness for beta users, without changing any underlying logic, routes, or data models. This is UI/UX polish only.
+
+Goals
+
+Reduce vertical bloat
+
+Emphasize identity and progress
+
+De-emphasize unfinished or zero-state noise
+
+Make Profile feel supportive, not overwhelming
+
+Preserve future features without distracting from core usage
+
+Requirements
+1) Identity Card (Top Section)
+
+Keep avatar, name, XP, streak, and equipped title
+
+Reduce vertical padding by ~20–24px
+
+Slightly reduce avatar glow radius
+
+Tighten spacing between:
+
+Name → XP/Streak
+
+XP/Streak → Title
+
+No redesign — spacing and density only
+
+2) “Your Journey So Far” Section
+
+Keep the section and copy
+
+Hide or visually de-emphasize rows where the value is 0:
+
+Quizzes completed
+
+Reflections written
+
+Quest steps finished
+
+Plan days completed
+
+Always show:
+
+Chapters completed
+
+Current streak
+
+Reduce card padding slightly to make this feel like a snapshot, not a dashboard
+
+3) Tools Section (Utility Focus)
+
+Keep Tools as a simple list, not tiles
+
+Slightly reduce row height
+
+Reduce icon size slightly
+
+Increase right-arrow contrast for clearer tap affordance
+
+Tools should feel like utilities (settings-style), not feature showcases
+
+4) Explore Section (Future Vision, Low Pressure)
+
+Keep “Explore (Coming Soon)” collapsed by default
+
+Add a subtle subtitle under the header:
+
+“Features expanding over time”
+
+When expanded:
+
+Keep existing rows and routes unchanged
+
+Slightly dim icons or labels to signal non-core status
+
+This section should feel optional, not required
+
+5) Titles & Achievements (Secondary Emphasis)
+
+Keep both sections
+
+Move them below Explore (already done)
+
+Reduce vertical padding around these sections
+
+Increase header clarity slightly (font weight or spacing), but keep them visually secondary
+
+Do NOT add new interactions
+
+6) Global Polish Rules
+
+Reduce vertical spacing between all major sections (target ~16px instead of 24–28px)
+
+Maintain existing card styles and theme
+
+Do NOT change:
+
+XP logic
+
+Streak logic
+
+Navigation
+
+Routes
+
+Data models
+
+Quest or Bible behavior
+
+Output
+
+Update UI only
+
+App should feel calmer, denser, and more intentional
+
+Profile should support the core loop, not compete with it

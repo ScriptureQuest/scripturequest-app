@@ -38,6 +38,17 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Profile screen UI polish (v3.1)
+  - Identity Card: reduced padding (16→12px), smaller avatar glow (112→96px), tighter spacing
+  - Journey section: hides zero-value rows (quizzes, reflections, quest steps, plan days)
+    - Always shows: Chapters completed, Current streak
+    - Snapshot-style reduced padding for calmer feel
+  - Tools section: compact utility style with smaller icons (18px), reduced row height, clearer arrows
+  - Explore section: added subtitle "Features expanding over time", dimmed icons/labels when expanded
+  - Titles & Achievements: reduced padding, clearer headers (titleSmall with fontWeight.w600)
+  - Global: ~16px spacing between sections, cards feel denser and more intentional
+  - No logic changes - UI/UX polish only
+
 - 2025-12-17: Profile screen beta polish (v3.0)
   - Simplified Profile for beta focus - clarity and calm over feature breadth
   - Tightened vertical spacing (24/28px → 16/12px between sections)

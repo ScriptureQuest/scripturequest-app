@@ -50,9 +50,9 @@ class ProfileScreen extends StatelessWidget {
         body: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
           children: [
-            // Header — avatar + equipped title badge (compact)
+            // Header — avatar + equipped title badge (compact, reduced padding)
             SacredCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -65,7 +65,7 @@ class ProfileScreen extends StatelessWidget {
                     hasAura: (provider.equippedCosmetics['aura'] ?? '').toString().isNotEmpty,
                     hasFrame: (provider.equippedCosmetics['frame'] ?? '').toString().isNotEmpty,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   _EquippedTitlePill(title: (equippedTitleName == null || equippedTitleName.trim().isEmpty) ? provider.faithTitle : equippedTitleName),
                 ],
               ),
@@ -133,7 +133,7 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-/// Simplified tools list for beta focus - only essential items
+/// Simplified tools list for beta focus - compact utility style
 class _SimpleToolsList extends StatelessWidget {
   const _SimpleToolsList();
 
@@ -141,28 +141,28 @@ class _SimpleToolsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return SacredCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Column(
         children: [
-          _ExploreRow(
+          _ToolRow(
             icon: Icons.edit_rounded,
             label: 'Journal',
             onTap: () => context.go('/journal'),
           ),
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
-          _ExploreRow(
+          _ToolRow(
             icon: Icons.favorite_rounded,
             label: 'Favorites',
             onTap: () => context.go('/favorite-verses'),
           ),
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
-          _ExploreRow(
+          _ToolRow(
             icon: Icons.settings_rounded,
             label: 'Settings',
             onTap: () => context.go('/settings'),
           ),
           Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
-          _ExploreRow(
+          _ToolRow(
             icon: Icons.people_alt_rounded,
             label: 'Friends (Beta)',
             onTap: () => context.go('/friends'),
@@ -173,7 +173,47 @@ class _SimpleToolsList extends StatelessWidget {
   }
 }
 
-/// Collapsible Explore section - collapsed by default
+/// Compact tool row - reduced height, smaller icons, clearer arrow
+class _ToolRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ToolRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        child: Row(
+          children: [
+            Icon(icon, color: cs.primary, size: 18),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurface,
+                    ),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: cs.onSurface.withValues(alpha: 0.7), size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Collapsible Explore section - collapsed by default with subtitle
 class _CollapsibleExploreSection extends StatefulWidget {
   const _CollapsibleExploreSection();
 
@@ -195,24 +235,36 @@ class _CollapsibleExploreSectionState extends State<_CollapsibleExploreSection> 
             onTap: () => setState(() => _expanded = !_expanded),
             borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
-                  Icon(Icons.explore_rounded, color: cs.primary, size: 22),
-                  const SizedBox(width: 12),
+                  Icon(Icons.explore_rounded, color: cs.primary.withValues(alpha: 0.7), size: 20),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      'Explore (Coming Soon)',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: cs.onSurface,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Explore (Coming Soon)',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                color: cs.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Features expanding over time',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: cs.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
                     ),
                   ),
                   Icon(
                     _expanded ? Icons.expand_less : Icons.expand_more,
                     color: cs.onSurfaceVariant,
-                    size: 22,
+                    size: 20,
                   ),
                 ],
               ),
@@ -221,29 +273,29 @@ class _CollapsibleExploreSectionState extends State<_CollapsibleExploreSection> 
           AnimatedCrossFade(
             firstChild: const SizedBox.shrink(),
             secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
               child: Column(
                 children: [
                   Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
-                  _ExploreRow(
+                  _ExploreRowDimmed(
                     icon: Icons.auto_stories_rounded,
                     label: 'Reading Plans',
                     onTap: () => context.go('/reading-plans'),
                   ),
                   Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
-                  _ExploreRow(
+                  _ExploreRowDimmed(
                     icon: Icons.self_improvement_rounded,
                     label: 'Avatar & Cosmetics',
                     onTap: () => context.go('/avatar'),
                   ),
                   Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
-                  _ExploreRow(
+                  _ExploreRowDimmed(
                     icon: Icons.people_rounded,
                     label: 'Community',
                     onTap: () => context.go('/community'),
                   ),
                   Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
-                  _ExploreRow(
+                  _ExploreRowDimmed(
                     icon: Icons.games_rounded,
                     label: 'Play & Learn',
                     onTap: () => context.go('/play-learn'),
@@ -255,6 +307,46 @@ class _CollapsibleExploreSectionState extends State<_CollapsibleExploreSection> 
             duration: const Duration(milliseconds: 200),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Dimmed explore row for non-core features
+class _ExploreRowDimmed extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ExploreRowDimmed({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        child: Row(
+          children: [
+            Icon(icon, color: cs.primary.withValues(alpha: 0.5), size: 18),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurface.withValues(alpha: 0.7),
+                    ),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: cs.onSurfaceVariant.withValues(alpha: 0.5), size: 18),
+          ],
+        ),
       ),
     );
   }
@@ -483,28 +575,28 @@ class _TopIdentity extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Avatar with subtle circular gradient glow
+        // Avatar with subtle circular gradient glow (reduced radius)
         Center(
           child: Stack(
             alignment: Alignment.center,
             children: [
               Container(
-                width: 112,
-                height: 112,
+                width: 96,
+                height: 96,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      GamerColors.neonCyan.withValues(alpha: 0.15),
-                      GamerColors.neonPurple.withValues(alpha: 0.08),
+                      GamerColors.neonCyan.withValues(alpha: 0.12),
+                      GamerColors.neonPurple.withValues(alpha: 0.06),
                       Colors.transparent,
                     ],
-                    stops: const [0.2, 0.6, 1.0],
+                    stops: const [0.25, 0.6, 1.0],
                   ),
                 ),
               ),
               Transform.scale(
-                scale: 1.06,
+                scale: 1.0,
                 child: Builder(builder: (context) {
                   final app = context.watch<AppProvider>();
                   return SoulAvatarViewV2(
@@ -517,9 +609,9 @@ class _TopIdentity extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 10),
         Text(username, style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         // Calm stats line under username per spec
         Builder(builder: (context) {
           final app = context.watch<AppProvider>();
@@ -729,16 +821,17 @@ class _AchievementsPreviewCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final purple = Theme.of(context).extension<PurpleUi>();
     return SacredCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.emoji_events_rounded, color: purple?.accent ?? cs.primary),
+              Icon(Icons.emoji_events_rounded, color: purple?.accent ?? cs.primary, size: 20),
               const SizedBox(width: 8),
-              Expanded(child: Text('Achievements', style: Theme.of(context).textTheme.titleMedium)),
+              Expanded(child: Text('Achievements', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600))),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(999),
@@ -748,7 +841,7 @@ class _AchievementsPreviewCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           if (unlockedCount == 0) ...[
             Center(
               child: Padding(
@@ -866,17 +959,18 @@ class _TitlesCard extends StatelessWidget {
             .toList();
 
         return SacredCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.emoji_events_outlined, color: cs.primary),
+                  Icon(Icons.emoji_events_outlined, color: cs.primary, size: 20),
                   const SizedBox(width: 8),
-                  Text('Your Titles', style: Theme.of(context).textTheme.titleMedium),
+                  Text('Your Titles', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               // Equipped title spotlight (tappable)
               InkWell(
                 borderRadius: BorderRadius.circular(12),
@@ -1036,7 +1130,7 @@ class _EquippedTitlePill extends StatelessWidget {
   }
 }
 
-// Sacred-Dark primary stats card per spec
+// Sacred-Dark primary stats card - snapshot style with hidden zero rows
 class _YourJourneySoFarCard extends StatelessWidget {
   final int chapters;
   final int quizzes;
@@ -1059,41 +1153,62 @@ class _YourJourneySoFarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    Widget row(String label, String value, {IconData? icon}) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon ?? Icons.check_circle_outline, color: cs.primary, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text('$label: $value', style: Theme.of(context).textTheme.bodyMedium),
-          ),
-        ],
+    
+    Widget row(String label, String value, {IconData? icon, bool dimmed = false}) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(icon ?? Icons.check_circle_outline, 
+                color: dimmed ? cs.primary.withValues(alpha: 0.4) : cs.primary, 
+                size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '$label: $value', 
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: dimmed ? cs.onSurfaceVariant : cs.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     }
 
+    // Build visible rows - always show chapters & streak, hide zero-value optional rows
+    final List<Widget> rows = [];
+    
+    // Always show
+    rows.add(row('Chapters completed', '$chapters', icon: Icons.menu_book_rounded));
+    rows.add(row('Current streak', currentStreak > 0
+        ? '$currentStreak day${currentStreak == 1 ? '' : 's'}${longestStreak > currentStreak ? ' • Best: $longestStreak' : ''}'
+        : 'Start today!', icon: Icons.local_fire_department_rounded));
+    
+    // Conditionally show (only if > 0)
+    if (quizzes > 0) {
+      rows.add(row('Quizzes completed', '$quizzes', icon: Icons.fact_check_rounded));
+    }
+    if (reflections > 0) {
+      rows.add(row('Reflections written', '$reflections', icon: Icons.edit_rounded));
+    }
+    if (questSteps > 0) {
+      rows.add(row('Quest steps finished', '$questSteps', icon: Icons.flag_circle_rounded));
+    }
+    if (planDays > 0) {
+      rows.add(row('Plan days completed', '$planDays', icon: Icons.calendar_month_rounded));
+    }
+
     return SacredCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [Icon(Icons.insights_rounded, color: cs.primary), const SizedBox(width: 8), Text('Your Journey so far', style: Theme.of(context).textTheme.titleMedium)]),
-          const SizedBox(height: 6),
-          Text('A quiet look at how far you\'ve come.', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
-          const SizedBox(height: 12),
-          // Keep 5–6 calm lines
-          row('Chapters completed', '$chapters', icon: Icons.menu_book_rounded),
+          Text('A quiet look at how far you\'ve come.', 
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
           const SizedBox(height: 8),
-          row('Quizzes completed', '$quizzes', icon: Icons.fact_check_rounded),
-          const SizedBox(height: 8),
-          row('Reflections written', '$reflections', icon: Icons.edit_rounded),
-          const SizedBox(height: 8),
-          row('Quest steps finished', '$questSteps', icon: Icons.flag_circle_rounded),
-          const SizedBox(height: 8),
-          row('Plan days completed', '$planDays', icon: Icons.calendar_month_rounded),
-          const SizedBox(height: 8),
-          row('Current streak', currentStreak > 0
-              ? '$currentStreak day${currentStreak == 1 ? '' : 's'}' + (longestStreak > 0 ? ' • Longest: $longestStreak' : '')
-              : '0', icon: Icons.local_fire_department_rounded),
+          ...rows,
         ],
       ),
     );
