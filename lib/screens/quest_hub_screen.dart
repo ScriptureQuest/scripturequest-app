@@ -41,6 +41,27 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
 
   String get _todayLabel => _isDaytime() ? 'Today' : 'Tonight';
 
+  /// Determines if a quest is action-oriented (doing/active tasks).
+  /// Action quests: scripture_reading, routine, service, community
+  bool _isActionQuest(TaskModel q) {
+    final qt = q.questType.trim().toLowerCase();
+    const actionTypes = {'scripture_reading', 'routine', 'service', 'community'};
+    return actionTypes.contains(qt);
+  }
+
+  /// Determines if a quest is reflective (inner prompts, journaling, etc.).
+  /// Reflection quests: reflection, prayer, journal, gratitude, memorization, memorize
+  bool _isReflectionQuest(TaskModel q) {
+    final qt = q.questType.trim().toLowerCase();
+    final title = q.title.toLowerCase();
+    const reflectionTypes = {'reflection', 'prayer', 'journal', 'gratitude', 'memorization', 'memorize'};
+    if (reflectionTypes.contains(qt)) return true;
+    if (title.contains('journal') || title.contains('gratitude') || 
+        title.contains('memorize') || title.contains('forgiveness') ||
+        title.contains('prayer reflection')) return true;
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AppProvider>(builder: (context, provider, _) {
@@ -57,9 +78,15 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
 
       final List<TaskModel> daily = provider.getDailyTasksForToday();
       final List<TaskModel> nightly = provider.getNightlyTasksForToday();
-      final List<TaskModel> reflection = provider.getReflectionTasks();
+      final List<TaskModel> allReflection = provider.getReflectionTasks();
 
-      final List<TaskModel> todayQuests = _isDaytime() ? daily : nightly;
+      final List<TaskModel> timeQuests = _isDaytime() ? daily : nightly;
+      final List<TaskModel> actionQuests = timeQuests.where(_isActionQuest).toList();
+
+      final List<TaskModel> reflectionQuests = [
+        ...timeQuests.where(_isReflectionQuest),
+        ...allReflection.where((q) => !q.isCompleted),
+      ].toSet().toList();
 
       final List<TaskModel> weeklyQuests = provider.quests
           .where((q) => q.isWeekly || q.category == 'weekly' || q.questFrequency == 'weekly')
@@ -74,11 +101,11 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
       List<TaskModel> currentQuests() {
         switch (_filter) {
           case _QuestFilter.today:
-            return todayQuests;
+            return actionQuests;
           case _QuestFilter.weekly:
             return weeklyQuests;
           case _QuestFilter.reflection:
-            return reflection;
+            return reflectionQuests;
           case _QuestFilter.events:
             return eventQuests;
         }
@@ -88,12 +115,12 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
         switch (_filter) {
           case _QuestFilter.today:
             return _isDaytime()
-                ? "You've finished your quests for today. Well done!"
-                : "You've finished tonight's quests. Rest well!";
+                ? "You've finished your action quests for today!"
+                : "You've finished tonight's action quests!";
           case _QuestFilter.weekly:
             return 'No weekly quests available right now.';
           case _QuestFilter.reflection:
-            return 'All reflection quests completed.';
+            return 'All reflection prompts completed.';
           case _QuestFilter.events:
             return 'No events or seasonal quests active.';
         }
@@ -112,6 +139,7 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
       final continueRef = last.isNotEmpty ? last : (votdRef.isNotEmpty ? votdRef : 'John 1');
 
       final quests = currentQuests();
+      final cs = Theme.of(context).colorScheme;
 
       return Scaffold(
         appBar: AppBar(
@@ -119,24 +147,46 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
           centerTitle: true,
         ),
         body: FadeSlideIn(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-            children: [
-              _buildWelcomeHeader(context),
-              const SizedBox(height: 16),
-              _buildTodaysVerse(context, votdRef, featuredText),
-              const SizedBox(height: 16),
-              _buildContinueReading(context, provider, continueRef),
-              const SizedBox(height: 24),
-              _buildFilterChips(context),
-              const SizedBox(height: 12),
-              if (quests.isEmpty)
-                _buildEmptyState(context, emptyMessage())
-              else
-                ...quests.map<Widget>((q) => TaskCard(quest: q)),
-              const SizedBox(height: 16),
-              _buildQuestsLink(context),
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) => [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildWelcomeHeader(context),
+                      const SizedBox(height: 16),
+                      _buildTodaysVerse(context, votdRef, featuredText),
+                      const SizedBox(height: 16),
+                      _buildContinueReading(context, provider, continueRef),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyFilterDelegate(
+                  child: Container(
+                    color: cs.surface,
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    child: _buildFilterChips(context),
+                  ),
+                ),
+              ),
             ],
+            body: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+              children: [
+                if (quests.isEmpty)
+                  _buildEmptyState(context, emptyMessage())
+                else
+                  ...quests.map<Widget>((q) => TaskCard(quest: q)),
+                const SizedBox(height: 16),
+                _buildQuestsLink(context),
+              ],
+            ),
           ),
         ),
       );
@@ -360,4 +410,22 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
       ),
     );
   }
+}
+
+class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  _StickyFilterDelegate({required this.child});
+
+  @override
+  double get minExtent => 52;
+  @override
+  double get maxExtent => 52;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return child;
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) => false;
 }

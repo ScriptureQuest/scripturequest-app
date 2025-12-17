@@ -38,12 +38,13 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
-- 2025-12-17: Quest Hub filter chips
-  - Default view shows ONLY Today/Tonight quests (time-aware, single list)
-  - Minimal filter chips: Tonight/Today (default), Weekly, Reflection, Events
-  - Only one filter view visible at a time (no stacked sections)
-  - Header flow preserved: Welcome → Today's Verse → Continue Reading
-  - Pill labels: DAILY QUEST, NIGHTLY QUEST, WEEKLY QUEST, REFLECTION, EVENT QUEST
+- 2025-12-17: Quest Hub action/reflection separation + sticky chips
+  - Today/Tonight filter shows ONLY action quests (scripture_reading, routine, service, community)
+  - Reflection filter shows ONLY reflective prompts (reflection, prayer, journal, gratitude, memorization)
+  - Filter chips are sticky (pinned) while scrolling the quest list via NestedScrollView + SliverPersistentHeader
+  - Weekly and Events filters unchanged
+  - Classification logic: `_isActionQuest()` and `_isReflectionQuest()` helpers in QuestHubScreen
+  - No XP or backend logic changes - presentation only
 
 - 2025-12-17: Quest Hub as primary home
   - QuestHubScreen is primary landing page at /
