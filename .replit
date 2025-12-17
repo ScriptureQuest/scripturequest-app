@@ -1,0 +1,40 @@
+modules = ["web", "ruby-3.2", "swift-5.8", "python-3.11"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+packages = ["flutter"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Flutter Web"
+
+[[workflows.workflow]]
+name = "Flutter Web"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "flutter build web --release && cd build/web && python3 -m http.server 5000 --bind 0.0.0.0"
+waitForPort = 5000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[deployment]
+deploymentTarget = "static"
+build = ["flutter", "build", "web", "--release"]
+publicDir = "build/web"
