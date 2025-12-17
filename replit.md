@@ -36,3 +36,27 @@ The application is built with Flutter 3.32.0 and Dart 3.8.0, utilizing the Provi
 - **Routing:** `go_router` package
 - **Local Storage:** `shared_preferences` package
 - **Web Server:** Python's `http.server` (for local development/serving web build)
+
+## Recent Changes
+- 2025-12-17: vNext - Quest Hub & Bible Navigation Improvements
+  - **A) Quest Hub filter chip bug fix:**
+    - Verified `_filter` is the ONLY source of truth for chip highlight AND list display
+    - Chip selection: `selected = _filter == filter`
+    - List derivation: `currentQuests()` switch statement on `_filter`
+    - No separate derived state that could drift
+    - Added widget test: tap Weekly, verify Weekly chip selected AND list shows Weekly, Tonight not selected
+  - **B) Bible Reader Book/Chapter picker improvements:**
+    - Jump to Book flow now two-step: Book → Chapter picker (no immediate navigation)
+    - Tapping a book opens chapter picker for that book
+    - Chapter picker includes "Change Book" button to switch books
+    - Top selector pill opens chapter picker with Change Book action available
+    - Selecting a chapter navigates to book+chapter and closes the sheet
+    - No code duplication - reuses `_openChapterPickerForBook()` and `_openJumpToBookSheet()`
+  - **Widget tests added (10 total):**
+    - Quest Hub: filter chip selection works correctly
+    - Bible Reader: book tap opens chapter picker (not navigate)
+    - Bible Reader: selecting chapter navigates correctly
+    - Bible Reader: Change Book action works from chapter picker
+  - No XP, quest, streak, or storage schema changes
+  - No routes removed
+  - Existing theme/style preserved

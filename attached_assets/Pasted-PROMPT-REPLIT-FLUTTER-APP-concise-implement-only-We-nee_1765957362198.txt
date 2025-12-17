@@ -1,0 +1,116 @@
+PROMPT (REPLIT FLUTTER APP) — concise, implement-only
+
+We need two improvements:
+
+A) Fix Quest Hub filter chip highlight bug
+B) Improve Bible “Jump to Book” flow so users can pick a chapter (and also change book from the top selector)
+
+Constraints
+
+Do not change XP/streak/quest generation logic or storage schemas.
+
+No route removals.
+
+Keep existing UI theme/style.
+
+Add/adjust widget tests where reasonable.
+
+A) Quest Hub — filter chip highlight mismatch (Weekly selected but Tonight highlighted)
+
+Bug: the quest list shows Weekly content but the chip highlight still shows Tonight.
+
+Requirements:
+
+Make _filter the ONLY source of truth for:
+
+which chip is highlighted
+
+which list of quests is displayed
+
+Ensure there is no separate derived “selected chip” variable that can drift.
+
+On initial load (and after restore from persisted state, if any), ensure _filter is set once and the UI rebuilds with matching chip highlight + list.
+
+Add a small widget test that:
+
+taps Weekly
+
+expects Weekly chip selected AND list derived from weekly
+
+verifies Tonight is not selected.
+
+Files likely:
+
+lib/screens/quest_hub_screen.dart (and any chip widget it uses)
+
+B) Bible Reader — Book/Chapter selection improvements
+
+Current behavior issues:
+
+“Jump to Book” → tapping a book (ex: Acts) immediately navigates to Acts 1.
+
+The top selector pill (ex: “Matthew • 1”) opens chapters, but you cannot change the book from there.
+
+Goal: Make book navigation consistently “Book → Chapter” and allow changing book from the top selector.
+
+Requirements:
+
+Update “Jump to Book” flow:
+
+Step 1: user chooses Testament (already exists)
+
+Step 2: user taps a Book (ex: Acts)
+
+Step 3: instead of navigating immediately, open a chapter picker for that selected book
+
+Selecting a chapter navigates to that book+chapter and closes the sheet(s)
+
+Provide a clear “Back” inside the sheet to return to book list (no confusing multi-sheet stacking if possible)
+
+Update top selector pill (ex: “Matthew • 1”):
+
+When tapped, open a combined “Book & Chapter” picker
+
+Default view: chapter picker for current book
+
+Include a “Change Book” action (button or tab) that shows the same book list used by Jump to Book
+
+After choosing a different book, show that book’s chapter picker immediately
+
+Keep existing chapter completion logic:
+
+Checkmarks ONLY show when “Complete Chapter” is tapped (do not reintroduce auto-checks)
+
+Navigating to a chapter must not mark completion
+
+Reuse code:
+
+Avoid duplicating two separate book/chapter pickers
+
+Create a shared bottom sheet widget/service if needed (ex: BookChapterPickerSheet)
+
+Tests (high ROI):
+
+Widget test: tapping a book does NOT navigate immediately; it opens chapter picker
+
+Widget test: selecting chapter navigates to correct reference
+
+Widget test: top selector allows changing book then chapter.
+
+Files likely:
+
+lib/screens/verses_screen.dart (or your Bible reader screen file)
+
+Any bottom sheet widgets used for Jump to Book / chapter picker
+
+Add tests under test/
+
+Output:
+
+Implement both A and B
+
+App builds successfully
+
+Tests pass
+
+Update replit.md with a short “vNext” change summary

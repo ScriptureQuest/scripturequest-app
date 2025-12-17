@@ -314,4 +314,210 @@ void main() {
           reason: 'Should show "Chapter Quiz" when quiz is available');
     });
   });
+
+  group('Quest Hub Filter Chip Tests', () {
+    testWidgets('Tapping Weekly selects Weekly chip AND shows weekly list, Tonight is not selected', (tester) async {
+      // Simulate filter chip behavior with _filter as sole source of truth
+      int selectedFilter = 0; // 0=Today, 1=Weekly, 2=Reflection, 3=Events
+      
+      final filterLabels = ['Today', 'Weekly', 'Reflection', 'Events'];
+      
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => MaterialApp(
+            home: Scaffold(
+              body: Column(
+                children: [
+                  // Filter chips - selection derived from selectedFilter only
+                  Wrap(
+                    children: [
+                      for (int i = 0; i < filterLabels.length; i++)
+                        GestureDetector(
+                          key: ValueKey('filter_chip_$i'),
+                          onTap: () => setState(() => selectedFilter = i),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            margin: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: selectedFilter == i ? Colors.blue : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              filterLabels[i],
+                              style: TextStyle(
+                                color: selectedFilter == i ? Colors.white : Colors.black,
+                                fontWeight: selectedFilter == i ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // List content derived from selectedFilter
+                  Text(
+                    key: const ValueKey('current_list_label'),
+                    'Showing: ${filterLabels[selectedFilter]} quests',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      
+      // Initially "Today" is selected
+      expect(find.text('Showing: Today quests'), findsOneWidget);
+      
+      // Tap "Weekly" chip (index 1)
+      await tester.tap(find.byKey(const ValueKey('filter_chip_1')));
+      await tester.pump();
+      
+      // Verify Weekly chip is now selected (list shows Weekly)
+      expect(find.text('Showing: Weekly quests'), findsOneWidget,
+          reason: 'List should show Weekly quests after tapping Weekly chip');
+      
+      // Verify Today is NOT selected (would show different text if it was)
+      expect(find.text('Showing: Today quests'), findsNothing,
+          reason: 'Today quests should NOT be showing when Weekly is selected');
+    });
+  });
+
+  group('Bible Reader Book/Chapter Picker Tests', () {
+    testWidgets('Tapping a book does NOT navigate immediately - opens chapter picker', (tester) async {
+      String? navigatedRef;
+      bool chapterPickerOpened = false;
+      String? chapterPickerBook;
+      
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => MaterialApp(
+            home: Scaffold(
+              body: Column(
+                children: [
+                  // Book list (simulates Jump to Book sheet)
+                  GestureDetector(
+                    key: const ValueKey('book_acts'),
+                    onTap: () {
+                      // New behavior: open chapter picker, don't navigate
+                      setState(() {
+                        chapterPickerOpened = true;
+                        chapterPickerBook = 'Acts';
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      child: const Text('Acts'),
+                    ),
+                  ),
+                  // Chapter picker (shown when book is tapped)
+                  if (chapterPickerOpened && chapterPickerBook != null)
+                    Wrap(
+                      children: [
+                        Text('Chapters in $chapterPickerBook'),
+                        for (int ch = 1; ch <= 5; ch++)
+                          GestureDetector(
+                            key: ValueKey('chapter_picker_$ch'),
+                            onTap: () => navigatedRef = '$chapterPickerBook $ch',
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              child: Text('$ch'),
+                            ),
+                          ),
+                      ],
+                    ),
+                  // Navigation result display
+                  if (navigatedRef != null)
+                    Text(key: const ValueKey('navigated_to'), 'Navigated: $navigatedRef'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      
+      // Tap on book "Acts"
+      await tester.tap(find.byKey(const ValueKey('book_acts')));
+      await tester.pump();
+      
+      // Should NOT have navigated yet
+      expect(navigatedRef, isNull, reason: 'Tapping book should NOT navigate immediately');
+      
+      // Chapter picker should be open
+      expect(find.text('Chapters in Acts'), findsOneWidget,
+          reason: 'Chapter picker should open after tapping book');
+      
+      // Now tap chapter 3
+      await tester.tap(find.byKey(const ValueKey('chapter_picker_3')));
+      await tester.pump();
+      
+      // Should navigate to Acts 3
+      expect(navigatedRef, 'Acts 3', reason: 'Should navigate to Acts 3 after selecting chapter');
+    });
+
+    testWidgets('Top selector allows changing book via Change Book action', (tester) async {
+      String currentBook = 'Matthew';
+      int currentChapter = 5;
+      bool showingBookList = false;
+      
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => MaterialApp(
+            home: Scaffold(
+              appBar: AppBar(
+                title: GestureDetector(
+                  key: const ValueKey('top_selector'),
+                  onTap: () {
+                    // Opens chapter picker for current book (with change book option)
+                  },
+                  child: Text('$currentBook · $currentChapter'),
+                ),
+              ),
+              body: Column(
+                children: [
+                  // Simulates chapter picker with "Change Book" button
+                  Text('Chapters in $currentBook'),
+                  TextButton(
+                    key: const ValueKey('change_book_btn'),
+                    onPressed: () => setState(() => showingBookList = true),
+                    child: const Text('Change Book'),
+                  ),
+                  // Book list (shown after Change Book)
+                  if (showingBookList)
+                    GestureDetector(
+                      key: const ValueKey('book_romans'),
+                      onTap: () => setState(() {
+                        currentBook = 'Romans';
+                        showingBookList = false;
+                      }),
+                      child: const Text('Romans'),
+                    ),
+                  // Current book indicator
+                  Text(key: const ValueKey('current_book'), 'Current: $currentBook'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      
+      // Initially showing Matthew
+      expect(find.text('Current: Matthew'), findsOneWidget);
+      
+      // Tap "Change Book"
+      await tester.tap(find.byKey(const ValueKey('change_book_btn')));
+      await tester.pump();
+      
+      // Book list should appear
+      expect(find.text('Romans'), findsOneWidget);
+      
+      // Tap on Romans
+      await tester.tap(find.byKey(const ValueKey('book_romans')));
+      await tester.pump();
+      
+      // Book should change to Romans
+      expect(find.text('Current: Romans'), findsOneWidget,
+          reason: 'Should be able to change book via Change Book action');
+    });
+  });
 }

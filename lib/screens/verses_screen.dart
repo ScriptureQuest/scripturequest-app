@@ -712,11 +712,9 @@ class _VersesScreenState extends State<VersesScreen> {
                             label: b,
                             selected: isCurrent,
                             onTap: () {
+                              // Step 2: Selecting a book opens chapter picker (don't navigate directly)
                               Navigator.of(ctx).pop();
-                              final uri = Uri(path: '/verses', queryParameters: {
-                                'ref': '$b 1',
-                              });
-                              if (mounted) context.push(uri.toString());
+                              _openChapterPickerForBook(b);
                             },
                           );
                         },
@@ -973,9 +971,9 @@ class _VersesScreenState extends State<VersesScreen> {
 
   // (Old in-body book/chapter pill header removed; AppBar pill is the single source of truth.)
 
-  // Restored: Chapter picker for a book; supports being opened standalone or stacked over the book sheet.
-  // When parentSheetContext is provided, we close both sheets after selecting a chapter.
-  Future<void> _openChapterPickerForBook(String bookDisplay, {BuildContext? parentSheetContext}) async {
+  // Chapter picker for a book with "Change Book" action.
+  // Shows chapters for the given book, with option to switch to a different book.
+  Future<void> _openChapterPickerForBook(String bookDisplay) async {
     final provider = context.read<AppProvider>();
     final total = provider.bibleService.getChapterCount(bookDisplay);
     final theme = Theme.of(context);
@@ -983,11 +981,12 @@ class _VersesScreenState extends State<VersesScreen> {
     await showModalBottomSheet(
       context: context,
       backgroundColor: GamerColors.darkCard,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        final maxSheetHeight = MediaQuery.of(ctx).size.height * 0.72;
+        final maxSheetHeight = MediaQuery.of(ctx).size.height * 0.80;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -1011,10 +1010,25 @@ class _VersesScreenState extends State<VersesScreen> {
                     )
                   ],
                 ),
+                const SizedBox(height: 4),
+                // "Change Book" action button
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    _openJumpToBookSheet();
+                  },
+                  icon: const Icon(Icons.swap_horiz, size: 18),
+                  label: const Text('Change Book'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: GamerColors.accent,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 // Height-limited scroll area for long books (e.g., Psalms)
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: maxSheetHeight),
+                  constraints: BoxConstraints(maxHeight: maxSheetHeight - 100),
                   child: SingleChildScrollView(
                     child: Wrap(
                       spacing: 10,
@@ -1023,18 +1037,14 @@ class _VersesScreenState extends State<VersesScreen> {
                         for (int i = 1; i <= total; i++)
                           _ChapterChip(
                             label: '$i',
-                            selected: i == (_selectedChapter ?? -1),
+                            selected: bookDisplay == _selectedBook && i == (_selectedChapter ?? -1),
                             read: provider.isChapterRead(bookDisplay, i),
                             onTap: () {
                               if (kDebugMode) {
                                 debugPrint('[ChaptersSheet] tapped book=$bookDisplay chapter=$i');
                               }
-                              // Close this (chapter) sheet
+                              // Close this sheet and navigate
                               Navigator.of(ctx).pop();
-                              // Close the parent (book) sheet if provided
-                              if (parentSheetContext != null) {
-                                Navigator.of(parentSheetContext).pop();
-                              }
                               final uri = Uri(path: '/verses', queryParameters: {
                                 'ref': '$bookDisplay $i',
                               });
