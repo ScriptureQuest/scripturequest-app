@@ -1,0 +1,92 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Combine two fixes in one change-set:
+(A) Quest Hub bottom bar polish (icon + active emphasis) and
+(B) Today’s Verse reference/text sync so the displayed verse text always matches the displayed reference (no mismatches, no wrong fallback verse).
+
+Hard constraints:
+
+Do NOT change quest generation, XP, streak logic, expiration rules, completion flow, or storage schemas.
+
+Do NOT add new screens or new features.
+
+Keep current 3-tab bottom nav: Quest Hub (/), Bible (/bible), Profile (/profile).
+
+Keep Quest Hub header flow unchanged: Welcome → Today’s Verse → Continue Reading.
+
+Output a final STATUS UPDATE in the standard format.
+
+========================
+A) BOTTOM BAR POLISH
+
+Goal: Make Quest Hub feel like “Home” and reduce the “empty space” feel without adding clutter.
+
+Requirements:
+
+Quest Hub icon
+
+Replace the current Quest Hub icon (flag) with a clear “Home” style icon (house / home glyph).
+
+Keep Bible and Profile icons unchanged.
+
+Active tab emphasis (subtle, single treatment)
+
+Add ONE subtle emphasis style to the currently selected tab:
+Choose ONE of the following (do not combine):
+a) a soft pill background behind the active tab icon+label OR
+b) a soft glow/halo behind the active icon OR
+c) a slightly larger active icon container
+
+Do not change overall nav height drastically.
+
+Keep labels visible (do not remove tab text labels).
+
+Consistency
+
+Keep inactive tabs minimal.
+
+Ensure the active state is obvious but calm (no neon blast).
+
+Files likely involved:
+
+lib/screens/main_navigation.dart (or wherever bottom nav is implemented)
+
+any shared theme/icon file if applicable
+
+========================
+B) TODAY’S VERSE REFERENCE/TEXT SYNC
+
+Goal: Fix “Today’s Verse” so the text ALWAYS corresponds to the same reference shown (never show John 3:16 text under a different reference). If verse text isn’t found locally, show a safe placeholder rather than a mismatched verse.
+
+Requirements:
+
+Single source of truth
+
+Use provider.getVerseOfTheDay() as the single source of truth for the displayed reference.
+
+The displayed verse text MUST be looked up using that exact reference only.
+
+Lookup behavior
+
+First attempt: exact match (v.reference == votdRef)
+
+Second attempt: normalized match (case-insensitive, trimmed whitespace, normalize spaces, handle common punctuation variations like ":" spacing)
+
+If still not found: show placeholder text exactly:
+"Tap to read this verse"
+
+Never substitute a different verse’s text as a fallback.
+
+Interaction
+
+Keep the current styling and layout.
+
+Tapping Today’s Verse should continue to navigate as it already does (do not change navigation behavior unless it’s currently broken).
+
+Files likely involved:
+
+lib/screens/quest_hub_screen.dart (Today’s Verse rendering + lookup)
+
+any verse model/provider utilities if needed
+
+========================

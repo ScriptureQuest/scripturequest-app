@@ -304,7 +304,7 @@ class _BottomNavBarState extends State<_BottomNavBar> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
-                icon: Icons.flag_outlined,
+                icon: Icons.home_outlined,
                 label: 'Quest Hub',
                 isSelected: currentIndex == 0,
                 onTap: () => context.go('/'),
