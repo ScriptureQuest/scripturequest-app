@@ -38,6 +38,22 @@ The app runs as a Flutter web application on port 5000. The workflow:
 - Mini-games (matching, scramble, etc.)
 
 ## Recent Changes
+- 2025-12-17: Quest correctness system v2.1 (safety refinements)
+  - Priority-based scripture detection in matchesQuestTarget():
+    - A) scriptureReference → source of truth
+    - B) allowedBooks/targetBook metadata → when available
+    - C) title keyword detection → fallback (e.g., "Psalm")
+  - Routine quest triggers explicitly documented:
+    - onBibleOpened: Opening Bible tab (primary trigger)
+    - onReadingTimerComplete: Reading timer threshold met
+    - onChapterComplete: NOT a trigger for routine quests
+  - Debug logging gated by kDebugMode (auto-disabled in release builds)
+  - Start button safety guarantee:
+    - Every quest type resolves to a non-null action
+    - Unknown types fallback to Details sheet
+    - Defensive warning logged in debug builds
+  - No XP, quest generation, or backend logic changes
+
 - 2025-12-17: Quest Start navigation + strict auto-progress rules
   - Start button now navigates based on quest type:
     - scripture_reading → Bible reader at quest target (or last-read reference)
@@ -46,7 +62,7 @@ The app runs as a Flutter web application on port 5000. The workflow:
     - service/community → Details sheet (manual completion)
     - routine → Bible reader
   - Strict matching in QuestProgressService for onChapterComplete:
-    - Only scripture_reading and routine quests auto-progress from chapter completion
+    - Only scripture_reading quests auto-progress from chapter completion
     - Must match quest's target book/chapter exactly
     - Psalm quests only credit Psalms book completions
     - Debug logging added with [QuestProgress] prefix

@@ -1,0 +1,57 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+Refine the existing quest correctness system (as implemented in the latest STATUS UPDATE) to make it more robust, future-proof, and production-safe, without changing any existing behavior that already works.
+
+Context:
+- Strict scripture matching, Start button routing, and quest-type navigation have already been implemented.
+- This prompt builds on that implementation and should NOT replace or simplify it.
+
+Requirements:
+
+1) Replace fragile title-based scripture detection (non-breaking)
+- Keep the existing “title contains ‘Psalm’” fallback logic working.
+- ADD stronger detection priority in this order:
+  A) If quest has scriptureReference → use it as the source of truth.
+  B) Else if quest has allowedBooks or targetBook metadata → use that.
+  C) Else fallback to current title keyword detection (e.g., “Psalm”).
+- Do NOT remove the existing behavior; only add higher-priority checks so future quests are safer.
+
+2) Make Routine Quest Completion Explicit
+- Keep current routine behavior working.
+- Ensure routine quests ONLY auto-progress from events they are meant to represent:
+  - reading timer threshold met
+  - Bible tab opened
+  - chapter completed (ONLY if the routine explicitly represents reading)
+- Prevent routine quests from being completed by unrelated chapter completions unless intended.
+- Document the intended routine triggers in code comments.
+
+3) Debug Logging Safety
+- Keep existing quest progress debug logs.
+- Ensure debug logging is enabled ONLY in debug/dev builds:
+  - Disable logs automatically in release/profile builds.
+  - Do NOT remove logs entirely; gate them behind a debug flag or assert.
+
+4) Start Button Safety Guarantee
+- Assert that EVERY quest type always resolves to a non-null Start action.
+- If a quest type is unknown or missing metadata:
+  - Force fallback to Details sheet.
+- Add a defensive log/warning if fallback is used (debug-only).
+
+5) No Behavior Regression
+- Do NOT change:
+  - XP values
+  - Quest generation pools
+  - Expiration rules
+  - Streak logic
+  - Storage schemas
+  - UI layout or Quest Hub structure
+- This is a correctness + safety refinement only.
+
+6) Output
+- Provide a final STATUS UPDATE describing:
+  - What safety layers were added
+  - Any new helper methods or priority rules
+  - Confirmation that existing quest behavior was preserved
+
+Goal:
+Lock in a quest system that cannot be accidentally broken by future quest wording, new quest types, or UI changes, while preserving the current correct behavior exactly.

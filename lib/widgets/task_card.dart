@@ -521,9 +521,18 @@ class TaskCard extends StatelessWidget {
   }
 
   // ---------------------- Quest Type Navigation ----------------------
+  /// Navigates to the appropriate screen based on quest type.
+  /// 
+  /// Safety guarantee (v2.1):
+  /// - EVERY quest type ALWAYS resolves to a non-null Start action
+  /// - Unknown/missing quest types fallback to Details sheet
+  /// - Defensive warning logged in debug builds if fallback is used
   void _navigateForQuestType(BuildContext context, AppProvider provider) {
     final qt = quest.questType.trim().toLowerCase();
     final ref = (quest.scriptureReference ?? '').trim();
+
+    // Track if we used the fallback path
+    bool usedFallback = false;
 
     switch (qt) {
       case 'scripture_reading':
@@ -555,8 +564,15 @@ class TaskCard extends StatelessWidget {
         context.go('/verses');
         break;
       default:
+        // Safety fallback: unknown quest types always get Details sheet
+        usedFallback = true;
         _showDetailsSheet(context);
         break;
+    }
+
+    // Defensive debug warning for unknown quest types (debug builds only)
+    if (usedFallback && kDebugMode) {
+      debugPrint('[TaskCard] WARNING: Unknown quest type "$qt" for quest "${quest.title}" - using fallback Details sheet');
     }
   }
 

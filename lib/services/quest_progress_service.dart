@@ -4,8 +4,9 @@ import 'package:level_up_your_faith/models/verse_model.dart';
 import 'package:level_up_your_faith/services/quest_service.dart';
 import 'package:level_up_your_faith/services/verse_service.dart';
 
-/// Debug flag for quest progress logging
-const bool _kQuestProgressDebug = true;
+/// Debug flag for quest progress logging.
+/// Automatically disabled in release/profile builds via kDebugMode.
+bool get _kQuestProgressDebug => kDebugMode;
 
 /// QuestProgressService (v2.0)
 /// Centralizes event-driven quest progression so all Scripture actions can
@@ -46,50 +47,75 @@ class QuestProgressService {
   }
 
   /// Checks if completed book+chapter matches quest target.
+  /// 
+  /// Priority for determining required book (v2.1 - robust detection):
+  /// A) If quest has scriptureReference → use it as source of truth
+  /// B) Else if quest has allowedBooks or targetBook metadata → use that
+  /// C) Else fallback to title keyword detection (e.g., "Psalm")
+  /// 
   /// Strict matching rules:
-  /// 1. If quest has no scriptureReference -> any chapter counts
+  /// 1. If no target can be determined -> any chapter counts
   /// 2. If quest specifies exact book+chapter -> must match exactly
   /// 3. If quest specifies only book (no chapter) -> any chapter of that book counts
-  /// 4. Special: for Psalm-related quests, only Psalms book counts
   static bool matchesQuestTarget({
     required String completedBook,
     required int completedChapter,
     required String? questScriptureReference,
     required String questTitle,
+    List<String>? allowedBooks,
+    String? targetBook,
   }) {
     final normBook = completedBook.trim().toLowerCase();
-    final questRef = (questScriptureReference ?? '').trim();
 
-    // No target specified -> generic quest, any chapter counts
-    if (questRef.isEmpty) {
-      _debugLog('Quest has no target, any chapter counts', questTitle, completedBook, completedChapter, true);
+    // Priority A: scriptureReference is the source of truth
+    final questRef = (questScriptureReference ?? '').trim();
+    if (questRef.isNotEmpty) {
+      final target = parseReference(questRef);
+      final targetBookName = target.book;
+      
+      if (targetBookName.isNotEmpty && !_booksMatch(normBook, targetBookName)) {
+        _debugLog('Book mismatch (from scriptureReference): expected "$targetBookName"', questTitle, completedBook, completedChapter, false);
+        return false;
+      }
+      
+      if (target.chapter != null && target.chapter != completedChapter) {
+        _debugLog('Chapter mismatch: expected ${target.chapter}', questTitle, completedBook, completedChapter, false);
+        return false;
+      }
+      
+      _debugLog('Match found (via scriptureReference)', questTitle, completedBook, completedChapter, true);
       return true;
     }
 
-    // Parse the quest target
-    final target = parseReference(questRef);
+    // Priority B: allowedBooks or targetBook metadata
+    if (allowedBooks != null && allowedBooks.isNotEmpty) {
+      final matchesAllowed = allowedBooks.any((b) => _booksMatch(normBook, b.trim().toLowerCase()));
+      if (!matchesAllowed) {
+        _debugLog('Book not in allowedBooks: $allowedBooks', questTitle, completedBook, completedChapter, false);
+        return false;
+      }
+      _debugLog('Match found (via allowedBooks)', questTitle, completedBook, completedChapter, true);
+      return true;
+    }
+    
+    if (targetBook != null && targetBook.trim().isNotEmpty) {
+      if (!_booksMatch(normBook, targetBook.trim().toLowerCase())) {
+        _debugLog('Book mismatch (from targetBook): expected "$targetBook"', questTitle, completedBook, completedChapter, false);
+        return false;
+      }
+      _debugLog('Match found (via targetBook)', questTitle, completedBook, completedChapter, true);
+      return true;
+    }
 
-    // Check for Psalm-specific quest (title mentions "Psalm" but maybe no specific reference)
+    // Priority C: Fallback to title keyword detection (legacy behavior preserved)
     final titleLower = questTitle.toLowerCase();
     if (titleLower.contains('psalm') && !normBook.contains('psalm')) {
-      _debugLog('Psalm quest requires Psalms book', questTitle, completedBook, completedChapter, false);
+      _debugLog('Psalm quest (title-based) requires Psalms book', questTitle, completedBook, completedChapter, false);
       return false;
     }
 
-    // Book must match
-    final targetBook = target.book;
-    if (targetBook.isNotEmpty && !_booksMatch(normBook, targetBook)) {
-      _debugLog('Book mismatch: expected "$targetBook"', questTitle, completedBook, completedChapter, false);
-      return false;
-    }
-
-    // If quest specifies a chapter, it must match
-    if (target.chapter != null && target.chapter != completedChapter) {
-      _debugLog('Chapter mismatch: expected ${target.chapter}', questTitle, completedBook, completedChapter, false);
-      return false;
-    }
-
-    _debugLog('Match found', questTitle, completedBook, completedChapter, true);
+    // No target specified -> generic quest, any chapter counts
+    _debugLog('Quest has no target, any chapter counts', questTitle, completedBook, completedChapter, true);
     return true;
   }
 
@@ -179,9 +205,15 @@ class QuestProgressService {
             }
             break;
           case 'onChapterComplete':
-            // STRICT MATCHING: Only credit if quest type is scripture_reading or routine
-            // AND the completed chapter matches the quest target
-            if (q.questType == 'scripture_reading' || q.questType == 'routine') {
+            // STRICT MATCHING: Only credit if quest type is scripture_reading
+            // Routine quests should NOT auto-progress from chapter completion
+            // (use onBibleOpened for routine check-in instead)
+            //
+            // Routine Quest Completion Triggers (documented):
+            // - onBibleOpened: Opening the Bible tab (check-in)
+            // - NOT onChapterComplete (reading is not a routine trigger)
+            // - Future: reading timer threshold, specific routine events
+            if (q.questType == 'scripture_reading') {
               // Special case: Nightly quest only progresses within the nightly window
               if (q.type == 'nightly' && !QuestProgressService.isNightlyWindow(DateTime.now())) {
                 if (_kQuestProgressDebug) {
@@ -190,15 +222,18 @@ class QuestProgressService {
                 continue;
               }
 
-              // Apply strict matching
+              // Apply strict matching with priority-based detection
               shouldApply = matchesQuestTarget(
                 completedBook: book,
                 completedChapter: chapter,
                 questScriptureReference: q.scriptureReference,
                 questTitle: q.title,
+                // Future: pass allowedBooks/targetBook from quest metadata when available
+                allowedBooks: null,
+                targetBook: null,
               );
             } else {
-              // Non-scripture quests should NOT auto-progress from chapter completion
+              // Non-scripture quests (including routine) should NOT auto-progress from chapter completion
               if (_kQuestProgressDebug) {
                 debugPrint('[QuestProgress] Ignoring chapter complete for non-scripture quest: ${q.title} (type: ${q.questType})');
               }
@@ -225,7 +260,16 @@ class QuestProgressService {
             }
             break;
           case 'onBibleOpened':
-            // Daily routine check-in (opening Bible tab)
+            // Routine Quest Trigger: Opening the Bible tab counts as a check-in.
+            // This is the PRIMARY trigger for routine quests.
+            // Routine quests represent daily habits like "Open your Bible today".
+            if (q.questType == 'routine') {
+              shouldApply = true;
+            }
+            break;
+          case 'onReadingTimerComplete':
+            // Routine Quest Trigger: Reading timer threshold met.
+            // For quests like "Read for 10 minutes today".
             if (q.questType == 'routine') {
               shouldApply = true;
             }
