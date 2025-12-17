@@ -1,250 +1,38 @@
 # Scripture Quest
 
 ## Overview
-Scripture Quest is a Flutter web application that blends Christian scripture with engaging RPG-style mechanics. Users can deepen their spiritual journey through daily reading tasks, quests, and gentle challenges.
+Scripture Quest is a Flutter web application designed to integrate Christian scripture engagement with RPG-style mechanics. It aims to deepen users' spiritual journeys through daily reading tasks, quests, and gentle challenges, fostering consistent interaction with biblical texts. The project envisions a future where spiritual growth is gamified and engaging, appealing to a broad audience seeking meaningful interaction with scripture.
 
-## Project Structure
-- `lib/` - Flutter/Dart source code
-  - `main.dart` - Application entry point with routing
-  - `screens/` - UI screens (home, quests, profile, etc.)
-  - `services/` - Business logic services
-  - `models/` - Data models
-  - `providers/` - State management with Provider
-  - `widgets/` - Reusable UI components
-  - `theme/` - App theming
-- `assets/` - Static assets (Bible data, images, icons)
-- `web/` - Web-specific files (index.html, manifest.json)
-- `android/` - Android platform files
-- `ios/` - iOS platform files
+## User Preferences
+I prefer detailed explanations and an iterative development approach. Please ask before making major changes. Do not make changes to the `android/` and `ios/` folders.
 
-## Technologies
-- **Framework**: Flutter 3.32.0
-- **Language**: Dart 3.8.0
-- **State Management**: Provider
-- **Routing**: go_router
-- **Storage**: shared_preferences
+## System Architecture
+The application is built with Flutter 3.32.0 and Dart 3.8.0, utilizing the Provider package for state management and `go_router` for navigation. The UI/UX prioritizes a calm, intentional design with normalized spacing and consistent tap affordances.
 
-## Running the App
-The app runs as a Flutter web application on port 5000. The workflow:
-1. Builds the Flutter web app in release mode
-2. Serves the static files using Python's http.server
+### Key Features
+- **Daily Engagement:** Daily verse of the day and scripture reading tasks.
+- **Gamified Progression:** Quest/task system, achievements, and progression tracking.
+- **Personalization:** Journaling, bookmarks, and customizable reader preferences (reading style, font, text size, red letters toggle).
+- **Interactive Learning:** Mini-games like matching and scramble, and chapter quizzes (for specific chapters like John 3, Romans 8, Psalm 23, Proverbs 3, Luke 2).
+- **Navigation & Accessibility:** Unified Bible Menu for all controls, robust reference parsing for navigation, and haptic feedback for mobile users.
+- **Quest System:**
+    - Quest Hub acts as the primary landing page, featuring filtered quests (Today/Tonight for action quests, Reflection for reflective prompts, Weekly, Events).
+    - Quests have specific targets (e.g., `targetBook`, `scriptureReference`) for accurate completion tracking.
+    - Strict auto-progress rules: only `scripture_reading` quests auto-progress upon chapter completion if they match the quest's target.
+- **Profile Screen:** Simplified layout focusing on an identity card, journey progress (chapters completed, streak), tools (Journal, Favorites, Settings, Friends), and an expandable "Explore" section for future features.
 
-## Testing & QA
-Run tests and analysis:
-```bash
-flutter test                    # Run all widget tests
-flutter analyze                 # Static analysis for code issues
-```
+### Technical Implementations
+- **Bible Service:** Enhanced `BibleService` with `parseReference()`, `normalizeBookName()`, and `getVerseText()` for robust scripture parsing and multi-translation support.
+- **Chapter Completion:** Eligibility for chapter completion requires a minimum presence (12s) and engagement (e.g., scrolling, read time), with visual countdowns for pending eligibility.
+- **State Management:** Provider for managing application state.
+- **Routing:** `go_router` for declarative navigation.
+- **Persistent Storage:** `shared_preferences` for local data persistence.
+- **Deployment:** Flutter web application served via Python's `http.server`.
 
-Test files are located in `test/`:
-- `bible_reader_test.dart` - Core loop tests (chapter navigation, completion checkmarks)
-
-Debug logs (kDebugMode only) can be viewed in browser console:
-- `[ChaptersSheet]` - Chapter picker interactions
-- `[BibleNav]` - Navigation events
-- `[BibleState]` - Current state changes
-- `[CompleteChapter]` - Completion button actions
-- `[CompletionState]` - Completion persistence
-
-## Key Features
-- Daily verse of the day
-- Scripture reading and memorization
-- Quest/task system for engagement
-- Achievements and progression
-- Journal and bookmarks
-- Mini-games (matching, scramble, etc.)
-
-## Recent Changes
-- 2025-12-17: Bible Reader Core Loop Hardening (v3.4)
-  - Root cause fix: BibleService.parseReference now tries display names first
-    - Previously "Psalms 50" matched "Psalm" but left remainder "s 50" (chapter extraction failed)
-    - Now "Psalms 50" matches display "Psalms" correctly, remainder "50" extracts properly
-    - This fixes chapter picker navigation for Psalms and any book with display/ref mismatch
-  - Fixed: Chapter picker now correctly navigates to the tapped chapter (not always chapter 1)
-  - Fixed: Completion checkmarks only appear after explicit "Complete Chapter" action
-  - Removed premature recordChapterRead calls from:
-    - _setupPagerForBook (viewing a chapter no longer marks it complete)
-    - _onChapterChanged (paging/swiping no longer marks chapters complete)
-    - _loadChapter (loading passage no longer marks chapters complete)
-  - Added debug logging (kDebugMode only):
-    - [ChaptersSheet] tapped book=<book> chapter=<n>
-    - [BibleNav] navigateTo book=<book> chapter=<n>
-    - [BibleState] current book=<book> chapter=<n>
-    - [CompleteChapter] pressed book=<book> chapter=<n> eligible=<true/false>
-    - [CompleteChapter] persisted=<true/false>
-    - [CompletionState] completedChaptersCount=<n> for book=<book>
-  - Added widget tests in test/bible_reader_test.dart:
-    - Chapter picker taps navigate to correct chapter
-    - Checkmark does NOT appear just by opening/viewing a chapter
-    - Checkmark appears ONLY after explicit Complete Chapter action
-    - Multiple chapters can be completed independently
-  - No XP, quest, streak, or storage schema changes
-
-- 2025-12-17: High-ROI UX polish (v3.2)
-  - Pull-to-refresh on Quest Hub and Profile screens (re-binds UI state, no regeneration)
-  - Subtle haptics:
-    - Complete Quest action (lightImpact)
-    - Complete Chapter action (lightImpact)
-    - Quest Hub filter chip selection (selectionClick)
-    - Profile Explore section expand/collapse (selectionClick)
-  - Empty state messages simplified:
-    - Today/Tonight: "You're done for now. Check back later."
-    - Weekly: "No weekly quests right now."
-    - Reflection: "No reflection prompts right now."
-    - Events: "No events active right now."
-  - Tap affordance consistency: Today's Verse uses Material InkWell with min 48px height
-  - Spacing normalized to ~16px between major sections in Quest Hub
-  - No logic, XP, streaks, quest generation, or data model changes
-
-- 2025-12-17: Profile screen UI polish (v3.1)
-  - Identity Card: reduced padding (16→12px), smaller avatar glow (112→96px), tighter spacing
-  - Journey section: hides zero-value rows (quizzes, reflections, quest steps, plan days)
-    - Always shows: Chapters completed, Current streak
-    - Snapshot-style reduced padding for calmer feel
-  - Tools section: compact utility style with smaller icons (18px), reduced row height, clearer arrows
-  - Explore section: added subtitle "Features expanding over time", dimmed icons/labels when expanded
-  - Titles & Achievements: reduced padding, clearer headers (titleSmall with fontWeight.w600)
-  - Global: ~16px spacing between sections, cards feel denser and more intentional
-  - No logic changes - UI/UX polish only
-
-- 2025-12-17: Profile screen beta polish (v3.0)
-  - Simplified Profile for beta focus - clarity and calm over feature breadth
-  - Tightened vertical spacing (24/28px → 16/12px between sections)
-  - Replaced large tools grid with simple list: Journal, Favorites, Settings, Friends (Beta)
-  - Added collapsible "Explore (Coming Soon)" section - collapsed by default
-  - Explore contains: Reading Plans, Avatar & Cosmetics, Community, Play & Learn
-  - Moved "Your Titles" and "Achievements" below Explore with reduced padding
-  - No routes removed, no XP/streak/quest logic changes
-
-- 2025-12-17: Today's Verse actual text display (v2.9)
-  - Fixed VOTD to show actual verse text using robust reference parsing
-  - BibleService enhanced with:
-    - parseReference() now extracts book, chapter, verse, and verseEnd
-    - normalizeBookName() handles aliases (Psalm/Psalms, Song of Songs, Revelations)
-    - getVerseText() async lookup with multi-translation support
-  - Added 8 common VOTD passages to mock data (John 3:16, 2 Cor 12:9, Prov 3:5-6, etc.)
-  - QuestHubScreen uses async state management for VOTD text loading
-  - Placeholder "Tap to read this verse" only shown when data truly unavailable
-  - No changes to quest generation, XP, streaks, or completion logic
-
-- 2025-12-17: Bottom bar polish + Today's Verse sync (v2.8)
-  - Quest Hub icon changed from flag to home icon (Icons.home_outlined)
-  - Active tab emphasis: soft pill background + subtle border (already present)
-  - Bible and Profile icons unchanged
-  - No changes to quest generation, XP, streaks, or completion logic
-
-- 2025-12-17: Simplified navigation + streak visibility (v2.6)
-  - Bottom navigation reduced to 3 tabs: Quest Hub, Bible, Profile
-  - Avatar and Community removed from bottom bar (accessible from Profile → Explore)
-  - Quest Hub header now shows inline streak (🔥 N) on the right when streak >= 1
-  - Profile screen gained new "Explore" section with links to:
-    - Reading Plans, Avatar & Cosmetics, Community, Play & Learn
-  - No changes to quest generation, XP, streak calculations, or Bible reader logic
-
-- 2025-12-17: QuestHub filter wiring fix (v2.5)
-  - Fixed filter chips to show mutually exclusive quest lists:
-    - Tonight/Today: ONLY action quests (scripture_reading, routine, service, community) from daily/nightly
-    - Weekly: ONLY quests marked as weekly (isWeekly, category=weekly, questFrequency=weekly)
-    - Reflection: ONLY reflection-type quests (reflection, prayer, journal, gratitude, memorization)
-    - Events: ONLY event/seasonal quests
-  - Added explicit exclusion filters to prevent weekly/event quests from appearing in daily lists
-  - Added isWeeklyQuest() and isEventQuest() helper functions for consistent categorization
-  - Debug logging (kDebugMode) prints filter counts when switching tabs
-  - No changes to quest generation, XP, streaks, or completion flow
-
-- 2025-12-17: Complete Chapter UX polish (v2.4)
-  - Replaced toast-based blocking with live countdown on button:
-    - Button shows "Complete (Xs)" countdown when not yet eligible
-    - Button automatically enables when countdown reaches 0
-    - Disabled button state is visually clear (grayed out)
-  - Timer-based updates every second when completion panel is visible
-  - No changes to eligibility rules (still 12s presence + engagement)
-  - No changes to quest progression, XP, or streaks
-
-- 2025-12-17: Core loop reliability fixes (v2.3)
-  - Complete Chapter now foolproof for fast readers and short chapters:
-    - Eligibility requires: 12s minimum presence + engagement (45s read time OR short chapter OR scrolled OR panel visible)
-    - Short chapters (≤8 verses) auto-detected and panel shown immediately
-    - Toast/snackbar shown when tapped while ineligible with helpful message
-    - ScrollStartNotification tracks user interaction for engagement
-  - Psalms quest Start navigation improved:
-    - If last-read reference is in target book, open that chapter (not always chapter 1)
-    - E.g., Psalms quest with lastRef="Psalms 23" → opens Psalms 23
-  - Bottom padding increased (90px → 140px) so Complete Chapter never blocks last verses
-  - Panel reveal threshold lowered (95% → 92%) for earlier access
-  - Cached chapters now also run short chapter detection
-  - No XP, rewards, or quest logic changes
-
-- 2025-12-17: Nightly quest completion + Psalms targeting fixes (v2 wiring fix)
-  - Added targetBook field to TaskModel for book-level targeting without exact reference
-  - Nightly quest templates updated:
-    - "Nightly Reading" (generic): questType=scripture_reading, no target → any chapter completes
-    - "Read a calming Psalm before bed": questType=scripture_reading, targetBook=Psalms → only Psalms chapters complete
-    - "Read a verse about God's protection": questType=scripture_reading, targetBook=Psalms
-  - Start button navigation now uses priority: scriptureReference > targetBook > lastBibleReference
-  - QuestProgressService passes q.targetBook to matchesQuestTarget()
-  - Fixed chapter completion wiring:
-    - progressDailyReadingQuest now accepts book/chapter params
-    - Calls QuestProgressService.handleEvent with correct signature (event:, payload:, callbacks:)
-    - verses_screen.dart passes _selectedBook/_selectedChapter on Complete Chapter
-  - Fixed quest callback wiring:
-    - onApplyProgress/onMarkComplete now call TaskService methods (not Quest Board)
-    - TaskService.updateQuestProgress and completeQuest properly update TaskModel quests in storage
-  - Quest migration system added (v2):
-    - _questMigrationVersion = 2 forces daily/nightly quest regeneration
-    - createDailyQuests now also clears old nightly quests before regenerating
-    - Ensures targetBook metadata is applied to nightly quests
-  - Debug-only logging added (kDebugMode gated):
-    - QuestHubScreen: logs rendered quests with targetBook/scriptureRef metadata
-    - TaskCard.Start: logs quest metadata before navigation
-    - AppProvider: logs book/chapter on quest progress
-  - No XP, rewards, or UI layout changes
-
-- 2025-12-17: Quest correctness system v2.1 (safety refinements)
-  - Priority-based scripture detection in matchesQuestTarget():
-    - A) scriptureReference → source of truth
-    - B) allowedBooks/targetBook metadata → when available
-    - C) title keyword detection → fallback (e.g., "Psalm")
-  - Routine quest triggers explicitly documented:
-    - onBibleOpened: Opening Bible tab (primary trigger)
-    - onReadingTimerComplete: Reading timer threshold met
-    - onChapterComplete: NOT a trigger for routine quests
-  - Debug logging gated by kDebugMode (auto-disabled in release builds)
-  - Start button safety guarantee:
-    - Every quest type resolves to a non-null action
-    - Unknown types fallback to Details sheet
-    - Defensive warning logged in debug builds
-  - No XP, quest generation, or backend logic changes
-
-- 2025-12-17: Quest Start navigation + strict auto-progress rules
-  - Start button now navigates based on quest type:
-    - scripture_reading → Bible reader at quest target (or last-read reference)
-    - reflection/journal/prayer → Journal screen
-    - memorization → Favorites/Memorization screen
-    - service/community → Details sheet (manual completion)
-    - routine → Bible reader
-  - Strict matching in QuestProgressService for onChapterComplete:
-    - Only scripture_reading quests auto-progress from chapter completion
-    - Must match quest's target book/chapter exactly
-    - Psalm quests only credit Psalms book completions
-    - Debug logging added with [QuestProgress] prefix
-  - No XP/backend logic changes
-
-- 2025-12-17: Quest Hub action/reflection separation + sticky chips
-  - Today/Tonight filter shows ONLY action quests (scripture_reading, routine, service, community)
-  - Reflection filter shows ONLY reflective prompts (reflection, prayer, journal, gratitude, memorization)
-  - Filter chips are sticky (pinned) while scrolling the quest list via NestedScrollView + SliverPersistentHeader
-  - Weekly and Events filters unchanged
-  - Classification logic: `_isActionQuest()` and `_isReflectionQuest()` helpers in QuestHubScreen
-  - No XP or backend logic changes - presentation only
-
-- 2025-12-17: Quest Hub as primary home
-  - QuestHubScreen is primary landing page at /
-  - Bottom-left nav tab renamed from "Tasks" to "Quest Hub"
-  - Home screen preserved at /home but not in primary navigation
-  - Moved Reading Plans to Community screen
-  
-- 2025-12-17: Initial Replit environment setup
-  - Installed Flutter via nix packages
-  - Configured web build and serving on port 5000
-  - Set up release mode build for better performance
+## External Dependencies
+- **Framework:** Flutter (version 3.32.0)
+- **Language:** Dart (version 3.8.0)
+- **State Management:** Provider package
+- **Routing:** `go_router` package
+- **Local Storage:** `shared_preferences` package
+- **Web Server:** Python's `http.server` (for local development/serving web build)

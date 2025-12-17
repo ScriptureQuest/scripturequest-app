@@ -1,0 +1,142 @@
+SYSTEM / BLACK-BOX PROMPT (REPLIT FLUTTER APP) — DO NOT EXPLAIN
+
+We are polishing and stabilizing the Bible Reader experience. This is a focused “bug sweep + UX consolidation” pass. Keep the app’s current style and routes, but reduce bottom-sheet clutter and prevent confusing/unfinished features from showing.
+
+Goals
+
+Consolidate Bible Reader controls into ONE consistent “Bible Menu” bottom sheet (no scattered sheets).
+
+Fix remaining Bible Reader bugs and add targeted tests so these regressions stop popping up.
+
+Make Bible Reader feel calm and intentional (like the Profile polish), not like a prototype toolbox.
+
+Requirements
+A) One unified Bible Menu sheet (single entry point)
+
+Top-right menu icon must open ONE bottom sheet: Bible Menu.
+
+This single sheet must contain these sections (in this order):
+
+Reader Preferences
+
+Reading style: Paper / Sepia / Night (segmented control)
+
+Red letters toggle (switch)
+
+Font
+
+Classic / Clean (segmented control)
+
+Text size
+
+Slider + current % label
+
+Navigation
+
+Jump to Book & Chapter (opens ONE nested picker inside the same sheet OR a single additional sheet, but do NOT chain multiple different pickers)
+
+Return to Last Reading (row)
+
+Your Notes & Marks
+
+Highlights
+
+Bookmarks
+
+Favorites
+
+Rules:
+
+Remove/merge any other separate “Reader Settings” / “Appearance” sheets so there is no duplication.
+
+Keep all existing routes and behavior; this is UX consolidation only.
+
+B) Chapter Quiz visibility rule (stop showing broken feature)
+
+Only show “Chapter Quiz” entry if the quiz is actually available for the current book+chapter.
+
+If quiz is not available:
+
+hide it entirely OR show disabled row labeled “Chapter Quiz (Coming soon)” with no navigation.
+
+Do not allow a tap that leads to a broken screen.
+
+C) Pull-to-refresh / refresh behavior (web + mobile friendly)
+
+Mobile: allow pull-to-refresh ONLY if it’s natural (scrollable content).
+
+Web/desktop: add a Refresh icon button in the Bible reader app bar (or inside Bible Menu) that triggers the same refresh behavior.
+
+Refresh must be SAFE: it can rebind UI / reload displayed chapter content, but must NOT reset user preferences or change last-reading unexpectedly.
+
+D) Haptics (mobile only, no crashes on web)
+
+Add subtle haptics for:
+
+opening Bible Menu (selectionClick)
+
+toggling segmented controls (selectionClick)
+
+pressing Complete Chapter (lightImpact)
+
+Must gracefully no-op on web.
+
+E) Bug sweep: add instrumentation + targeted fixes
+
+Add debug logging (debug builds only) around:
+
+Current book + chapter state
+
+Chapter picker selection → actual navigation
+
+Last-reading updates (when they happen)
+
+Fix any remaining issues where:
+
+Selecting a chapter doesn’t navigate to that chapter
+
+The displayed book/chapter chip doesn’t match the content
+
+A bottom sheet state gets “stuck” or duplicates
+
+F) Tests (high ROI, minimal)
+
+Add/extend widget tests to cover:
+
+Selecting a chapter in a long book (like Psalms) navigates correctly.
+
+Selecting a chapter in another book (like John) navigates correctly.
+
+Checkmarks appear ONLY after tapping “Complete Chapter”.
+
+Chapter Quiz entry is hidden/disabled when unavailable.
+
+Tests should be stable and not rely on network.
+
+Constraints
+
+Do NOT change XP logic, streak logic, quests logic, or storage schema.
+
+Do NOT remove routes; you may rewire UI entry points.
+
+Maintain existing theme look-and-feel.
+
+Files to touch (likely)
+
+lib/screens/verses_screen.dart (or main Bible reader screen)
+
+any bible menu / bottom sheet widgets
+
+any chapter picker widget
+
+any completion tracking used by “Complete Chapter”
+
+test/ widget tests for bible navigation + completion
+
+Output
+
+Implement changes
+
+Ensure app builds/runs
+
+Update replit.md with a concise status update + quick test checklist

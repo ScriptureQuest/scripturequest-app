@@ -20,6 +20,10 @@ import 'package:level_up_your_faith/widgets/reward_toast.dart';
 import 'package:level_up_your_faith/widgets/journal/journal_editor_sheet.dart';
 import 'package:level_up_your_faith/services/progress/progress_engine.dart';
 import 'package:level_up_your_faith/services/progress/progress_event.dart';
+import 'package:level_up_your_faith/services/chapter_quiz_service.dart';
+
+// Haptic feedback types (top-level for class access)
+enum _HapticType { selectionClick, lightImpact }
 
 class VersesScreen extends StatefulWidget {
   final String? selectedReference;
@@ -115,16 +119,16 @@ class _VersesScreenState extends State<VersesScreen> {
             ),
             centerTitle: true,
             actions: [
-              // Reader/Text settings (font + text size)
+              // Refresh button (web-friendly alternative to pull-to-refresh)
               IconButton(
-                icon: const Icon(Icons.format_size),
-                tooltip: 'Reader settings',
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Refresh chapter',
                 visualDensity: VisualDensity.compact,
                 constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                 padding: const EdgeInsets.all(6),
-                onPressed: _openReaderSettings,
+                onPressed: _refreshChapterContent,
               ),
-              // Overflow menu with Appearance and Version
+              // Single entry point: Bible Menu
               IconButton(
                 icon: const Icon(Icons.more_vert),
                 tooltip: 'Bible menu',
@@ -345,23 +349,28 @@ class _VersesScreenState extends State<VersesScreen> {
 
   // Deprecated: per-verse reader settings sheet (moved into Bible Menu)
 
-  // Opens the Bible Menu bottom sheet containing version + book + chapter controls
+  // Opens the unified Bible Menu bottom sheet (single entry point for all controls)
   Future<void> _openBibleMenuSheet() async {
+    // Haptic feedback on open (no-op on web)
+    _triggerHaptic(_HapticType.selectionClick);
+    
     RewardToast.setBottomSheetOpen(true);
     await showModalBottomSheet(
       context: context,
       backgroundColor: GamerColors.darkCard,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        final theme = Theme.of(context);
-        final app = context.watch<AppProvider>();
-        final settings = context.watch<SettingsProvider>();
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final app = ctx.watch<AppProvider>();
+        final settings = ctx.watch<SettingsProvider>();
+        
         // Parse last reading for display and navigation
         final lastKey = app.lastReadingKey;
         String? lastSubtitle;
-        String? lastNavRef; // encoded "Book Chapter" for /verses?ref=
+        String? lastNavRef;
         if (lastKey != null && lastKey.trim().isNotEmpty) {
           final parts = lastKey.split(':');
           if (parts.length >= 2) {
@@ -373,207 +382,247 @@ class _VersesScreenState extends State<VersesScreen> {
             }
           }
         }
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        
+        // Check quiz availability for current chapter (use display name, not ref)
+        final book = _selectedBook;
+        final chapter = _selectedChapter;
+        final bool quizAvailable = (book != null && chapter != null) &&
+            ChapterQuizService.getQuizForChapter(book, chapter) != null;
+        
+        final maxHeight = MediaQuery.of(ctx).size.height * 0.85;
+        
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('Bible Menu', style: theme.textTheme.titleLarge),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
+                    // Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Bible Menu', style: theme.textTheme.titleLarge),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(ctx).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // === READER PREFERENCES (inline) ===
+                    Text(
+                      'Reader Preferences',
+                      style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Reading style (Paper / Sepia / Night)
+                    Text('Reading style', style: theme.textTheme.labelMedium?.copyWith(color: GamerColors.textSecondary.withValues(alpha: 0.7))),
+                    const SizedBox(height: 6),
+                    _ReaderStyleChips(
+                      current: settings.readerColorScheme,
+                      onChanged: (s) async {
+                        _triggerHaptic(_HapticType.selectionClick);
+                        await ctx.read<SettingsProvider>().setReaderColorScheme(s);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    // Red letters toggle
+                    SwitchListTile.adaptive(
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                      title: Text(
+                        "Show Jesus' words in red",
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      activeColor: GamerColors.accent,
+                      value: settings.redLettersEnabled,
+                      onChanged: (val) async {
+                        _triggerHaptic(_HapticType.selectionClick);
+                        await ctx.read<SettingsProvider>().setRedLettersEnabled(val);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    // Font style (Classic / Clean)
+                    Text('Font', style: theme.textTheme.labelMedium?.copyWith(color: GamerColors.textSecondary.withValues(alpha: 0.7))),
+                    const SizedBox(height: 6),
+                    _FontStyleChips(
+                      current: settings.readerFontStyle,
+                      onChanged: (f) async {
+                        _triggerHaptic(_HapticType.selectionClick);
+                        await ctx.read<SettingsProvider>().setReaderFontStyle(f);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    
+                    // Text size slider
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text('Text size', style: theme.textTheme.labelMedium?.copyWith(color: GamerColors.textSecondary.withValues(alpha: 0.7))),
+                        ),
+                        Text(
+                          '${(settings.bibleFontScale * 100).round()}%',
+                          style: theme.textTheme.labelSmall?.copyWith(color: GamerColors.accent),
+                        ),
+                      ],
+                    ),
+                    _TextSizeSlider(
+                      value: settings.bibleFontScale,
+                      onChanged: (v) {
+                        ctx.read<SettingsProvider>().setBibleFontScale(v);
+                      },
+                    ),
+
+                    const Divider(height: 24),
+
+                    // === NAVIGATION ===
+                    Text(
+                      'Navigation',
+                      style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
+                    _menuTile(
+                      ctx,
+                      icon: Icons.menu_book,
+                      title: 'Jump to Book & Chapter',
+                      subtitle: 'Choose any book, then a chapter',
+                      onTap: () {
+                        Navigator.of(ctx).pop();
+                        _openJumpToBookSheet();
+                      },
+                    ),
+                    _menuTile(
+                      ctx,
+                      icon: Icons.history,
+                      title: 'Return to Last Reading',
+                      subtitle: lastSubtitle,
+                      enabled: lastNavRef != null,
+                      onTap: lastNavRef == null
+                          ? null
+                          : () {
+                              Navigator.of(ctx).pop();
+                              context.push('/verses?ref=$lastNavRef');
+                            },
+                    ),
+
+                    const Divider(height: 24),
+
+                    // === YOUR NOTES & MARKS ===
+                    Text(
+                      'Your Notes & Marks',
+                      style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
+                    _menuTile(
+                      ctx,
+                      icon: Icons.brush,
+                      title: 'Highlights',
+                      onTap: () {
+                        Navigator.of(ctx).pop();
+                        context.push('/highlights');
+                      },
+                    ),
+                    _menuTile(
+                      ctx,
+                      icon: Icons.bookmark,
+                      title: 'Bookmarks',
+                      onTap: () {
+                        Navigator.of(ctx).pop();
+                        context.push('/bookmarks');
+                      },
+                    ),
+                    _menuTile(
+                      ctx,
+                      icon: Icons.favorite,
+                      iconColor: GamerColors.neonPurple,
+                      title: 'Favorites',
+                      onTap: () {
+                        Navigator.of(ctx).pop();
+                        context.push('/favorite-verses');
+                      },
+                    ),
+
+                    const Divider(height: 24),
+
+                    // === CHAPTER QUIZ (visibility based on availability) ===
+                    Text(
+                      'Chapter Quiz',
+                      style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                    ),
+                    const SizedBox(height: 8),
+                    _menuTile(
+                      ctx,
+                      icon: Icons.quiz_outlined,
+                      title: quizAvailable ? 'Chapter Quiz' : 'Chapter Quiz (Coming soon)',
+                      subtitle: quizAvailable ? 'Test your understanding of this chapter' : null,
+                      enabled: quizAvailable,
+                      onTap: quizAvailable
+                          ? () {
+                              Navigator.of(ctx).pop();
+                              if (book != null && chapter != null) {
+                                final uri = Uri(path: '/chapter-quiz', queryParameters: {
+                                  'book': book,
+                                  'chapter': '$chapter',
+                                });
+                                try {
+                                  final bookRef = ctx.read<AppProvider>().bibleService.displayToRef(book);
+                                  final diff = ctx.read<SettingsProvider>().preferredQuizDifficulty;
+                                  ProgressEngine.instance.emit(
+                                    ProgressEvent.chapterQuizStarted(bookRef, chapter, diff.code),
+                                  );
+                                } catch (_) {}
+                                context.push(uri.toString());
+                              }
+                            }
+                          : null,
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-
-                // Section: Reader Preferences
-                Text(
-                  'Reader Preferences',
-                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                _menuTile(
-                  context,
-                  icon: Icons.color_lens_outlined,
-                  title: 'Appearance',
-                  subtitle: 'Color scheme & red letters',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _openAppearanceSheet();
-                  },
-                ),
-                _menuTile(
-                  context,
-                  icon: Icons.menu_book_outlined,
-                  title: 'Bible Version',
-                  subtitle: 'Select translation',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _openVersionSelectorSheet();
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                // Section: Navigation
-                Text(
-                  'Navigation',
-                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                _menuTile(
-                  context,
-                  icon: Icons.menu_book,
-                  title: 'Jump to Book & Chapter',
-                  subtitle: 'Choose any book, then a chapter',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _openJumpToBookSheet();
-                  },
-                ),
-                _menuTile(
-                  context,
-                  icon: Icons.history,
-                  title: 'Return to Last Reading',
-                  subtitle: lastSubtitle,
-                  enabled: lastNavRef != null,
-                  onTap: lastNavRef == null
-                      ? null
-                      : () {
-                          Navigator.of(context).pop();
-                          context.push('/verses?ref=$lastNavRef');
-                        },
-                ),
-
-                const SizedBox(height: 12),
-
-                // Section: Your Notes & Marks
-                Text(
-                  'Your Notes & Marks',
-                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                _menuTile(
-                  context,
-                  icon: Icons.brush,
-                  title: 'Highlights',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    context.push('/highlights');
-                  },
-                ),
-                _menuTile(
-                  context,
-                  icon: Icons.bookmark,
-                  title: 'Bookmarks',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    context.push('/bookmarks');
-                  },
-                ),
-                _menuTile(
-                  context,
-                  icon: Icons.favorite,
-                  iconColor: GamerColors.neonPurple,
-                  title: 'Favorites',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    context.push('/favorite-verses');
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                // Section: Reading style
-                Text(
-                  'Reading style',
-                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                _ReaderStyleChips(
-                  current: settings.readerColorScheme,
-                  onChanged: (s) async {
-                    await context.read<SettingsProvider>().setReaderColorScheme(s);
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                // Section: Font
-                Text(
-                  'Font',
-                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                _FontStyleChips(
-                  current: settings.readerFontStyle,
-                  onChanged: (f) async {
-                    await context.read<SettingsProvider>().setReaderFontStyle(f);
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                // Section: Text size
-                Text(
-                  'Text size',
-                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                _TextSizeSlider(
-                  value: settings.bibleFontScale,
-                  onChanged: (v) {
-                    // Persist and notify without awaiting to keep slider smooth
-                    context.read<SettingsProvider>().setBibleFontScale(v);
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                // Section: Chapter Quiz
-                Text(
-                  'Chapter Quiz',
-                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
-                ),
-                const SizedBox(height: 8),
-                _menuTile(
-                  context,
-                  icon: Icons.quiz_outlined,
-                  title: 'Chapter Quiz',
-                  subtitle: 'Test your understanding of this chapter',
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    final book = _selectedBook;
-                    final chapter = _selectedChapter;
-                    if (book != null && chapter != null) {
-                      final uri = Uri(path: '/chapter-quiz', queryParameters: {
-                        'book': book,
-                        'chapter': '$chapter',
-                      });
-                        try {
-                          final bookRef = context.read<AppProvider>().bibleService.displayToRef(book);
-                          final diff = context.read<SettingsProvider>().preferredQuizDifficulty;
-                          ProgressEngine.instance.emit(
-                            ProgressEvent.chapterQuizStarted(bookRef, chapter, diff.code),
-                          );
-                        } catch (_) {}
-                      context.push(uri.toString());
-                    }
-                  },
-                ),
-              ],
+              ),
             ),
           ),
         );
       },
     );
     RewardToast.setBottomSheetOpen(false);
+  }
+  
+  // Safe haptic trigger (no-op on web)
+  void _triggerHaptic(_HapticType type) {
+    try {
+      switch (type) {
+        case _HapticType.selectionClick:
+          HapticFeedback.selectionClick();
+          break;
+        case _HapticType.lightImpact:
+          HapticFeedback.lightImpact();
+          break;
+      }
+    } catch (_) {
+      // Gracefully no-op on platforms that don't support haptics
+    }
+  }
+  
+  // Refresh current chapter content (safe - doesn't reset preferences)
+  void _refreshChapterContent() {
+    final book = _selectedBook;
+    final chapter = _selectedChapter;
+    if (book != null && chapter != null) {
+      // Clear cached chapter to force reload
+      _chapterCache[book]?.remove(chapter);
+      if (kDebugMode) {
+        debugPrint('[BibleRefresh] clearing cache for $book $chapter');
+      }
+      setState(() {});
+    }
   }
 
   // Bottom sheet to jump quickly to any book, then to a chapter (two-step)
@@ -2028,25 +2077,32 @@ class _ChapterPageState extends State<_ChapterPage> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                final uri = Uri(path: '/chapter-quiz', queryParameters: {
-                                  'book': widget.book,
-                                  'chapter': '${widget.chapter}',
-                                });
-                                try {
-                                  final app = context.read<AppProvider>();
-                                  final bookRef = app.bibleService.displayToRef(widget.book);
-                                  // Optional: emit quiz started for analytics/stats
-                                  final diff = context.read<SettingsProvider>().preferredQuizDifficulty;
-                                  ProgressEngine.instance.emit(
-                                    ProgressEvent.chapterQuizStarted(bookRef, widget.chapter, diff.code),
-                                  );
-                                } catch (_) {}
-                                context.push(uri.toString());
+                            Builder(
+                              builder: (ctx) {
+                                // Use display name for quiz lookup (ChapterQuizService uses display names)
+                                final quizAvailable = ChapterQuizService.getQuizForChapter(widget.book, widget.chapter) != null;
+                                return OutlinedButton.icon(
+                                  onPressed: quizAvailable
+                                      ? () {
+                                          final uri = Uri(path: '/chapter-quiz', queryParameters: {
+                                            'book': widget.book,
+                                            'chapter': '${widget.chapter}',
+                                          });
+                                          try {
+                                            final app = ctx.read<AppProvider>();
+                                            final bookRef = app.bibleService.displayToRef(widget.book);
+                                            final diff = ctx.read<SettingsProvider>().preferredQuizDifficulty;
+                                            ProgressEngine.instance.emit(
+                                              ProgressEvent.chapterQuizStarted(bookRef, widget.chapter, diff.code),
+                                            );
+                                          } catch (_) {}
+                                          context.push(uri.toString());
+                                        }
+                                      : null,
+                                  icon: const Icon(Icons.quiz_outlined),
+                                  label: Text(quizAvailable ? 'Take Chapter Quiz' : 'Quiz (Coming soon)'),
+                                );
                               },
-                              icon: const Icon(Icons.quiz_outlined),
-                              label: const Text('Take Chapter Quiz'),
                             ),
                           ],
                         ),

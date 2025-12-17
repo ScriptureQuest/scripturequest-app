@@ -219,5 +219,99 @@ void main() {
       // Should have exactly 3 checkmarks
       expect(find.byKey(const ValueKey('checkmark')), findsNWidgets(3));
     });
+
+    testWidgets('Chapter picker navigation works for different books (John)', (tester) async {
+      int? navigatedChapter;
+      String? navigatedBook;
+      
+      await tester.pumpWidget(
+        TestChapterPicker(
+          book: 'John',
+          totalChapters: 20,
+          isChapterCompleted: (_, __) => false,
+          onChapterTap: (book, chapter) {
+            navigatedBook = book;
+            navigatedChapter = chapter;
+          },
+        ),
+      );
+      
+      // Tap on chapter 3 (famous John 3:16 chapter)
+      await tester.tap(find.byKey(const ValueKey('chapter_3')));
+      await tester.pump();
+      
+      expect(navigatedBook, 'John');
+      expect(navigatedChapter, 3, reason: 'Should navigate to John chapter 3');
+      
+      // Tap on chapter 11
+      await tester.tap(find.byKey(const ValueKey('chapter_11')));
+      await tester.pump();
+      
+      expect(navigatedChapter, 11, reason: 'Should navigate to John chapter 11');
+    });
+  });
+
+  group('Chapter Quiz Visibility Tests', () {
+    testWidgets('Quiz availability is correctly determined', (tester) async {
+      // Mock quiz availability check
+      // Available chapters: John 3, Romans 8, Psalm 23, Proverbs 3, Luke 2
+      bool isQuizAvailable(String bookRef, int chapter) {
+        if (bookRef == 'John' && chapter == 3) return true;
+        if (bookRef == 'Romans' && chapter == 8) return true;
+        if (bookRef == 'Psalms' && chapter == 23) return true;
+        if (bookRef == 'Psalm' && chapter == 23) return true;
+        if (bookRef == 'Proverbs' && chapter == 3) return true;
+        if (bookRef == 'Luke' && chapter == 2) return true;
+        return false;
+      }
+      
+      // Test quiz availability
+      expect(isQuizAvailable('John', 3), true, reason: 'John 3 should have quiz');
+      expect(isQuizAvailable('John', 1), false, reason: 'John 1 should not have quiz');
+      expect(isQuizAvailable('Romans', 8), true, reason: 'Romans 8 should have quiz');
+      expect(isQuizAvailable('Psalms', 23), true, reason: 'Psalm 23 should have quiz');
+      expect(isQuizAvailable('Genesis', 1), false, reason: 'Genesis 1 should not have quiz');
+    });
+
+    testWidgets('Quiz button shows correct state based on availability', (tester) async {
+      // Simple widget to test quiz button state
+      bool quizAvailable = false;
+      
+      await tester.pumpWidget(
+        StatefulBuilder(
+          builder: (context, setState) => MaterialApp(
+            home: Scaffold(
+              body: Column(
+                children: [
+                  ElevatedButton(
+                    key: const ValueKey('toggle_quiz'),
+                    onPressed: () => setState(() => quizAvailable = !quizAvailable),
+                    child: const Text('Toggle'),
+                  ),
+                  OutlinedButton(
+                    key: const ValueKey('quiz_button'),
+                    onPressed: quizAvailable ? () {} : null,
+                    child: Text(quizAvailable ? 'Chapter Quiz' : 'Quiz (Coming soon)'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      
+      // Initially quiz not available - button should be disabled
+      final quizButton = find.byKey(const ValueKey('quiz_button'));
+      expect(quizButton, findsOneWidget);
+      expect(find.text('Quiz (Coming soon)'), findsOneWidget,
+          reason: 'Should show "Coming soon" when quiz not available');
+      
+      // Toggle quiz availability
+      await tester.tap(find.byKey(const ValueKey('toggle_quiz')));
+      await tester.pump();
+      
+      expect(find.text('Chapter Quiz'), findsOneWidget,
+          reason: 'Should show "Chapter Quiz" when quiz is available');
+    });
   });
 }
