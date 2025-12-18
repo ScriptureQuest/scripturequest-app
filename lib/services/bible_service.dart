@@ -298,6 +298,95 @@ class BibleService {
       'CSB': 'Don’t worry about anything, but in everything, through prayer and petition with thanksgiving, present your requests to God. And the peace of God, which surpasses all understanding, will guard your hearts and minds in Christ Jesus.',
       'NKJV': 'Be anxious for nothing, but in everything by prayer and supplication, with thanksgiving, let your requests be made known to God; and the peace of God, which surpasses all understanding, will guard your hearts and minds through Christ Jesus.',
     },
+    // === Additional VOTD Pool Verses ===
+    'PHILIPPIANS 4:13': {
+      'KJV': 'I can do all things through Christ which strengtheneth me.',
+      'NIV': 'I can do all this through him who gives me strength.',
+    },
+    'PSALM 23:1': {
+      'KJV': 'The LORD is my shepherd; I shall not want.',
+      'NIV': 'The Lord is my shepherd, I lack nothing.',
+    },
+    'ISAIAH 40:31': {
+      'KJV': 'But they that wait upon the LORD shall renew their strength; they shall mount up with wings as eagles; they shall run, and not be weary; and they shall walk, and not faint.',
+      'NIV': 'But those who hope in the LORD will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint.',
+    },
+    'MATTHEW 28:20': {
+      'KJV': 'Teaching them to observe all things whatsoever I have commanded you: and, lo, I am with you always, even unto the end of the world. Amen.',
+      'NIV': 'And teaching them to obey everything I have commanded you. And surely I am with you always, to the very end of the age.',
+    },
+    '1 CORINTHIANS 13:4-5': {
+      'KJV': 'Charity suffereth long, and is kind; charity envieth not; charity vaunteth not itself, is not puffed up, Doth not behave itself unseemly, seeketh not her own, is not easily provoked, thinketh no evil.',
+      'NIV': 'Love is patient, love is kind. It does not envy, it does not boast, it is not proud. It does not dishonor others, it is not self-seeking, it is not easily angered, it keeps no record of wrongs.',
+    },
+    'EPHESIANS 2:8-9': {
+      'KJV': 'For by grace are ye saved through faith; and that not of yourselves: it is the gift of God: Not of works, lest any man should boast.',
+      'NIV': 'For it is by grace you have been saved, through faith—and this is not from yourselves, it is the gift of God—not by works, so that no one can boast.',
+    },
+    'PROVERBS 16:3': {
+      'KJV': 'Commit thy works unto the LORD, and thy thoughts shall be established.',
+      'NIV': 'Commit to the LORD whatever you do, and he will establish your plans.',
+    },
+    'MATTHEW 6:33': {
+      'KJV': 'But seek ye first the kingdom of God, and his righteousness; and all these things shall be added unto you.',
+      'NIV': 'But seek first his kingdom and his righteousness, and all these things will be given to you as well.',
+    },
+    'PSALM 46:1': {
+      'KJV': 'God is our refuge and strength, a very present help in trouble.',
+      'NIV': 'God is our refuge and strength, an ever-present help in trouble.',
+    },
+    'ROMANS 12:2': {
+      'KJV': 'And be not conformed to this world: but be ye transformed by the renewing of your mind, that ye may prove what is that good, and acceptable, and perfect, will of God.',
+      'NIV': "Do not conform to the pattern of this world, but be transformed by the renewing of your mind. Then you will be able to test and approve what God's will is—his good, pleasing and perfect will.",
+    },
+    'PSALM 118:24': {
+      'KJV': 'This is the day which the LORD hath made; we will rejoice and be glad in it.',
+      'NIV': 'The LORD has done it this very day; let us rejoice today and be glad.',
+    },
+    'JAMES 1:2-3': {
+      'KJV': 'My brethren, count it all joy when ye fall into divers temptations; Knowing this, that the trying of your faith worketh patience.',
+      'NIV': 'Consider it pure joy, my brothers and sisters, whenever you face trials of many kinds, because you know that the testing of your faith produces perseverance.',
+    },
+    'MATTHEW 11:28': {
+      'KJV': 'Come unto me, all ye that labour and are heavy laden, and I will give you rest.',
+      'NIV': 'Come to me, all you who are weary and burdened, and I will give you rest.',
+    },
+    'COLOSSIANS 3:23': {
+      'KJV': 'And whatsoever ye do, do it heartily, as to the Lord, and not unto men.',
+      'NIV': 'Whatever you do, work at it with all your heart, as working for the Lord, not for human masters.',
+    },
+    'HEBREWS 11:1': {
+      'KJV': 'Now faith is the substance of things hoped for, the evidence of things not seen.',
+      'NIV': 'Now faith is confidence in what we hope for and assurance about what we do not see.',
+    },
+    'PROVERBS 4:23': {
+      'KJV': 'Keep thy heart with all diligence; for out of it are the issues of life.',
+      'NIV': 'Above all else, guard your heart, for everything you do flows from it.',
+    },
+    'PSALM 27:1': {
+      'KJV': 'The LORD is my light and my salvation; whom shall I fear? the LORD is the strength of my life; of whom shall I be afraid?',
+      'NIV': 'The LORD is my light and my salvation—whom shall I fear? The LORD is the stronghold of my life—of whom shall I be afraid?',
+    },
+    'ROMANS 15:13': {
+      'KJV': 'Now the God of hope fill you with all joy and peace in believing, that ye may abound in hope, through the power of the Holy Ghost.',
+      'NIV': 'May the God of hope fill you with all joy and peace as you trust in him, so that you may overflow with hope by the power of the Holy Spirit.',
+    },
+    'GALATIANS 5:22-23': {
+      'KJV': 'But the fruit of the Spirit is love, joy, peace, longsuffering, gentleness, goodness, faith, meekness, temperance: against such there is no law.',
+      'NIV': 'But the fruit of the Spirit is love, joy, peace, forbearance, kindness, goodness, faithfulness, gentleness and self-control. Against such things there is no law.',
+    },
+    'JOHN 14:6': {
+      'KJV': 'Jesus saith unto him, I am the way, the truth, and the life: no man cometh unto the Father, but by me.',
+      'NIV': 'Jesus answered, "I am the way and the truth and the life. No one comes to the Father except through me."',
+    },
+    'PSALM 34:18': {
+      'KJV': 'The LORD is nigh unto them that are of a broken heart; and saveth such as be of a contrite spirit.',
+      'NIV': 'The LORD is close to the brokenhearted and saves those who are crushed in spirit.',
+    },
+    'ISAIAH 43:2': {
+      'KJV': 'When thou passest through the waters, I will be with thee; and through the rivers, they shall not overflow thee: when thou walkest through the fire, thou shalt not be burned; neither shall the flame kindle upon thee.',
+      'NIV': 'When you pass through the waters, I will be with you; and when you pass through the rivers, they will not sweep over you. When you walk through the fire, you will not be burned; the flames will not set you ablaze.',
+    },
   };
 
   String _normalizeRef(String reference) => reference.trim().toUpperCase();

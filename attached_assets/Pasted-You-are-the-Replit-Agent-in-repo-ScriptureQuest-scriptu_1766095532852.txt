@@ -1,0 +1,72 @@
+You are the Replit Agent in repo: ScriptureQuest/scripturequest-app.
+
+TASK: Fix Verse of the Day TEXT LOADING. This is NOT a UI task.
+Current UI already shows reference (e.g., Colossians 3:23) but displays “Unable to load verse text”.
+We must make the service/provider actually return/populate the verse TEXT reliably.
+
+ABSOLUTE CONSTRAINTS (DO NOT VIOLATE):
+1) Edit ONLY Verse-of-the-Day data retrieval + provider state. Do NOT change quest logic, filter pills, or any other screen behavior.
+2) Do NOT reintroduce “Tap to read this verse” anywhere. If you see it, remove it, but otherwise do not change UI copy.
+3) Do NOT add any AbsorbPointer/IgnorePointer/ModalBarrier that blocks the screen.
+4) Ensure loading flags ALWAYS clear via try/catch/finally. No infinite loading.
+5) Keep changes minimal and consistent with existing Provider/services.
+
+WHAT “FIXED” MEANS:
+- On Quest Hub, Today’s Verse shows:
+  - Label + reference + the verse TEXT (actual scripture text)
+- If network/source fails, show “Unable to load verse text” but only after a real attempt and log the error in debug.
+- On web preview (flutter run -d chrome), the verse text must appear within a couple seconds.
+
+PROCESS YOU MUST FOLLOW:
+A) Locate the current VOTD model/provider/service and where the verse reference is chosen.
+   - Find where Colossians 3:23 comes from, and where verse text should be fetched.
+B) Identify why text is missing:
+   - Is the text field never fetched?
+   - Is it async but not awaited?
+   - Is it failing silently?
+   - Is it being dropped when mapping JSON/model?
+C) Implement the smallest fix so the provider ends with BOTH reference and non-empty text.
+
+IMPLEMENTATION REQUIREMENTS:
+1) Provider state must include:
+   - votdReference (String)
+   - votdText (String? or String)
+   - votdLoading (bool)
+   - votdError (String? optional)
+2) VOTD load flow must be:
+
+   set votdLoading = true; votdError = null; notifyListeners();
+   try {
+     // Step 1: get todays reference (existing behavior)
+     // Step 2: fetch verse text for that reference (ensure awaited)
+     // Step 3: set votdText = fetchedText.trim()
+     // Step 4: if fetchedText empty => throw or set votdError
+   } catch (e, st) {
+     votdError = e.toString();
+     if (kDebugMode) print('[VOTD] error: $e'); print(st);
+   } finally {
+     votdLoading = false;
+     notifyListeners();
+   }
+
+3) If there is currently a “pool” of references:
+   - keep it, but ensure the text is fetched for the chosen reference.
+4) If there is already a Bible text source in-app (local JSON/db):
+   - prefer that (no network).
+   - Otherwise use the existing remote source you already have (do not add new deps unless absolutely required).
+5) Add debug logs in kDebugMode:
+   - chosen reference
+   - whether text was found and its length
+   - any error
+
+CACHE (minimal, optional but preferred):
+- Cache the resolved reference+text for todayKey (YYYY-MM-DD local) in SharedPreferences so it doesn’t re-fetch repeatedly.
+- If cache exists for todayKey, load it immediately.
+
+VERIFICATION (MUST DO):
+1) Run `flutter test` (must pass).
+2) Run `flutter run -d chrome` (or restart preview) and confirm:
+   - Today’s Verse shows verse text (not “Unable to load verse text”).
+3) In your response, list EXACT files changed and why.
+
+Start now by finding the VOTD provider/service and tracing how the reference is selected and where the verse text should be populated.
