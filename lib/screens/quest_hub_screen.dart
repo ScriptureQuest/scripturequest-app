@@ -257,6 +257,8 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
     final cs = theme.colorScheme;
     final provider = context.watch<AppProvider>();
     final streak = provider.currentBibleStreak;
+    final userName = (provider.currentUser?.username ?? '').trim();
+    final displayName = userName.isNotEmpty ? userName : 'Warrior';
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +271,7 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
                 children: [
                   const TextSpan(text: 'Welcome, '),
                   TextSpan(
-                    text: 'Warrior',
+                    text: displayName,
                     style: TextStyle(color: cs.primary),
                   ),
                 ],
