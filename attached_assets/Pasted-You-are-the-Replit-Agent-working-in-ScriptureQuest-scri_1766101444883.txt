@@ -1,0 +1,47 @@
+You are the Replit Agent working in ScriptureQuest/scripturequest-app (Flutter).
+
+BUG (REPRO STEPS — MUST MATCH):
+1) Refresh Quest Hub: Tonight highlighted + Tonight list shown.
+2) Tap Weekly: LIST changes to weekly quests, but HIGHLIGHT stays on Tonight.
+3) Tap Reflection: LIST changes + HIGHLIGHT changes to Reflection.
+4) Tap Events: LIST changes to events, but HIGHLIGHT stays on Reflection.
+5) Tap Tonight: LIST changes back to Tonight, but HIGHLIGHT remains Reflection.
+
+CONCLUSION: Some pills update only the list source, while others update only the highlight state (or they use different state variables). We must unify so EVERY pill updates the SAME single source of truth that drives BOTH list + highlight.
+
+HARD CONSTRAINTS:
+- Edit ONLY the Quest Hub filter/pills state + rendering logic.
+- Do NOT touch Verse of the Day, quest generation, persistence, or services.
+- Do NOT change UI styling besides which pill is selected.
+- Keep changes minimal, local to Quest Hub, and consistent with existing style.
+
+TASK:
+A) Open: lib/screens/quest_hub_screen.dart (and any widget file it uses for the pills).
+B) Identify:
+   1) What state variable controls which quest list is displayed.
+   2) What state variable controls which pill is highlighted.
+   If they are not literally the same variable, that is the bug.
+
+C) Fix:
+- Create ONE enum/state (use existing one if present) e.g. `_QuestFilter`.
+- Ensure:
+  - Quest list selection uses ONLY this variable (switch/case on it).
+  - Each pill’s `isSelected/isActive` uses ONLY this variable.
+  - Each pill’s `onTap/onPressed` sets ONLY this variable via setState (or provider notifyListeners if provider-owned).
+- Remove/stop using any secondary state (selectedIndex, provider.tab, etc) that affects only list OR only highlight.
+- Do NOT navigate to another screen on pill taps. These are filters, not routes.
+
+D) Add debug logs (kDebugMode) ONLY in Quest Hub:
+- When a pill is tapped: print the selected filter value.
+- When building the list: print the active filter value.
+This will confirm state is unified.
+
+E) Verify in Preview using the exact repro steps above:
+- After each tap, list and highlight MUST match every time.
+
+F) Run: flutter test (must pass).
+
+DELIVERABLE:
+- Report exactly what state variables you found (names + where used),
+- What you removed/unified,
+- The file(s) changed (should be Quest Hub only).

@@ -320,14 +320,30 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
 
   Widget _buildFilterChips(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    
+    // Debug: log current filter when building chips
+    if (kDebugMode) {
+      debugPrint('[QuestHub] _buildFilterChips: current _filter=$_filter');
+    }
 
     Widget chip(_QuestFilter filter, String label) {
       final selected = _filter == filter;
+      if (kDebugMode) {
+        debugPrint('[QuestHub] Building chip "$label": selected=$selected (_filter=$_filter, filter=$filter)');
+      }
       return GestureDetector(
         onTap: () {
+          if (kDebugMode) {
+            debugPrint('[QuestHub] Chip "$label" tapped. Before: _filter=$_filter, After will be: $filter');
+          }
           if (_filter != filter) {
             HapticFeedback.selectionClick();
-            setState(() => _filter = filter);
+            setState(() {
+              _filter = filter;
+              if (kDebugMode) {
+                debugPrint('[QuestHub] setState complete. _filter is now: $_filter');
+              }
+            });
           }
         },
         child: Container(
