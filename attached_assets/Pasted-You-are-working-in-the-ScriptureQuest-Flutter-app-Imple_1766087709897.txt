@@ -1,0 +1,68 @@
+You are working in the ScriptureQuest Flutter app. Implement the following fixes together and make sure they work on iOS + web. Keep changes minimal and consistent with existing architecture (Provider/services). After changes, run tests and ensure no regressions.
+
+FIX 1 — Verse of the Day should ALWAYS show (no “Tap to read this verse” state)
+- Current bug: The “Today’s Verse” card sometimes shows the verse reference but then displays “Tap to read this verse” instead of showing the verse text content.
+- Desired: The card always displays:
+  1) label (“Today’s Verse”)
+  2) verse reference (e.g., Colossians 3:23)
+  3) the verse text itself (the actual scripture text) without requiring any tap.
+- Implementation requirements:
+  - Ensure the Verse-of-the-Day loader/service returns both reference AND text.
+  - If verse text is missing due to async timing, show a small loading placeholder (“Loading verse…”) briefly, then render the verse text once available.
+  - Remove/avoid any UI logic that swaps to “Tap to read this verse” for the normal state.
+  - Keep tapping optional (tap can still open the passage), but the text must already be visible.
+
+FIX 2 — Weekly pill highlight must match the quests being shown
+- Current bug: When weekly quests are displayed, the “Weekly” pill is not highlighted (the “Today” pill stays highlighted).
+- Desired:
+  - The selected filter pill must always reflect the currently displayed quest list.
+  - If the user is viewing weekly quests, “Weekly” is selected/highlighted; if viewing daily quests, “Today” is selected.
+- Implementation requirements:
+  - Identify the state that controls which quest list is rendered (daily vs weekly vs reflection/events).
+  - Ensure the UI pill selection is driven from that same single source of truth.
+  - If weekly quests are automatically shown due to navigation, deep-link, or state restore, the pill must update accordingly.
+
+FIX 3 — Quest repetition fix (ALL quests, not just “Read John 3”)
+- Current bug: Daily quests repeat across different days and can frequently re-show the same items (example observed: “Read John 3” appearing multiple days). This should be solved for ALL generated quests, not just one.
+- Desired:
+  - The daily quest set should rotate with variety across days while still making sense.
+  - Weekly quests should also avoid repeating the exact same weekly set immediately after completion/previous week, when possible.
+  - Never hardcode a specific chapter or quest as default.
+- Persistence requirements (SharedPreferences or existing user persistence):
+  - Save a local date key (YYYY-MM-DD, local timezone) for “daily quests generated for this day”.
+  - Save a rolling history list (at least last 7 days) of quest IDs that were used (daily).
+  - Save a rolling history list (at least last 4 weeks) of quest IDs/sets for weekly.
+  - Save today’s generated daily quest IDs so reopening the app does not regenerate mid-day.
+- Generation behavior:
+  1) On app start / provider load:
+     - If todayKey matches saved key and saved daily quest IDs exist -> load them (do NOT regenerate).
+     - Only generate if it’s a new local day or there is no saved set.
+  2) When generating a new daily set:
+     - Build candidate quests from your existing quest pool/templates (reading + reflection + prayer/obedience etc if you have them).
+     - Filter out quests that appear in the recent daily history window (7-day window).
+     - If filtering removes too many, relax progressively (avoid last 2 days minimum).
+     - Ensure variety by mixing categories (e.g., reading quest + reflection quest + optional small action) if your system supports categories; otherwise ensure at least the primary reading target changes.
+     - If you have a “Continue reading” concept, allow it but prevent it from producing identical “read same chapter” daily quest unless user truly hasn’t progressed; still diversify other quests.
+  3) Weekly generation:
+     - Weekly set should be stable for the week (keyed by ISO week or YYYY-WW), saved, and restored.
+     - Avoid repeating last week’s exact set when generating a new week (if pool allows).
+- Quest IDs:
+  - Ensure every quest has a stable unique ID used for history (not just title text). If you currently only have titles, derive an ID deterministically from (type + book + chapter + verse range + difficulty + cadence) so it’s stable.
+- Debugging:
+  - In kDebugMode, log:
+    - todayKey, weekKey
+    - whether loaded saved vs generated
+    - chosen quest IDs and counts
+    - history length
+- After implementation:
+  - Verify manually: change system date / simulate day boundary; quests should change and not repeat.
+  - Verify weekly: when weekly quests are shown, Weekly pill is highlighted.
+  - Verify Verse of the Day: always shows verse text.
+
+Deliverables:
+- Update any relevant service/provider(s) responsible for:
+  - Verse of the Day data retrieval + caching
+  - Quest generation + persistence + loading
+  - Quest filter UI state (Today/Weekly/etc)
+- Keep code style consistent with project.
+- Run tests; ensure they pass. If you must add tests, add minimal ones.

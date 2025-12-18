@@ -351,9 +351,10 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
     );
   }
 
-  Widget _buildTodaysVerse(BuildContext context, String reference, String text) {
+  Widget _buildTodaysVerse(BuildContext context, String reference, String? text) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final isLoading = text == null;
     return Material(
       color: cs.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(16),
@@ -382,12 +383,34 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
               const SizedBox(height: 6),
               Text(reference, style: theme.textTheme.titleMedium?.copyWith(color: GamerColors.neonCyan)),
               const SizedBox(height: 10),
-              Text(
-                text,
-                style: theme.textTheme.bodyLarge?.copyWith(fontStyle: FontStyle.italic),
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis,
-              ),
+              if (isLoading)
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Loading verse...',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Text(
+                  text,
+                  style: theme.textTheme.bodyLarge?.copyWith(fontStyle: FontStyle.italic),
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                ),
             ],
           ),
         ),
