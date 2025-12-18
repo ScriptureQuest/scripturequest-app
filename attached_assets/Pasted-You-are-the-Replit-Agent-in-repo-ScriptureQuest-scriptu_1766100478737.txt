@@ -1,0 +1,45 @@
+You are the Replit Agent in repo: ScriptureQuest/scripturequest-app.
+
+GOAL: Fix Replit Flutter Web Preview (it’s currently failing to compile/run). This is a tooling/runtime issue, NOT a Verse-of-the-Day logic change.
+DO NOT modify quest logic, VOTD logic, UI copy, or any app behavior unless required to make web compile.
+
+HARD RULES:
+1) Do NOT change app features/logic. Only fix web build/preview plumbing.
+2) Do NOT add/remove dependencies unless compilation forces it.
+3) Keep changes minimal, revertable, and explain each change.
+
+WHAT TO DO (in order):
+
+A) CAPTURE THE REAL ERROR
+- Run `flutter run -d chrome --verbose` and capture the FIRST Dart error lines that explain the failure (not just the stack trace).
+- If the error is truncated in the UI, rerun and pipe to a file: `flutter run -d chrome --verbose 2>&1 | tee /tmp/web_run.log`
+- In your response, quote the first 30–60 lines around the actual error message (the root cause line).
+
+B) CLEAN REPLIT/FLUTTER CACHES (safe)
+Run these commands:
+- `flutter clean`
+- `rm -rf .dart_tool build`
+- `flutter pub get`
+Then try again:
+- `flutter run -d chrome`
+
+C) IF STILL FAILING: CHECK COMMON WEB BREAKERS
+Only if build still fails, check/fix these minimal items:
+1) `web/index.html` base href
+   - Ensure `<base href="/">` (or correct for Replit; if your app is served at root in preview, `/` is correct)
+2) `web/manifest.json` + icons paths existence (missing referenced files can break build)
+3) Any web-only imports guarded incorrectly (dart:io usage in web build)
+   - Search for web-incompatible imports and fix with conditional imports or `kIsWeb` guards ONLY where necessary.
+   - Do NOT refactor; apply the smallest guard to unblock compile.
+
+D) CONFIRM PREVIEW RUNS
+- Preview must load and show the app UI (Quest Hub is fine).
+- Provide the exact command that succeeds.
+- State clearly whether this is fixed for `flutter run -d chrome` and Replit Preview.
+
+DELIVERABLES:
+- List exactly which files changed (if any).
+- If no code changes were needed, say so and report the clean commands that fixed it.
+- Do NOT touch VOTD/quests behavior.
+
+Start now with step A: run `flutter run -d chrome --verbose`, identify the root error line, then proceed through the steps.
