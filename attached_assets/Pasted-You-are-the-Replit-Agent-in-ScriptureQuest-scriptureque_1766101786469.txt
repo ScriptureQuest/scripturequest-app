@@ -1,0 +1,47 @@
+You are the Replit Agent in ScriptureQuest/scripturequest-app.
+
+THIS IS A REAL BUG. Do NOT say “already correct.” The screenshot shows:
+- Weekly quest cards visible (purple “WEEKLY QUEST” tags)
+- Tonight pill highlighted (cyan)
+So list source != pill selection source.
+
+GOAL: Make ONE source of truth drive BOTH:
+(A) which quests are displayed AND
+(B) which pill is highlighted
+
+HARD CONSTRAINTS:
+- Edit ONLY Quest Hub filtering/rendering. Do NOT touch VOTD, quest generation, persistence.
+- Do NOT add new UI components.
+- Minimal edits.
+
+MANDATORY DEBUGGING (must do before fixing):
+1) In lib/screens/quest_hub_screen.dart, identify the EXACT List<Quest> variable used by ListView.builder / rendering.
+   - Print (kDebugMode) when building the list:
+     - current _filter value
+     - the list length
+     - the first 3 quest IDs or titles
+     - whether each quest is labeled DAILY/NIGHTLY/WEEKLY in your model
+2) Identify the EXACT code path that selects that list.
+   - If it is NOT the switch(_filter) you mentioned, you must locate the real selector.
+3) Search for any provider-driven view selection in Quest Hub:
+   - selectedTab, selectedFilter, currentQuests, showWeekly, activeFilter, mode, etc.
+   - If provider is deciding the list, then the pills MUST set that provider value too.
+
+FIX REQUIREMENT:
+- There must be exactly ONE “active filter” variable.
+- The list selector MUST depend only on that variable.
+- Every pill tap MUST update that same variable (setState or provider notifyListeners).
+- Remove/stop using any second selector that can override the list (even if it’s “helpful”).
+
+VERIFICATION:
+- Run in Preview and click:
+  Tonight -> Weekly -> Reflection -> Events -> Tonight
+After each click, log output must show:
+  - active filter value matches highlighted pill
+  - list content corresponds to that filter (weekly list only on Weekly)
+If mismatch persists, keep debugging until fixed.
+
+DELIVERABLE:
+- Name the two conflicting sources of truth you found (variable names + file/line).
+- Describe exactly what you changed to unify them.
+- flutter test must pass.

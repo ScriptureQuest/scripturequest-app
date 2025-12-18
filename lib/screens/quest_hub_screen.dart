@@ -594,5 +594,5 @@ class _StickyFilterDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) => false;
+  bool shouldRebuild(covariant _StickyFilterDelegate oldDelegate) => true;
 }
