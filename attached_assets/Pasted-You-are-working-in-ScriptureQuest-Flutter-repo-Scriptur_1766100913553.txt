@@ -1,0 +1,44 @@
+You are working in ScriptureQuest Flutter repo: ScriptureQuest/scripturequest-app.
+
+TASK: Fix the Quest Hub filter pill highlight mismatch.
+BUG: The quest list switches to Weekly quests, but the UI pill highlight remains on Tonight (seen in preview).
+This means there are TWO sources of truth (one for list, one for selected pill). Unify them.
+
+HARD CONSTRAINTS:
+- Edit ONLY the Quest Hub filter state + pill rendering logic.
+- Do NOT touch Verse of the Day, quest generation, persistence, or any service logic.
+- Do NOT change UI styling besides which pill is “selected”.
+- Keep changes minimal and local.
+
+WHAT “FIXED” MEANS:
+- If Weekly quests are being displayed, the Weekly pill MUST be highlighted.
+- If Tonight/Daily quests are being displayed, Tonight pill MUST be highlighted.
+- Same for Reflection and Events.
+- On tap, the highlight and list must change together every time.
+- If the screen restores state / auto-navigates to a filter, highlight must match the displayed list immediately.
+
+IMPLEMENTATION REQUIREMENT:
+- Establish ONE single source of truth for the active filter (enum or string).
+- Both:
+  (1) which list is rendered AND
+  (2) which pill isActive/selected
+  must be derived from that same variable.
+- Remove/stop using any duplicate state (e.g., selectedIndex for pills while list uses provider.filter, or vice versa).
+
+STEPS:
+1) Open lib/screens/quest_hub_screen.dart.
+2) Find:
+   - where the quest list is chosen (daily vs weekly vs reflection vs events)
+   - where pills set selected/highlight
+3) Make them use the SAME variable (prefer provider if it already exists; otherwise keep local state, but only one variable).
+4) Verify in Preview:
+   - click Weekly => Weekly highlighted + weekly quests shown
+   - click Tonight => Tonight highlighted + daily/nightly quests shown
+   - click Reflection => Reflection highlighted + reflection quests shown
+   - click Events => Events highlighted + events quests shown
+
+After change:
+- run flutter test
+- confirm preview behavior with a screenshot or clear confirmation
+
+DO NOT change any other behavior.
