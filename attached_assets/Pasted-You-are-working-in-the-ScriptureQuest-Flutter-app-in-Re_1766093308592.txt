@@ -1,0 +1,80 @@
+You are working in the ScriptureQuest Flutter app in Replit (repo: ScriptureQuest/scripturequest-app).
+CRITICAL: The last changes BROKE the app:
+- Verse of the Day is stuck on a persistent “Loading verse…” state.
+- Quest filter pills are stuck (Reflection stays selected; tapping pills does nothing).
+- The quests system is effectively not working now.
+Fix this NOW with minimal changes. Do NOT add new architecture. Do NOT refactor unrelated code.
+
+========================
+NON-NEGOTIABLE RULES
+========================
+1) Do NOT block the entire Quest Hub screen during Verse-of-the-Day loading.
+   - Absolutely NO AbsorbPointer/IgnorePointer/ModalBarrier wrapping the whole page based on VOTD loading.
+   - VOTD loading UI must be LOCAL to the VOTD card only.
+2) All async loading flags MUST clear in a finally block so they can’t get stuck forever.
+3) The filter pill highlight MUST match the currently displayed list (single source of truth).
+4) Daily/weekly quests must load and remain interactive even if VOTD fails to load.
+
+========================
+STEP 1 — FIND ROOT CAUSE (DO THIS FIRST)
+========================
+Locate where the Quest Hub UI is frozen:
+- Search for AbsorbPointer / IgnorePointer / ModalBarrier / GestureDetector overlays in:
+  - lib/screens/quest_hub_screen.dart
+  - any widgets used by Quest Hub
+Remove or scope them so they do NOT prevent taps on filter pills or quest cards.
+
+Locate why VOTD loading is stuck:
+- Find the provider/service method that fetches Verse of the Day.
+- Ensure it sets loading true BEFORE fetch and ALWAYS sets loading false in finally.
+- If the fetch throws or returns missing text, still clear loading and show a small fallback message.
+
+========================
+STEP 2 — FIX VOTD (WITHOUT BREAKING QUESTS)
+========================
+Desired VOTD behavior:
+- Always show label + verse reference.
+- Show verse text if present.
+- If verse text not yet available: show “Loading verse…” ONLY in the verse text area.
+- If fetch fails or returns empty text: show “Unable to load verse text” (small, subtle), but do not affect the rest of the screen.
+- Tapping the card can still open the passage, but text should not require a tap.
+
+Implementation constraints:
+- Keep changes minimal.
+- No new global loading gates.
+- Ensure VOTD service/provider returns reference + text (or updates provider once text arrives).
+
+========================
+STEP 3 — FIX FILTER PILLS (UNSTICK + SINGLE SOURCE OF TRUTH)
+========================
+- Identify the one state that decides which quest list is shown (Today / Weekly / Reflection / Events).
+- Make pill selection read from that same state.
+- Make pill onTap update that same state.
+- Remove any duplicate “selectedIndex” or local UI state that conflicts with provider state.
+- Ensure tapping pills immediately switches the displayed list and highlight.
+
+========================
+STEP 4 — QUEST REPETITION SYSTEM (VERIFY NOT BROKEN)
+========================
+If you already implemented caching/rotation, verify it still works:
+- Daily quests: stable for local YYYY-MM-DD; reopen app should not regenerate.
+- Weekly quests: stable for YYYY-WW; avoid repeating last week set if possible.
+- Uses SharedPreferences keys for saved IDs + rolling history.
+- Debug logs in kDebugMode: todayKey/weekKey, loaded vs generated, chosen IDs.
+If any of this logic is missing OR currently broken by the recent changes, fix it now with minimal edits.
+
+========================
+STEP 5 — VERIFY + TESTS
+========================
+Run:
+- flutter test
+- flutter run -d chrome (quick sanity)
+Verify manually in preview:
+- Quest Hub loads and is interactive.
+- Pills switch lists and highlight correctly.
+- VOTD shows reference and either text, or “Loading verse…” briefly, then text; never infinite loading.
+- Quests still load even if VOTD fails.
+
+DELIVERABLES:
+- Provide a clear summary of what files were changed and why.
+- Ensure no regressions and no new UX blockers.

@@ -24,6 +24,7 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
   _QuestFilter _filter = _QuestFilter.today;
   String? _votdText;
   String _lastVotdRef = '';
+  bool _votdLoadAttempted = false;
 
   @override
   void didChangeDependencies() {
@@ -42,13 +43,27 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
   void _triggerVotdLoad(String votdRef) {
     if (votdRef.isEmpty || votdRef == _lastVotdRef) return;
     _lastVotdRef = votdRef;
+    _votdLoadAttempted = false;
     
     BibleService.instance.getVerseText(votdRef).then((text) {
-      if (mounted && text != null) {
-        setState(() => _votdText = text);
+      if (mounted) {
+        setState(() {
+          _votdLoadAttempted = true;
+          _votdText = text;
+        });
       }
       if (kDebugMode) {
         debugPrint('[QuestHub] VOTD lookup: ref="$votdRef", text=${text != null ? "found (${text.length} chars)" : "NOT FOUND"}');
+      }
+    }).catchError((e) {
+      if (mounted) {
+        setState(() {
+          _votdLoadAttempted = true;
+          _votdText = null;
+        });
+      }
+      if (kDebugMode) {
+        debugPrint('[QuestHub] VOTD lookup error: $e');
       }
     });
   }
@@ -212,7 +227,7 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
                       children: [
                         _buildWelcomeHeader(context),
                         const SizedBox(height: 16),
-                        _buildTodaysVerse(context, votdRef, _votdText),
+                        _buildTodaysVerse(context, votdRef, _votdText, _votdLoadAttempted),
                         const SizedBox(height: 16),
                         _buildContinueReading(context, provider, continueRef),
                         const SizedBox(height: 16),
@@ -348,10 +363,11 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
     );
   }
 
-  Widget _buildTodaysVerse(BuildContext context, String reference, String? text) {
+  Widget _buildTodaysVerse(BuildContext context, String reference, String? text, bool loadAttempted) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final isLoading = text == null;
+    final isStillLoading = !loadAttempted;
+    final hasText = text != null && text.isNotEmpty;
     return Material(
       color: cs.surfaceContainerHigh,
       borderRadius: BorderRadius.circular(16),
@@ -380,7 +396,7 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
               const SizedBox(height: 6),
               Text(reference, style: theme.textTheme.titleMedium?.copyWith(color: GamerColors.neonCyan)),
               const SizedBox(height: 10),
-              if (isLoading)
+              if (isStillLoading)
                 Row(
                   children: [
                     SizedBox(
@@ -401,12 +417,20 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
                     ),
                   ],
                 )
-              else
+              else if (hasText)
                 Text(
-                  text,
+                  text!,
                   style: theme.textTheme.bodyLarge?.copyWith(fontStyle: FontStyle.italic),
                   maxLines: 5,
                   overflow: TextOverflow.ellipsis,
+                )
+              else
+                Text(
+                  'Tap to read this verse',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
             ],
           ),
