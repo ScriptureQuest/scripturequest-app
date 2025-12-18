@@ -1,0 +1,58 @@
+You are the Replit Agent working in the ScriptureQuest Flutter repo: ScriptureQuest/scripturequest-app.
+
+STOP. Read this carefully:
+Your last attempts broke core UX and wasted money. You must fix ONLY what is broken, with minimal edits, and you MUST verify in the running Preview.
+
+ABSOLUTE RULES (DO NOT VIOLATE):
+1) The phrase “Tap to read this verse” must NOT appear anywhere in the app UI for Verse of the Day. Remove it and never reintroduce it.
+2) Verse of the Day must always show verse TEXT. If text is not available yet, show “Loading verse…” briefly. If fetch fails or returns empty text, show “Unable to load verse text” (NOT tap-to-read).
+3) Do NOT block the Quest Hub screen while VOTD loads. NO AbsorbPointer / IgnorePointer / ModalBarrier / overlay that disables taps for the whole page.
+4) Quest filter pills MUST be clickable and switch lists. The highlighted pill must match the currently displayed list (single source of truth).
+5) Do NOT claim quest repetition is fixed unless you can show the actual persistence keys and code paths. If repetition logic isn’t present, say so and implement it properly (SharedPreferences todayKey/weekKey + rolling history).
+
+WORKFLOW YOU MUST FOLLOW:
+A) AUDIT FIRST — run ripgrep and list the exact files/lines that currently:
+   - contain “Tap to read this verse”
+   - show any AbsorbPointer/IgnorePointer/ModalBarrier in Quest Hub
+   - implement VOTD loading/state
+   - implement quest filter selection state
+   - implement quest generation/persistence
+B) APPLY MINIMAL PATCHES — only in the files identified.
+C) VERIFY IN PREVIEW — after patch, you must:
+   - open Quest Hub
+   - click Today/Weekly/Reflection/Events and confirm they change + highlight updates
+   - confirm VOTD shows reference + either verse text OR “Loading verse…” briefly OR “Unable to load verse text”
+   - confirm “Tap to read this verse” never appears
+D) TESTS — run `flutter test` and report pass/fail.
+
+IMPLEMENTATION DETAILS REQUIRED:
+FIX 1 (VOTD):
+- Ensure VOTD state machine is only:
+  (loading) => “Loading verse…”
+  (loaded text present) => show text
+  (loaded but text empty OR error) => “Unable to load verse text”
+- Do NOT use “tap to read” as any state.
+- Ensure async load always clears loading in finally.
+
+FIX 2 (PILLS):
+- Identify the single variable that decides which quest list is rendered.
+- Drive pill highlight from that same variable.
+- Tapping pills must update that same variable and notify listeners (or setState if local).
+- Remove conflicting duplicate state.
+
+FIX 3 (QUEST REPETITION) — if missing or fake, implement:
+- SharedPreferences:
+  todayKey (YYYY-MM-DD local), weekKey (YYYY-WW)
+  save daily ids for today; save weekly ids for week
+  rolling history: daily 7 days, weekly 4 weeks
+- On load: if saved ids exist for current key, load and DO NOT regenerate
+- On generate: avoid history; relax progressively to avoid last 2 days minimum
+- Quest IDs must be stable; derive deterministically if needed
+- In kDebugMode log todayKey/weekKey, loaded vs generated, ids, history length
+
+CONSTRAINTS:
+- Minimal changes. No redesign. No refactors. No new UI components.
+- Do not touch unrelated files.
+- Do not change styling.
+
+Start now by running the audit searches and listing the exact file paths you will edit.

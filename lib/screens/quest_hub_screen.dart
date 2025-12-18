@@ -426,7 +426,7 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
                 )
               else
                 Text(
-                  'Tap to read this verse',
+                  'Unable to load verse text',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: cs.onSurfaceVariant.withValues(alpha: 0.7),
                     fontStyle: FontStyle.italic,
