@@ -10,9 +10,14 @@ class TaskService {
   static const String _storageKey = 'quests';
   static const String _lastDailyGenerationKey = 'last_daily_generation';
   static const String _lastWeeklyGenerationKey = 'last_weekly_generation';
+  // Quest history keys for preventing repetition
+  static const String _dailyQuestHistoryKey = 'daily_quest_history';
+  static const String _weeklyQuestHistoryKey = 'weekly_quest_history';
+  static const String _generatedDailyQuestsKey = 'generated_daily_quests';
+  static const String _generatedWeeklyQuestsKey = 'generated_weekly_quests';
   // Migration key: bump this version to force quest regeneration when templates change
   static const String _questMigrationKey = 'quest_migration_v';
-  static const int _questMigrationVersion = 2; // v2: added targetBook to nightly templates
+  static const int _questMigrationVersion = 3; // v3: added quest history for anti-repetition
   final StorageService _storage;
   final _uuid = const Uuid();
 
@@ -34,6 +39,184 @@ class TaskService {
       }
     } catch (e) {
       debugPrint('Quest migration error: $e');
+    }
+  }
+
+  // ================== Quest History Management (Anti-Repetition) ==================
+  
+  /// Get today's date key in YYYY-MM-DD format (local timezone)
+  String _getTodayKey() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+  
+  /// Get week key in YYYY-WW format (ISO week number, local timezone)
+  String _getWeekKey() {
+    final now = DateTime.now();
+    final weekNumber = _getIsoWeekNumber(now);
+    return '${now.year}-W${weekNumber.toString().padLeft(2, '0')}';
+  }
+  
+  /// Calculate ISO week number
+  int _getIsoWeekNumber(DateTime date) {
+    final dayOfYear = int.parse(date.difference(DateTime(date.year, 1, 1)).inDays.toString()) + 1;
+    final woy = ((dayOfYear - date.weekday + 10) / 7).floor();
+    if (woy < 1) return _getIsoWeekNumber(DateTime(date.year - 1, 12, 31));
+    if (woy > 52) {
+      final nextYear = DateTime(date.year + 1, 1, 1);
+      if (nextYear.weekday <= 4) return 1;
+    }
+    return woy;
+  }
+  
+  /// Load quest history for daily quests (Map of dateKey -> List of quest titles)
+  Map<String, List<String>> _loadDailyQuestHistory() {
+    try {
+      final raw = _storage.getString(_dailyQuestHistoryKey);
+      if (raw == null || raw.isEmpty) return {};
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final result = <String, List<String>>{};
+      decoded.forEach((k, v) {
+        result[k] = (v as List<dynamic>).cast<String>();
+      });
+      return result;
+    } catch (e) {
+      debugPrint('_loadDailyQuestHistory error: $e');
+      return {};
+    }
+  }
+  
+  /// Save quest history for daily quests (rolling 7 days)
+  Future<void> _saveDailyQuestHistory(Map<String, List<String>> history) async {
+    try {
+      // Prune to last 7 days
+      final keys = history.keys.toList()..sort();
+      while (keys.length > 7) {
+        history.remove(keys.removeAt(0));
+      }
+      await _storage.save(_dailyQuestHistoryKey, jsonEncode(history));
+    } catch (e) {
+      debugPrint('_saveDailyQuestHistory error: $e');
+    }
+  }
+  
+  /// Load quest history for weekly quests (Map of weekKey -> List of quest titles)
+  Map<String, List<String>> _loadWeeklyQuestHistory() {
+    try {
+      final raw = _storage.getString(_weeklyQuestHistoryKey);
+      if (raw == null || raw.isEmpty) return {};
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final result = <String, List<String>>{};
+      decoded.forEach((k, v) {
+        result[k] = (v as List<dynamic>).cast<String>();
+      });
+      return result;
+    } catch (e) {
+      debugPrint('_loadWeeklyQuestHistory error: $e');
+      return {};
+    }
+  }
+  
+  /// Save quest history for weekly quests (rolling 4 weeks)
+  Future<void> _saveWeeklyQuestHistory(Map<String, List<String>> history) async {
+    try {
+      // Prune to last 4 weeks
+      final keys = history.keys.toList()..sort();
+      while (keys.length > 4) {
+        history.remove(keys.removeAt(0));
+      }
+      await _storage.save(_weeklyQuestHistoryKey, jsonEncode(history));
+    } catch (e) {
+      debugPrint('_saveWeeklyQuestHistory error: $e');
+    }
+  }
+  
+  /// Get all recently used quest titles (daily: last 7 days, fallback to 2 days if pool too small)
+  Set<String> _getRecentDailyQuestTitles({int lookbackDays = 7}) {
+    try {
+      final history = _loadDailyQuestHistory();
+      final now = DateTime.now();
+      final recent = <String>{};
+      for (int i = 1; i <= lookbackDays; i++) {
+        final d = now.subtract(Duration(days: i));
+        final key = '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+        if (history.containsKey(key)) {
+          recent.addAll(history[key]!);
+        }
+      }
+      return recent;
+    } catch (e) {
+      debugPrint('_getRecentDailyQuestTitles error: $e');
+      return {};
+    }
+  }
+  
+  /// Get all recently used weekly quest titles (last 1-2 weeks)
+  Set<String> _getRecentWeeklyQuestTitles({int lookbackWeeks = 1}) {
+    try {
+      final history = _loadWeeklyQuestHistory();
+      final keys = history.keys.toList()..sort();
+      final recent = <String>{};
+      final takeCount = lookbackWeeks.clamp(1, keys.length);
+      for (final key in keys.reversed.take(takeCount)) {
+        recent.addAll(history[key]!);
+      }
+      return recent;
+    } catch (e) {
+      debugPrint('_getRecentWeeklyQuestTitles error: $e');
+      return {};
+    }
+  }
+  
+  /// Load saved daily quest IDs for a specific day (returns null if not found)
+  List<String>? _loadGeneratedDailyQuestIds(String todayKey) {
+    try {
+      final raw = _storage.getString(_generatedDailyQuestsKey);
+      if (raw == null || raw.isEmpty) return null;
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      if (decoded['dateKey'] != todayKey) return null;
+      return (decoded['questIds'] as List<dynamic>?)?.cast<String>();
+    } catch (e) {
+      debugPrint('_loadGeneratedDailyQuestIds error: $e');
+      return null;
+    }
+  }
+  
+  /// Save generated daily quest IDs for today
+  Future<void> _saveGeneratedDailyQuestIds(String todayKey, List<String> questIds) async {
+    try {
+      await _storage.save(_generatedDailyQuestsKey, jsonEncode({
+        'dateKey': todayKey,
+        'questIds': questIds,
+      }));
+    } catch (e) {
+      debugPrint('_saveGeneratedDailyQuestIds error: $e');
+    }
+  }
+  
+  /// Load saved weekly quest IDs for a specific week (returns null if not found)
+  List<String>? _loadGeneratedWeeklyQuestIds(String weekKey) {
+    try {
+      final raw = _storage.getString(_generatedWeeklyQuestsKey);
+      if (raw == null || raw.isEmpty) return null;
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      if (decoded['weekKey'] != weekKey) return null;
+      return (decoded['questIds'] as List<dynamic>?)?.cast<String>();
+    } catch (e) {
+      debugPrint('_loadGeneratedWeeklyQuestIds error: $e');
+      return null;
+    }
+  }
+  
+  /// Save generated weekly quest IDs for this week
+  Future<void> _saveGeneratedWeeklyQuestIds(String weekKey, List<String> questIds) async {
+    try {
+      await _storage.save(_generatedWeeklyQuestsKey, jsonEncode({
+        'weekKey': weekKey,
+        'questIds': questIds,
+      }));
+    } catch (e) {
+      debugPrint('_saveGeneratedWeeklyQuestIds error: $e');
     }
   }
 
@@ -146,10 +329,20 @@ class TaskService {
     await _runQuestMigrationIfNeeded();
     
     final today = DateTime.now();
-    final todayString = '${today.year}-${today.month}-${today.day}';
+    final todayKey = _getTodayKey();
     final lastGen = _storage.getString(_lastDailyGenerationKey);
     
-    if (lastGen == todayString) return;
+    if (kDebugMode) {
+      debugPrint('[TaskService] createDailyQuests: todayKey=$todayKey, lastGen=$lastGen');
+    }
+    
+    // Check if we already generated for today
+    if (lastGen == todayKey) {
+      if (kDebugMode) {
+        debugPrint('[TaskService] Daily quests already generated for $todayKey - loading existing');
+      }
+      return;
+    }
     
     final quests = await getAllQuests();
     // Remove old daily and nightly quests that are not completed
@@ -158,32 +351,75 @@ class TaskService {
       ((q.category == 'nightly' || q.type == 'nightly') && q.status != 'completed')
     );
     
-    final newDailyQuests = _generateDailyQuests();
-    // Add Nightly tasks (v2.0)
-    final nightly = _generateNightlyQuests(today);
+    // Generate new daily quests with history-aware selection
+    final newDailyQuests = _generateDailyQuestsWithHistory();
+    // Add Nightly tasks (v2.0) with history-aware selection  
+    final nightly = _generateNightlyQuestsWithHistory(today);
+    
     quests.addAll([...newDailyQuests, ...nightly]);
     
+    // Record quest titles in history
+    final usedTitles = [...newDailyQuests.map((q) => q.title), ...nightly.map((q) => q.title)];
+    final history = _loadDailyQuestHistory();
+    history[todayKey] = usedTitles;
+    await _saveDailyQuestHistory(history);
+    
+    // Save quest IDs for stable loading
+    final questIds = [...newDailyQuests.map((q) => q.id), ...nightly.map((q) => q.id)];
+    await _saveGeneratedDailyQuestIds(todayKey, questIds);
+    
     await _saveQuests(quests);
-    await _storage.save(_lastDailyGenerationKey, todayString);
+    await _storage.save(_lastDailyGenerationKey, todayKey);
+    
+    if (kDebugMode) {
+      debugPrint('[TaskService] Generated ${newDailyQuests.length} daily + ${nightly.length} nightly quests for $todayKey');
+      debugPrint('[TaskService] Daily quest titles: ${newDailyQuests.map((q) => q.title).toList()}');
+      debugPrint('[TaskService] History size: ${history.length} days');
+    }
   }
 
   Future<void> createWeeklyQuests() async {
     final now = DateTime.now();
-    // Use Monday as week key
-    final monday = now.subtract(Duration(days: (now.weekday - DateTime.monday))).copyWith(hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
-    final key = 'W${monday.year}-${monday.month}-${monday.day}';
+    final weekKey = _getWeekKey();
     final last = _storage.getString(_lastWeeklyGenerationKey);
-    if (last == key) return;
+    
+    if (kDebugMode) {
+      debugPrint('[TaskService] createWeeklyQuests: weekKey=$weekKey, lastGen=$last');
+    }
+    
+    if (last == weekKey) {
+      if (kDebugMode) {
+        debugPrint('[TaskService] Weekly quests already generated for $weekKey - loading existing');
+      }
+      return;
+    }
 
     final quests = await getAllQuests();
     // Remove old weekly quests that are not completed
     quests.removeWhere((q) => (q.category == 'weekly' || q.isWeekly || q.type == 'weekly') && q.status != 'completed');
 
-    final weekly = _generateWeeklyQuests(monday);
+    // Use Monday as week start for quest generation with history-aware selection
+    final monday = now.subtract(Duration(days: (now.weekday - DateTime.monday))).copyWith(hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+    final weekly = _generateWeeklyQuestsWithHistory(monday);
     quests.addAll(weekly);
+    
+    // Record quest titles in history
+    final usedTitles = weekly.map((q) => q.title).toList();
+    final history = _loadWeeklyQuestHistory();
+    history[weekKey] = usedTitles;
+    await _saveWeeklyQuestHistory(history);
+    
+    // Save quest IDs for stable loading
+    await _saveGeneratedWeeklyQuestIds(weekKey, weekly.map((q) => q.id).toList());
 
     await _saveQuests(quests);
-    await _storage.save(_lastWeeklyGenerationKey, key);
+    await _storage.save(_lastWeeklyGenerationKey, weekKey);
+    
+    if (kDebugMode) {
+      debugPrint('[TaskService] Generated ${weekly.length} weekly quests for $weekKey');
+      debugPrint('[TaskService] Weekly quest titles: $usedTitles');
+      debugPrint('[TaskService] Weekly history size: ${history.length} weeks');
+    }
   }
 
   // Mark quest rewards claimed (v2.0)
@@ -939,6 +1175,162 @@ extension _TaskGenerationHelpers on TaskService {
       debugPrint('_ensureReflectionSeeds error: $e\n$st');
     }
     return existing;
+  }
+  
+  // ================== History-Aware Quest Generation ==================
+  
+  /// Generate daily quests with history filtering to prevent repetition
+  List<TaskModel> _generateDailyQuestsWithHistory() {
+    final now = DateTime.now();
+    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    
+    // Get full pool and recent history
+    final pool = _dailyTaskPool(now, endOfDay);
+    final recentTitles = _getRecentDailyQuestTitles(lookbackDays: 7);
+    
+    // Filter out recently used quests
+    var availablePool = pool.where((q) => !recentTitles.contains(q.title)).toList();
+    
+    // If pool is too small, relax to 2-day history
+    if (availablePool.length < 3) {
+      if (kDebugMode) {
+        debugPrint('[TaskService] Daily pool too small (${availablePool.length}), relaxing to 2-day history');
+      }
+      final relaxedRecent = _getRecentDailyQuestTitles(lookbackDays: 2);
+      availablePool = pool.where((q) => !relaxedRecent.contains(q.title)).toList();
+    }
+    
+    // If still too small, use full pool (edge case)
+    if (availablePool.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('[TaskService] Daily pool empty after filtering, using full pool');
+      }
+      availablePool = pool;
+    }
+    
+    // Pick 2-3 quests from available pool using deterministic seed
+    final picked = _pickRandom(availablePool, min: 2, max: 3);
+    
+    if (kDebugMode) {
+      debugPrint('[TaskService] _generateDailyQuestsWithHistory: pool=${pool.length}, available=${availablePool.length}, picked=${picked.length}');
+      debugPrint('[TaskService] Recent daily titles (7 days): ${recentTitles.length}');
+    }
+    
+    return picked;
+  }
+  
+  /// Generate nightly quests with history filtering to prevent repetition
+  List<TaskModel> _generateNightlyQuestsWithHistory(DateTime now) {
+    final endOfNight = DateTime(now.year, now.month, now.day + 1, 5, 59, 59);
+    
+    // Get full pool and recent history
+    final pool = _nightlyTaskPool(now, endOfNight);
+    final recentTitles = _getRecentDailyQuestTitles(lookbackDays: 7);
+    
+    // Filter out recently used quests
+    var availablePool = pool.where((q) => !recentTitles.contains(q.title)).toList();
+    
+    // If pool is too small, relax to 2-day history
+    if (availablePool.length < 2) {
+      if (kDebugMode) {
+        debugPrint('[TaskService] Nightly pool too small (${availablePool.length}), relaxing to 2-day history');
+      }
+      final relaxedRecent = _getRecentDailyQuestTitles(lookbackDays: 2);
+      availablePool = pool.where((q) => !relaxedRecent.contains(q.title)).toList();
+    }
+    
+    // If still too small, use full pool
+    if (availablePool.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('[TaskService] Nightly pool empty after filtering, using full pool');
+      }
+      availablePool = pool;
+    }
+    
+    // Pick 1-2 quests from available pool
+    final picked = _pickRandom(availablePool, min: 1, max: 2);
+    
+    if (kDebugMode) {
+      debugPrint('[TaskService] _generateNightlyQuestsWithHistory: pool=${pool.length}, available=${availablePool.length}, picked=${picked.length}');
+    }
+    
+    return picked;
+  }
+  
+  /// Generate weekly quests with history filtering to prevent repetition
+  List<TaskModel> _generateWeeklyQuestsWithHistory(DateTime weekStart) {
+    final end = weekStart.add(const Duration(days: 7)).subtract(const Duration(seconds: 1));
+    final now = DateTime.now();
+    
+    // Get full pool and recent weekly history
+    final pool = _weeklyTaskPool(weekStart, end, now);
+    final recentTitles = _getRecentWeeklyQuestTitles(lookbackWeeks: 1);
+    
+    // Filter out quests used last week
+    var availablePool = pool.where((q) => !recentTitles.contains(q.title)).toList();
+    
+    // If pool is too small after filtering, use full pool
+    if (availablePool.length < 3) {
+      if (kDebugMode) {
+        debugPrint('[TaskService] Weekly pool too small (${availablePool.length}), using full pool');
+      }
+      availablePool = pool;
+    }
+    
+    // Pick 3-4 weekly quests from available pool
+    final picked = _pickRandom(availablePool, min: 3, max: 4);
+    
+    if (kDebugMode) {
+      debugPrint('[TaskService] _generateWeeklyQuestsWithHistory: pool=${pool.length}, available=${availablePool.length}, picked=${picked.length}');
+      debugPrint('[TaskService] Recent weekly titles (1 week): ${recentTitles.length}');
+    }
+    
+    return picked;
+  }
+  
+  /// Pool of weekly quest templates for varied selection
+  List<TaskModel> _weeklyTaskPool(DateTime weekStart, DateTime end, DateTime now) {
+    TaskModel w({
+      required String title,
+      required String description,
+      String questType = 'scripture_reading',
+      int targetCount = 5,
+      int xp = 100,
+      String difficulty = 'Medium',
+    }) => TaskModel(
+          id: _uuid.v4(),
+          title: title,
+          description: description,
+          type: 'weekly',
+          category: 'weekly',
+          questFrequency: 'weekly',
+          questType: questType,
+          isAutoTracked: true,
+          targetCount: targetCount,
+          xpReward: xp,
+          rewards: [Reward(type: RewardTypes.xp, amount: xp, label: '$xp XP')],
+          isWeekly: true,
+          difficulty: difficulty,
+          startDate: weekStart,
+          endDate: end,
+          createdAt: now,
+          updatedAt: now,
+        );
+    
+    return [
+      // Core weekly quests
+      w(title: 'Read on 3 different days', description: 'Return on three separate days this week. Gentle rhythm.', questType: 'days_active', targetCount: 3, difficulty: 'Easy'),
+      w(title: 'Complete 5 quests', description: 'Finish any five quests across the week—keep it kind.', questType: 'meta', targetCount: 5, xp: 150),
+      w(title: 'Read 5 chapters this week', description: 'Steady pace: complete 5 chapters this week.', questType: 'scripture_reading', targetCount: 5, xp: 120),
+      w(title: 'Complete 3 reflection moments', description: 'Pause with three short reflections this week.', questType: 'reflection', targetCount: 3, xp: 90, difficulty: 'Easy'),
+      // Additional weekly variety
+      w(title: 'Read 3 Psalms this week', description: 'Let the Psalms guide your week with comfort and praise.', questType: 'scripture_reading', targetCount: 3, xp: 80, difficulty: 'Easy'),
+      w(title: 'Journal twice this week', description: 'Capture two moments of reflection in your journal.', questType: 'reflection', targetCount: 2, xp: 70, difficulty: 'Easy'),
+      w(title: 'Read 7 chapters this week', description: 'A chapter a day keeps the Word near.', questType: 'scripture_reading', targetCount: 7, xp: 150),
+      w(title: 'Pray for 3 different people', description: 'Lift up three people in prayer this week.', questType: 'prayer', targetCount: 3, xp: 75, difficulty: 'Easy'),
+      w(title: 'Complete 3 quests in one day', description: 'Have a focused day of spiritual growth.', questType: 'meta', targetCount: 3, xp: 100),
+      w(title: 'Read from 2 different books', description: 'Explore two different books of the Bible this week.', questType: 'scripture_reading', targetCount: 2, xp: 80, difficulty: 'Easy'),
+    ];
   }
 }
 

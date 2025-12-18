@@ -168,9 +168,6 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
       final votdRef = provider.getVerseOfTheDay();
       // Trigger async VOTD text lookup (will setState when complete)
       _triggerVotdLoad(votdRef);
-      // Use state-managed VOTD text (loaded via BibleService)
-      // Defensive: If no matching text found, show safe placeholder (never mismatched text)
-      final featuredText = _votdText ?? 'Tap to read this verse';
 
       // Continue Reading: separate source (last-read reference, fallback to VOTD)
       final last = (provider.lastBibleReference ?? '').trim();
@@ -215,7 +212,7 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
                       children: [
                         _buildWelcomeHeader(context),
                         const SizedBox(height: 16),
-                        _buildTodaysVerse(context, votdRef, featuredText),
+                        _buildTodaysVerse(context, votdRef, _votdText),
                         const SizedBox(height: 16),
                         _buildContinueReading(context, provider, continueRef),
                         const SizedBox(height: 16),

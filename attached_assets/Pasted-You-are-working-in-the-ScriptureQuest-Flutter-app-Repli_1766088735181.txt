@@ -1,0 +1,94 @@
+You are working in the ScriptureQuest Flutter app (Replit).
+Repo: ScriptureQuest/scripturequest-app
+Architecture: Flutter + Provider + services, builds via CodeMagic.
+Goal: audit and COMPLETE all fixes below. Do NOT assume previous work is finished.
+
+====================
+STEP 1 — AUDIT
+====================
+First, check the codebase and explicitly confirm whether each fix is fully implemented.
+Log your findings in comments before changing anything.
+
+Audit checks:
+1) Search for any remaining "Tap to read this verse" UI or logic.
+2) Verify Verse of the Day always renders verse TEXT (not just reference) once loaded.
+3) Identify the single source of truth that determines which quest list is displayed (Today / Weekly / etc).
+4) Verify the quest filter pills are driven from that same state.
+5) Locate quest generation logic and check:
+   - Are daily quests cached per local day (YYYY-MM-DD)?
+   - Are weekly quests cached per week (YYYY-WW)?
+   - Is there a rolling history preventing repeats?
+   - Are quest IDs stable and persisted?
+
+If any item is missing or partially implemented, proceed to STEP 2.
+
+====================
+STEP 2 — IMPLEMENT FIXES
+====================
+
+FIX 1 — Verse of the Day (VERIFY & FINALIZE)
+- The Today’s Verse card MUST always show:
+  • Label
+  • Verse reference
+  • Verse text
+- Remove any "Tap to read this verse" normal state.
+- If verse text is not yet loaded, show a small "Loading verse…" placeholder.
+- Keep tap optional for navigation only.
+- Ensure VOTD service/provider returns BOTH reference + text.
+
+FIX 2 — Quest Filter Pill State (SINGLE SOURCE OF TRUTH)
+- Identify the state that controls which quest list is rendered.
+- Drive pill highlighting directly from that same state.
+- If Weekly quests are displayed for ANY reason, Weekly pill must be highlighted.
+- Remove any duplicate or conflicting UI-only filter state.
+- Keep changes minimal and consistent with Provider usage.
+
+FIX 3 — Quest Repetition / Rotation (ALL QUESTS)
+Implement proper quest caching and rotation using SharedPreferences (or existing persistence):
+
+Persistence:
+- todayKey: YYYY-MM-DD (local timezone)
+- weekKey: YYYY-WW
+- Save generated DAILY quest IDs per day.
+- Save generated WEEKLY quest IDs per week.
+- Maintain rolling history:
+  • Daily history: last 7 days
+  • Weekly history: last 4 weeks
+
+Daily generation rules:
+1) On provider load:
+   - If todayKey matches and saved IDs exist → load, DO NOT regenerate.
+   - Only generate when day changes or no saved set exists.
+2) When generating:
+   - Build from existing quest pool/templates.
+   - Filter out quests used in recent daily history (7 days).
+   - If pool becomes too small, relax progressively (minimum: avoid last 2 days).
+   - Ensure variety (not same chapter/title repeatedly).
+   - Never hardcode any specific book/chapter.
+
+Weekly generation rules:
+- Stable per week using weekKey.
+- Avoid repeating last week's exact set when possible.
+
+Quest IDs:
+- Ensure every quest has a stable unique ID.
+- If IDs don’t exist, derive deterministically from quest attributes (type + scripture target + cadence).
+
+Debug logging (kDebugMode):
+- todayKey / weekKey
+- Loaded vs generated
+- Chosen quest IDs
+- History sizes
+
+====================
+STEP 3 — VERIFY
+====================
+After implementing:
+- Run tests (flutter test).
+- Verify Verse of the Day always shows text.
+- Verify Weekly pill highlights when Weekly quests are shown.
+- Simulate day/week change and confirm quests rotate and do not repeat.
+
+Do not refactor unrelated code.
+Do not remove existing working functionality.
+Keep changes minimal, stable, and production-safe.

@@ -38,6 +38,18 @@ The application is built with Flutter 3.32.0 and Dart 3.8.0, utilizing the Provi
 - **Web Server:** Python's `http.server` (for local development/serving web build)
 
 ## Recent Changes
+- 2025-12-18: Bug Fixes - VOTD Loading State & Quest Repetition Prevention
+  - **VOTD Loading State:** Quest Hub now shows a loading spinner with "Loading verse..." text when verse text is still loading (instead of "Tap to read this verse")
+  - **Quest History Tracking:** Implemented comprehensive anti-repetition system for all quest types:
+    - Daily/nightly quests: 7-day rolling history with progressive relaxation (falls back to 2-day if pool too small)
+    - Weekly quests: Now draws from 10-template pool, filters out last week's selections
+    - History pruned to 7 days (daily) and 4 weeks (weekly) to avoid unbounded growth
+    - Storage keys: `task_daily_quest_history`, `task_weekly_quest_history`
+    - Debug logging in kDebugMode throughout quest generation
+  - **Filter Chip Verification:** Confirmed _filter is single source of truth for both pill highlighting and quest list display
+  - All 10 widget tests passing
+  - No changes to XP, streak logic, routes, or data models
+
 - 2025-12-17: Onboarding UI/UX Refinement (Calm & Personal)
   - **Identity screen:** Name now required (no skip), gentle copy "What should we call you?", autofocus on text field
   - **No titles during onboarding:** Removed "Pilgrim" title preview entirely - titles appear post-onboarding only
