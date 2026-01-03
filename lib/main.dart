@@ -9,6 +9,7 @@ import 'package:level_up_your_faith/screens/main_navigation.dart';
 import 'package:level_up_your_faith/screens/home_screen.dart';
 import 'package:level_up_your_faith/screens/verses_screen.dart';
 import 'package:level_up_your_faith/screens/quest_board_screen.dart';
+import 'package:level_up_your_faith/screens/tasks_screen.dart';
 import 'package:level_up_your_faith/screens/profile_screen.dart';
 import 'package:level_up_your_faith/screens/verse_detail_screen.dart';
 import 'package:level_up_your_faith/screens/achievements_screen.dart';
@@ -189,7 +190,7 @@ final _router = GoRouter(
         // New: Tasks (formerly small Quests) board
         GoRoute(
           path: '/tasks',
-          builder: (context, state) => const QuestBoardScreen(),
+          builder: (context, state) => const TasksScreen(),
         ),
         GoRoute(
           path: '/tasks/completed',

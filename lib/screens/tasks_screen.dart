@@ -15,102 +15,55 @@ class TasksScreen extends StatefulWidget {
   State<TasksScreen> createState() => _TasksScreenState();
 }
 
-enum _TaskBoardTab { daily, nightly, reflection }
-
 class _TasksScreenState extends State<TasksScreen> {
-  _TaskBoardTab _selected = _TaskBoardTab.daily;
 
   @override
   Widget build(BuildContext context) {
     return Consumer<AppProvider>(builder: (context, provider, _) {
       final List<TaskModel> daily = provider.getDailyTasksForToday();
       final List<TaskModel> nightly = provider.getNightlyTasksForToday();
-      final List<TaskModel> reflection = provider.getReflectionTasks();
 
-      List<TaskModel> currentList() {
-        switch (_selected) {
-          case _TaskBoardTab.daily:
-            return daily;
-          case _TaskBoardTab.nightly:
-            return nightly;
-          case _TaskBoardTab.reflection:
-            return reflection;
-        }
-      }
-
-      String emptyCopy() {
-        switch (_selected) {
-          case _TaskBoardTab.daily:
-            return 'You’ve finished your Daily Tasks for today. Well done.';
-          case _TaskBoardTab.nightly:
-            return 'Nightly Tasks unlock later in the day. Keep walking with God.';
-          case _TaskBoardTab.reflection:
-            return 'All Reflection tasks are completed. You can revisit them anytime in your journey.';
-        }
-      }
+      final hour = DateTime.now().hour;
+      final isDaytime = hour >= 6 && hour < 18;
+      final activeQuests = isDaytime ? daily : nightly;
+      final questLabel = isDaytime ? 'Daily Quests' : 'Nightly Quests';
+      final questIcon = isDaytime ? Icons.wb_sunny_rounded : Icons.nights_stay_rounded;
 
       return Scaffold(
         appBar: AppBar(
-          title: Text('Task Board', style: Theme.of(context).textTheme.headlineSmall),
+          title: Text('Quest Hub', style: Theme.of(context).textTheme.headlineSmall),
           centerTitle: true,
           actions: const [HomeActionButton()],
         ),
         body: FadeSlideIn(
           child: ListView(
           children: [
-            // Reading Plan entry (compact, non-intrusive)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SectionHeader('Reading Plan', icon: Icons.auto_stories_rounded),
-                  const SizedBox(height: 8),
-                  _ReadingPlanEntryCard(),
-                ],
-              ),
-            ),
-            // Segmented control
+            _TasksHeader(provider: provider),
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: SegmentedButton<_TaskBoardTab>(
-                segments: const <ButtonSegment<_TaskBoardTab>>[
-                  ButtonSegment(label: Text('Daily'), value: _TaskBoardTab.daily, icon: Icon(Icons.wb_sunny_rounded)),
-                  ButtonSegment(label: Text('Nightly'), value: _TaskBoardTab.nightly, icon: Icon(Icons.nights_stay_rounded)),
-                  ButtonSegment(label: Text('Reflection'), value: _TaskBoardTab.reflection, icon: Icon(Icons.psychology_alt_rounded)),
+              child: Row(
+                children: [
+                  Icon(questIcon, color: Theme.of(context).colorScheme.primary, size: 20),
+                  const SizedBox(width: 8),
+                  Text(questLabel, style: Theme.of(context).textTheme.titleMedium),
                 ],
-                selected: <_TaskBoardTab>{_selected},
-                onSelectionChanged: (s) {
-                  setState(() => _selected = s.first);
-                },
-                style: ButtonStyle(
-                  visualDensity: VisualDensity.compact,
-                  shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                ),
               ),
             ),
             const SizedBox(height: 12),
-            if (currentList().isEmpty)
+            if (activeQuests.isEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 6, 20, 16),
                 child: Column(
                   children: [
                     const SizedBox(height: 8),
-                    Icon(
-                      _selected == _TaskBoardTab.daily
-                          ? Icons.wb_sunny_rounded
-                          : _selected == _TaskBoardTab.nightly
-                              ? Icons.nights_stay_rounded
-                              : Icons.psychology_alt_rounded,
-                      color: Theme.of(context).colorScheme.outline,
-                      size: 40,
-                    ),
+                    Icon(questIcon, color: Theme.of(context).colorScheme.outline, size: 40),
                     const SizedBox(height: 12),
-                    EmptyState(message: emptyCopy()),
+                    EmptyState(message: isDaytime ? 'You\'ve finished your Daily Quests for today. Well done.' : 'You\'ve finished your Nightly Quests for today. Well done.'),
                   ],
                 ),
               )
-            else ...currentList().map<Widget>((q) => Padding(
+            else ...activeQuests.map<Widget>((q) => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: TaskCard(quest: q),
                 )),
@@ -123,93 +76,177 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 }
 
-class _ReadingPlanEntryCard extends StatelessWidget {
+class _TasksHeader extends StatelessWidget {
+  final AppProvider provider;
+
+  const _TasksHeader({required this.provider});
+
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppProvider>(builder: (context, app, _) {
-      final plan = app.activeReadingPlan;
-      final hasActive = plan != null;
-      final pct = hasActive ? app.getPlanProgressPercent() : 0.0;
-      final step = hasActive ? app.getCurrentPlanStep() : null;
-      final subtitle = hasActive
-          ? plan!.title
-          : 'Gentle guidance for your daily rhythm';
-      final helper = hasActive
-          ? (step == null ? 'Completed' : step.friendlyLabel)
-          : null;
+    final user = provider.currentUser;
+    final userName = user?.username ?? 'Friend';
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
-      void openPlans() => context.push('/reading-plans');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          RichText(
+            text: TextSpan(
+              style: theme.textTheme.titleLarge,
+              children: [
+                const TextSpan(text: 'Welcome, '),
+                TextSpan(
+                  text: userName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: cs.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _TodaysVerseCard(provider: provider),
+          const SizedBox(height: 12),
+          _ContinueReadingCard(provider: provider),
+        ],
+      ),
+    );
+  }
+}
 
-      return SacredCard(
-        onTap: openPlans,
-        child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+class _ContinueReadingCard extends StatelessWidget {
+  final AppProvider provider;
+
+  const _ContinueReadingCard({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final votdRef = provider.getVerseOfTheDay();
+    final last = (provider.lastBibleReference ?? '').trim();
+    final ref = last.isNotEmpty ? last : votdRef.isNotEmpty ? votdRef : 'John 1';
+
+    String friendlyTitle(String r) {
+      try {
+        if (r.contains(':')) {
+          return r.split(':').first;
+        }
+        return r;
+      } catch (_) {
+        return r;
+      }
+    }
+
+    final title = friendlyTitle(ref);
+
+    return SacredCard(
+      onTap: () {
+        final encoded = Uri.encodeComponent(ref);
+        context.go('/verses?ref=$encoded');
+      },
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: cs.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: cs.primary.withValues(alpha: 0.35)),
+            ),
+            child: Icon(Icons.menu_book_rounded, color: cs.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Continue in $title',
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Pick up where you left off',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right, color: cs.onSurfaceVariant, size: 20),
+        ],
+      ),
+    );
+  }
+}
+
+class _TodaysVerseCard extends StatelessWidget {
+  final AppProvider provider;
+
+  const _TodaysVerseCard({required this.provider});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final votdRef = provider.getVerseOfTheDay();
+    String featuredText = 'For God so loved the world...';
+
+    if (provider.verses.isNotEmpty) {
+      try {
+        final verse = provider.verses.firstWhere((v) => v.reference == votdRef);
+        featuredText = verse.text.isNotEmpty ? verse.text : featuredText;
+      } catch (_) {}
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Icon(
-                hasActive ? Icons.auto_stories_rounded : Icons.flag_circle_rounded,
-                color: hasActive ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.secondary,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            hasActive ? 'Your Reading Plan' : 'Start a Reading Plan',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                        if (hasActive)
-                          Text(
-                            '${(pct * 100).round()}%',
-                            style: Theme.of(context).textTheme.labelMedium,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    if (helper != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        helper,
-                        style: Theme.of(context).textTheme.labelSmall,
-                      ),
-                    ],
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: openPlans,
-                          icon: Icon(Icons.menu_book_rounded, color: Theme.of(context).colorScheme.onPrimary),
-                          label: Text(hasActive ? 'View Plan' : 'Browse Plans'),
-                        ),
-                        const SizedBox(width: 8),
-                        if (hasActive)
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
-                              child: LinearProgressIndicator(
-                                value: pct,
-                                minHeight: 6,
-                                backgroundColor: Theme.of(context).colorScheme.surface,
-                                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
+              Icon(Icons.auto_awesome_rounded, color: cs.secondary, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                "Today's Verse",
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: cs.onSurfaceVariant,
                 ),
               ),
             ],
           ),
-      );
-    });
+          const SizedBox(height: 8),
+          Text(
+            featuredText,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontStyle: FontStyle.italic,
+              color: cs.onSurface.withValues(alpha: 0.75),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            votdRef,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: cs.primary.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

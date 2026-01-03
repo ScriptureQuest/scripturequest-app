@@ -137,12 +137,12 @@ class _MainNavigationState extends State<MainNavigation> {
       });
     }
 
-    // Quick Tour trigger: show when landing on Home and not completed
+    // Quick Tour trigger: show when landing on Tasks (the new default landing screen) and not completed
     final settings = context.watch<SettingsProvider>();
     final locationStr = GoRouterState.of(context).uri.toString();
-    final onHome = locationStr == '/' || locationStr.startsWith('/home');
-    // Dismiss Quick Tour immediately if user navigates away from Home while active (tab switch or route change)
-    if (_showQuickTour && !onHome) {
+    final onTasks = locationStr == '/' || locationStr.startsWith('/tasks');
+    // Dismiss Quick Tour immediately if user navigates away from Tasks while active (tab switch or route change)
+    if (_showQuickTour && !onTasks) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         setState(() => _showQuickTour = false);
@@ -152,9 +152,9 @@ class _MainNavigationState extends State<MainNavigation> {
         } catch (_) {}
       });
     }
-    // Only arm Quick Tour on Home, after Personalized Setup completion, and if not already completed
+    // Only arm Quick Tour on Tasks, after Personalized Setup completion, and if not already completed
     // Disable Quick Tour entirely for beta builds to avoid misaligned overlays.
-    if (!kIsBetaBuild && onHome && settings.hasCompletedPersonalizedSetup && !settings.hasCompletedQuickTour && !_armedQuickTour) {
+    if (!kIsBetaBuild && onTasks && settings.hasCompletedPersonalizedSetup && !settings.hasCompletedQuickTour && !_armedQuickTour) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         setState(() {
