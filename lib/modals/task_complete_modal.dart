@@ -6,15 +6,19 @@ Future<void> showTaskCompleteModal({
   required BuildContext context,
   required TaskModel quest,
   required VoidCallback onClaim,
+  bool readingV2 = false,
 }) async {
   await showDialog(
     context: context,
     barrierDismissible: true,
     builder: (ctx) {
+      final cs = Theme.of(ctx).colorScheme;
+      final accent = readingV2 ? cs.primary : GamerColors.accent;
       return Dialog(
-        backgroundColor: GamerColors.darkCard,
+        backgroundColor: readingV2 ? cs.surface : GamerColors.darkCard,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
+        child: SingleChildScrollView(
+            child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -23,65 +27,87 @@ Future<void> showTaskCompleteModal({
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.emoji_events, color: GamerColors.accent, size: 22),
+                  Icon(Icons.emoji_events, color: accent, size: 22),
                   const SizedBox(width: 8),
-                  Text('Task Complete!', style: Theme.of(ctx).textTheme.titleLarge),
+                  Flexible(
+                      child: Text(
+                          readingV2 ? 'A step worth keeping' : 'Task Complete!',
+                          style: Theme.of(ctx).textTheme.titleLarge)),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(quest.title, textAlign: TextAlign.center, style: Theme.of(ctx).textTheme.titleMedium),
+              Text(quest.title,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(ctx).textTheme.titleMedium),
               const SizedBox(height: 12),
               // XP burst chip
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: GamerColors.accent.withValues(alpha: 0.12),
+                  color: accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: GamerColors.accent.withValues(alpha: 0.4), width: 1),
+                  border: Border.all(
+                      color: accent.withValues(alpha: 0.4), width: 1),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.stars, color: GamerColors.accent, size: 18),
+                    Icon(Icons.stars, color: accent, size: 18),
                     const SizedBox(width: 8),
-                    Text('+${quest.xpReward} XP', style: Theme.of(ctx).textTheme.labelLarge?.copyWith(color: GamerColors.accent)),
+                    Text('+${quest.xpReward} XP',
+                        style: Theme.of(ctx)
+                            .textTheme
+                            .labelLarge
+                            ?.copyWith(color: accent)),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
               // Rewards preview (icons only for now)
-              if (quest.rewards.isNotEmpty) Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: quest.rewards.map((r) {
-                  final isXp = r.type == 'xp';
-                  final icon = isXp ? Icons.stars : Icons.auto_awesome;
-                  final color = isXp ? GamerColors.accent : GamerColors.neonPurple;
-                  final label = r.label.isNotEmpty ? r.label : (isXp ? '+${r.amount ?? 0} XP' : 'Reward');
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: GamerColors.darkSurface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(icon, color: color, size: 18),
-                        const SizedBox(width: 8),
-                        Text(label, style: Theme.of(ctx).textTheme.labelMedium),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
+              if (quest.rewards.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: quest.rewards.map((r) {
+                    final isXp = r.type == 'xp';
+                    final icon = isXp ? Icons.stars : Icons.auto_awesome;
+                    final color = isXp ? accent : GamerColors.neonPurple;
+                    final label = r.label.isNotEmpty
+                        ? r.label
+                        : (isXp ? '+${r.amount ?? 0} XP' : 'Reward');
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: readingV2
+                            ? cs.surfaceContainerHighest
+                            : GamerColors.darkSurface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: color.withValues(alpha: 0.5), width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(icon, color: color, size: 18),
+                          const SizedBox(width: 8),
+                          Text(label,
+                              style: Theme.of(ctx).textTheme.labelMedium),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  icon: const Icon(Icons.redeem, color: GamerColors.darkBackground),
+                  icon: Icon(Icons.check,
+                      color: readingV2
+                          ? cs.onPrimary
+                          : GamerColors.darkBackground),
                   label: const Text('Claim Rewards'),
                   onPressed: () {
                     Navigator.of(ctx).maybePop();
@@ -91,7 +117,7 @@ Future<void> showTaskCompleteModal({
               ),
             ],
           ),
-        ),
+        )),
       );
     },
   );

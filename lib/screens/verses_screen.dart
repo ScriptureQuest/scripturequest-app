@@ -9,7 +9,6 @@ import 'package:level_up_your_faith/providers/app_provider.dart';
 import 'package:level_up_your_faith/providers/settings_provider.dart';
 import 'package:level_up_your_faith/models/settings.dart';
 import 'package:level_up_your_faith/models/quiz_difficulty.dart';
-import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/models/verse_bookmark.dart';
 import 'package:level_up_your_faith/models/bible_version.dart';
 import 'package:level_up_your_faith/widgets/bible_reader_styles.dart';
@@ -27,8 +26,13 @@ enum _HapticType { selectionClick, lightImpact }
 
 class VersesScreen extends StatefulWidget {
   final String? selectedReference;
-  final int? initialFocusVerse; // when provided, scroll to and gently highlight this verse
-  const VersesScreen({super.key, this.selectedReference, this.initialFocusVerse});
+  final int?
+      initialFocusVerse; // when provided, scroll to and gently highlight this verse
+  const VersesScreen({
+    super.key,
+    this.selectedReference,
+    this.initialFocusVerse,
+  });
 
   @override
   State<VersesScreen> createState() => _VersesScreenState();
@@ -48,13 +52,16 @@ class _VersesScreenState extends State<VersesScreen> {
   PageController? _pageController;
   int _pageCountForBook = 0; // number of chapters for current book
   bool _suppressPageEvents = false; // avoid loops when jumping programmatically
-  final Map<String, Map<int, String>> _chapterCache = {}; // book -> chapter -> text
+  final Map<String, Map<int, String>> _chapterCache =
+      {}; // book -> chapter -> text
 
   // Reading time tracking for quest completion (daily + weekly)
   DateTime? _readingStartTime;
   bool _dailyQuestProgressedThisSession = false;
-  bool _hasMetReadingThreshold = false; // Set to true when user has read for minimum time
-  static const int _minimumReadingSecondsForQuest = 45; // Minimum time to gate quest progression
+  bool _hasMetReadingThreshold =
+      false; // Set to true when user has read for minimum time
+  static const int _minimumReadingSecondsForQuest =
+      45; // Minimum time to gate quest progression
 
   @override
   Widget build(BuildContext context) {
@@ -69,23 +76,28 @@ class _VersesScreenState extends State<VersesScreen> {
         // Reader theme + font scale
         final settings = context.watch<SettingsProvider>();
         final double fontScale = settings.bibleFontScale;
-        final themeData = BibleReaderStyles.themeFor(settings.bibleReaderTheme);
+        final originalReader =
+            BibleReaderStyles.themeFor(settings.bibleReaderTheme);
+        final themeData = BibleReaderThemeData(
+          background: originalReader.background,
+          text: originalReader.text,
+          muted: originalReader.muted,
+          red: originalReader.red,
+          accent: Theme.of(context).colorScheme.primary,
+        );
 
         return Scaffold(
+          backgroundColor: themeData.background,
           appBar: AppBar(
-            leading: Navigator.of(context).canPop()
-                ? IconButton(
-                    icon: const Icon(Icons.arrow_back, color: GamerColors.accent),
-                    onPressed: () => context.pop(),
-                    tooltip: 'Back',
-                    visualDensity: VisualDensity.compact,
-                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                    padding: const EdgeInsets.all(6),
-                  )
-                : null,
-            title: InkWell(
-              borderRadius: BorderRadius.circular(999),
-              onTap: () {
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              tooltip: 'Back to reading home',
+              onPressed: () => Navigator.of(context).canPop()
+                  ? context.pop()
+                  : context.go('/'),
+            ),
+            title: TextButton.icon(
+              onPressed: () {
                 final book = _selectedBook;
                 if (book != null && book.isNotEmpty) {
                   _openChapterPickerForBook(book);
@@ -93,53 +105,39 @@ class _VersesScreenState extends State<VersesScreen> {
                   _openJumpToBookSheet();
                 }
               },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: GamerColors.accent.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: GamerColors.accent.withValues(alpha: 0.45), width: 1),
-                ),
-                child: Builder(builder: (context) {
-                  final book = _selectedBook;
-                  final ch = _selectedChapter;
-                  final label = (book == null || book.isEmpty || ch == null)
-                      ? 'Bible'
-                      : '${book} · ${ch}';
-                  return Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: GamerColors.textPrimary,
-                          letterSpacing: 0.2,
-                          fontWeight: FontWeight.w600,
-                        ),
-                  );
-                }),
+              icon: const Icon(Icons.expand_more, size: 20),
+              label: Text(
+                _selectedBook == null
+                    ? 'Choose a passage'
+                    : '${_selectedBook!} ${_selectedChapter ?? 1}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            centerTitle: true,
             actions: [
-              // Single entry point: Bible Menu
               IconButton(
-                icon: const Icon(Icons.more_vert),
+                tooltip: 'Text size and font',
+                icon: const Icon(Icons.text_fields),
+                onPressed: _openReaderSettings,
+              ),
+              IconButton(
                 tooltip: 'Bible menu',
-                visualDensity: VisualDensity.compact,
-                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                padding: const EdgeInsets.all(6),
+                icon: const Icon(Icons.more_horiz),
                 onPressed: _openBibleMenu,
               ),
             ],
           ),
           body: SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: _buildChapterPager(
-                    fontScale: fontScale,
-                    themeData: themeData,
-                  ),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: _buildChapterPager(
+                  fontScale: fontScale,
+                  themeData: themeData,
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -152,7 +150,7 @@ class _VersesScreenState extends State<VersesScreen> {
     RewardToast.setBottomSheetOpen(true);
     await showModalBottomSheet(
       context: context,
-      backgroundColor: GamerColors.darkCard,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -166,7 +164,10 @@ class _VersesScreenState extends State<VersesScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.menu_book_outlined, color: GamerColors.accent),
+                    Icon(
+                      Icons.menu_book_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -177,7 +178,7 @@ class _VersesScreenState extends State<VersesScreen> {
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(context).pop(),
-                    )
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -199,7 +200,7 @@ class _VersesScreenState extends State<VersesScreen> {
     RewardToast.setBottomSheetOpen(true);
     await showModalBottomSheet(
       context: context,
-      backgroundColor: GamerColors.darkCard,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -215,10 +216,16 @@ class _VersesScreenState extends State<VersesScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.format_size, color: GamerColors.accent),
+                    Icon(
+                      Icons.format_size,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text('Reader Settings', style: theme.textTheme.titleLarge),
+                      child: Text(
+                        'Reader Settings',
+                        style: theme.textTheme.titleLarge,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -231,13 +238,17 @@ class _VersesScreenState extends State<VersesScreen> {
                 // Section: Font
                 Text(
                   'Font',
-                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 _FontStyleChips(
                   current: settings.readerFontStyle,
                   onChanged: (f) async {
-                    await context.read<SettingsProvider>().setReaderFontStyle(f);
+                    await context.read<SettingsProvider>().setReaderFontStyle(
+                          f,
+                        );
                   },
                 ),
 
@@ -246,7 +257,9 @@ class _VersesScreenState extends State<VersesScreen> {
                 // Section: Text size
                 Text(
                   'Text size',
-                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 _TextSizeSlider(
@@ -269,7 +282,7 @@ class _VersesScreenState extends State<VersesScreen> {
     RewardToast.setBottomSheetOpen(true);
     await showModalBottomSheet(
       context: context,
-      backgroundColor: GamerColors.darkCard,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -285,10 +298,16 @@ class _VersesScreenState extends State<VersesScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.color_lens_outlined, color: GamerColors.accent),
+                    Icon(
+                      Icons.color_lens_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text('Appearance', style: theme.textTheme.titleLarge),
+                      child: Text(
+                        'Appearance',
+                        style: theme.textTheme.titleLarge,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
@@ -299,13 +318,17 @@ class _VersesScreenState extends State<VersesScreen> {
                 const SizedBox(height: 12),
                 Text(
                   'Reading style',
-                  style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 _ReaderStyleChips(
                   current: settings.readerColorScheme,
                   onChanged: (s) async {
-                    await context.read<SettingsProvider>().setReaderColorScheme(s);
+                    await context.read<SettingsProvider>().setReaderColorScheme(
+                          s,
+                        );
                   },
                 ),
                 const SizedBox(height: 12),
@@ -317,10 +340,12 @@ class _VersesScreenState extends State<VersesScreen> {
                     "Show Jesus’ words in red",
                     style: theme.textTheme.labelMedium,
                   ),
-                  activeColor: GamerColors.accent,
+                  activeColor: Theme.of(context).colorScheme.primary,
                   value: settings.redLettersEnabled,
                   onChanged: (val) async {
-                    await context.read<SettingsProvider>().setRedLettersEnabled(val);
+                    await context.read<SettingsProvider>().setRedLettersEnabled(
+                          val,
+                        );
                   },
                 ),
               ],
@@ -335,7 +360,9 @@ class _VersesScreenState extends State<VersesScreen> {
   @override
   void initState() {
     super.initState();
-    _currentReference = (widget.selectedReference ?? '').trim().isNotEmpty ? widget.selectedReference!.trim() : null;
+    _currentReference = (widget.selectedReference ?? '').trim().isNotEmpty
+        ? widget.selectedReference!.trim()
+        : null;
   }
 
   // Deprecated: per-verse reader settings sheet (moved into Bible Menu)
@@ -344,11 +371,11 @@ class _VersesScreenState extends State<VersesScreen> {
   Future<void> _openBibleMenuSheet() async {
     // Haptic feedback on open (no-op on web)
     _triggerHaptic(_HapticType.selectionClick);
-    
+
     RewardToast.setBottomSheetOpen(true);
     await showModalBottomSheet(
       context: context,
-      backgroundColor: GamerColors.darkCard,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -357,7 +384,7 @@ class _VersesScreenState extends State<VersesScreen> {
         final theme = Theme.of(ctx);
         final app = ctx.watch<AppProvider>();
         final settings = ctx.watch<SettingsProvider>();
-        
+
         // Parse last reading for display and navigation
         final lastKey = app.lastReadingKey;
         String? lastSubtitle;
@@ -373,15 +400,15 @@ class _VersesScreenState extends State<VersesScreen> {
             }
           }
         }
-        
+
         // Check quiz availability for current chapter (use display name, not ref)
         final book = _selectedBook;
         final chapter = _selectedChapter;
         final bool quizAvailable = (book != null && chapter != null) &&
             ChapterQuizService.getQuizForChapter(book, chapter) != null;
-        
+
         final maxHeight = MediaQuery.of(ctx).size.height * 0.85;
-        
+
         return ConstrainedBox(
           constraints: BoxConstraints(maxHeight: maxHeight),
           child: SafeArea(
@@ -408,22 +435,33 @@ class _VersesScreenState extends State<VersesScreen> {
                     // === READER PREFERENCES (inline) ===
                     Text(
                       'Reader Preferences',
-                      style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Reading style (Paper / Sepia / Night)
-                    Text('Reading style', style: theme.textTheme.labelMedium?.copyWith(color: GamerColors.textSecondary.withValues(alpha: 0.7))),
+                    Text(
+                      'Reading style',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     _ReaderStyleChips(
                       current: settings.readerColorScheme,
                       onChanged: (s) async {
                         _triggerHaptic(_HapticType.selectionClick);
-                        await ctx.read<SettingsProvider>().setReaderColorScheme(s);
+                        await ctx.read<SettingsProvider>().setReaderColorScheme(
+                              s,
+                            );
                       },
                     ),
                     const SizedBox(height: 10),
-                    
+
                     // Red letters toggle
                     SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
@@ -432,36 +470,57 @@ class _VersesScreenState extends State<VersesScreen> {
                         "Show Jesus' words in red",
                         style: theme.textTheme.bodyMedium,
                       ),
-                      activeColor: GamerColors.accent,
+                      activeColor: Theme.of(context).colorScheme.primary,
                       value: settings.redLettersEnabled,
                       onChanged: (val) async {
                         _triggerHaptic(_HapticType.selectionClick);
-                        await ctx.read<SettingsProvider>().setRedLettersEnabled(val);
+                        await ctx.read<SettingsProvider>().setRedLettersEnabled(
+                              val,
+                            );
                       },
                     ),
                     const SizedBox(height: 10),
-                    
+
                     // Font style (Classic / Clean)
-                    Text('Font', style: theme.textTheme.labelMedium?.copyWith(color: GamerColors.textSecondary.withValues(alpha: 0.7))),
+                    Text(
+                      'Font',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     _FontStyleChips(
                       current: settings.readerFontStyle,
                       onChanged: (f) async {
                         _triggerHaptic(_HapticType.selectionClick);
-                        await ctx.read<SettingsProvider>().setReaderFontStyle(f);
+                        await ctx.read<SettingsProvider>().setReaderFontStyle(
+                              f,
+                            );
                       },
                     ),
                     const SizedBox(height: 10),
-                    
+
                     // Text size slider
                     Row(
                       children: [
                         Expanded(
-                          child: Text('Text size', style: theme.textTheme.labelMedium?.copyWith(color: GamerColors.textSecondary.withValues(alpha: 0.7))),
+                          child: Text(
+                            'Text size',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant
+                                  .withValues(alpha: 0.7),
+                            ),
+                          ),
                         ),
                         Text(
                           '${(settings.bibleFontScale * 100).round()}%',
-                          style: theme.textTheme.labelSmall?.copyWith(color: GamerColors.accent),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
                       ],
                     ),
@@ -477,7 +536,9 @@ class _VersesScreenState extends State<VersesScreen> {
                     // === NAVIGATION ===
                     Text(
                       'Navigation',
-                      style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     _menuTile(
@@ -509,7 +570,9 @@ class _VersesScreenState extends State<VersesScreen> {
                     // === YOUR NOTES & MARKS ===
                     Text(
                       'Your Notes & Marks',
-                      style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     _menuTile(
@@ -533,7 +596,7 @@ class _VersesScreenState extends State<VersesScreen> {
                     _menuTile(
                       ctx,
                       icon: Icons.favorite,
-                      iconColor: GamerColors.neonPurple,
+                      iconColor: Theme.of(context).colorScheme.primary,
                       title: 'Favorites',
                       onTap: () {
                         Navigator.of(ctx).pop();
@@ -546,28 +609,46 @@ class _VersesScreenState extends State<VersesScreen> {
                     // === CHAPTER QUIZ (visibility based on availability) ===
                     Text(
                       'Chapter Quiz',
-                      style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     _menuTile(
                       ctx,
                       icon: Icons.quiz_outlined,
-                      title: quizAvailable ? 'Chapter Quiz' : 'Chapter Quiz (Coming soon)',
-                      subtitle: quizAvailable ? 'Test your understanding of this chapter' : null,
+                      title: quizAvailable
+                          ? 'Chapter Quiz'
+                          : 'Chapter Quiz (Coming soon)',
+                      subtitle: quizAvailable
+                          ? 'Test your understanding of this chapter'
+                          : null,
                       enabled: quizAvailable,
                       onTap: quizAvailable
                           ? () {
                               Navigator.of(ctx).pop();
                               if (book != null && chapter != null) {
-                                final uri = Uri(path: '/chapter-quiz', queryParameters: {
-                                  'book': book,
-                                  'chapter': '$chapter',
-                                });
+                                final uri = Uri(
+                                  path: '/chapter-quiz',
+                                  queryParameters: {
+                                    'book': book,
+                                    'chapter': '$chapter',
+                                  },
+                                );
                                 try {
-                                  final bookRef = ctx.read<AppProvider>().bibleService.displayToRef(book);
-                                  final diff = ctx.read<SettingsProvider>().preferredQuizDifficulty;
+                                  final bookRef = ctx
+                                      .read<AppProvider>()
+                                      .bibleService
+                                      .displayToRef(book);
+                                  final diff = ctx
+                                      .read<SettingsProvider>()
+                                      .preferredQuizDifficulty;
                                   ProgressEngine.instance.emit(
-                                    ProgressEvent.chapterQuizStarted(bookRef, chapter, diff.code),
+                                    ProgressEvent.chapterQuizStarted(
+                                      bookRef,
+                                      chapter,
+                                      diff.code,
+                                    ),
                                   );
                                 } catch (_) {}
                                 context.push(uri.toString());
@@ -585,7 +666,7 @@ class _VersesScreenState extends State<VersesScreen> {
     );
     RewardToast.setBottomSheetOpen(false);
   }
-  
+
   // Safe haptic trigger (no-op on web)
   void _triggerHaptic(_HapticType type) {
     try {
@@ -601,7 +682,7 @@ class _VersesScreenState extends State<VersesScreen> {
       // Gracefully no-op on platforms that don't support haptics
     }
   }
-  
+
   // Refresh current chapter content (safe - doesn't reset preferences)
   void _refreshChapterContent() {
     final book = _selectedBook;
@@ -623,18 +704,21 @@ class _VersesScreenState extends State<VersesScreen> {
     RewardToast.setBottomSheetOpen(true);
     await showModalBottomSheet(
       context: context,
-      backgroundColor: GamerColors.darkCard,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         // Partition books into OT and NT based on the index of Matthew
-        final matthewIndex = books.indexWhere((b) => b.toLowerCase() == 'matthew');
+        final matthewIndex = books.indexWhere(
+          (b) => b.toLowerCase() == 'matthew',
+        );
         final ot = matthewIndex > 0 ? books.sublist(0, matthewIndex) : books;
         final nt = matthewIndex > 0 ? books.sublist(matthewIndex) : <String>[];
-        int selectedTab = (_selectedBook != null && (_selectedBook ?? '').isNotEmpty)
-            ? ((ot.contains(_selectedBook)) ? 0 : 1)
-            : 1; // default NT (common start) if unknown
+        int selectedTab =
+            (_selectedBook != null && (_selectedBook ?? '').isNotEmpty)
+                ? ((ot.contains(_selectedBook)) ? 0 : 1)
+                : 1; // default NT (common start) if unknown
 
         return SafeArea(
           child: StatefulBuilder(
@@ -649,10 +733,16 @@ class _VersesScreenState extends State<VersesScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.menu_book, color: GamerColors.accent),
+                        Icon(
+                          Icons.menu_book,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: Text('Jump to Book', style: Theme.of(context).textTheme.titleLarge),
+                          child: Text(
+                            'Jump to Book',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close),
@@ -664,19 +754,25 @@ class _VersesScreenState extends State<VersesScreen> {
                     // Segmented control: OT / NT
                     Container(
                       decoration: BoxDecoration(
-                        color: GamerColors.darkSurface,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.25)),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.25),
+                        ),
                       ),
                       padding: const EdgeInsets.all(4),
                       child: Row(
                         children: [
                           _segButton(
+                            context: context,
                             label: 'Old Testament',
                             selected: selectedTab == 0,
                             onTap: () => setSheetState(() => selectedTab = 0),
                           ),
                           _segButton(
+                            context: context,
                             label: 'New Testament',
                             selected: selectedTab == 1,
                             onTap: () => setSheetState(() => selectedTab = 1),
@@ -689,7 +785,8 @@ class _VersesScreenState extends State<VersesScreen> {
                       constraints: BoxConstraints(maxHeight: maxSheetHeight),
                       child: GridView.builder(
                         shrinkWrap: true,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           mainAxisSpacing: 10,
                           crossAxisSpacing: 10,
@@ -742,7 +839,7 @@ class _VersesScreenState extends State<VersesScreen> {
     try {
       if (_hasMetReadingThreshold) return; // Already met
       if (_readingStartTime == null) return;
-      
+
       final duration = DateTime.now().difference(_readingStartTime!);
       if (duration.inSeconds >= _minimumReadingSecondsForQuest) {
         _hasMetReadingThreshold = true;
@@ -759,10 +856,10 @@ class _VersesScreenState extends State<VersesScreen> {
   void _progressDailyQuestIfEligible(AppProvider provider) {
     try {
       if (_dailyQuestProgressedThisSession) return; // Already progressed
-      
+
       // Update threshold status before checking
       _updateReadingTimeThreshold();
-      
+
       if (_hasMetReadingThreshold) {
         _dailyQuestProgressedThisSession = true;
         // Pass current book and chapter for proper quest target matching
@@ -770,12 +867,16 @@ class _VersesScreenState extends State<VersesScreen> {
           book: _selectedBook,
           chapter: _selectedChapter,
         );
-        debugPrint('Daily reading quest progressed via chapter completion: $_selectedBook $_selectedChapter');
+        debugPrint(
+          'Daily reading quest progressed via chapter completion: $_selectedBook $_selectedChapter',
+        );
       } else {
-        final elapsed = _readingStartTime != null 
-            ? DateTime.now().difference(_readingStartTime!).inSeconds 
+        final elapsed = _readingStartTime != null
+            ? DateTime.now().difference(_readingStartTime!).inSeconds
             : 0;
-        debugPrint('Daily quest NOT progressed: reading time ${elapsed}s < ${_minimumReadingSecondsForQuest}s threshold');
+        debugPrint(
+          'Daily quest NOT progressed: reading time ${elapsed}s < ${_minimumReadingSecondsForQuest}s threshold',
+        );
       }
     } catch (e) {
       debugPrint('_progressDailyQuestIfEligible error: $e');
@@ -796,11 +897,17 @@ class _VersesScreenState extends State<VersesScreen> {
     final hasIncoming = (_currentReference ?? '').trim().isNotEmpty;
     if (hasIncoming) {
       _applyParsedReference(provider, _currentReference!);
-    } else if ((provider.lastBibleBook ?? '').isNotEmpty && (provider.lastBibleChapter ?? 0) > 0) {
+    } else if ((provider.lastBibleBook ?? '').isNotEmpty &&
+        (provider.lastBibleChapter ?? 0) > 0) {
       _selectedBook = provider.lastBibleBook;
       _selectedChapter = provider.lastBibleChapter;
       if (_selectedBook != null && _selectedChapter != null) {
-        _setupPagerForBook(provider, book: _selectedBook!, initialChapter: _selectedChapter!, jump: true);
+        _setupPagerForBook(
+          provider,
+          book: _selectedBook!,
+          initialChapter: _selectedChapter!,
+          jump: true,
+        );
       }
     } else {
       final lastRef = (provider.lastBibleReference ?? '').trim();
@@ -810,7 +917,12 @@ class _VersesScreenState extends State<VersesScreen> {
         // Default to John 3
         _selectedBook = 'John';
         _selectedChapter = 3;
-        _setupPagerForBook(provider, book: _selectedBook!, initialChapter: _selectedChapter!, jump: true);
+        _setupPagerForBook(
+          provider,
+          book: _selectedBook!,
+          initialChapter: _selectedChapter!,
+          jump: true,
+        );
       }
     }
   }
@@ -834,11 +946,14 @@ class _VersesScreenState extends State<VersesScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_loading)
-            const Center(
-                child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: CircularProgressIndicator(color: GamerColors.accent),
-            ))
+            Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            )
           else if ((_currentReference ?? '').isEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -851,7 +966,11 @@ class _VersesScreenState extends State<VersesScreen> {
           else ...[
             Row(
               children: [
-                const Icon(Icons.bookmark, color: GamerColors.accent, size: 18),
+                Icon(
+                  Icons.bookmark,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   '${_currentReference ?? ''} · ${_selectedVersionCode.toUpperCase()}',
@@ -862,26 +981,30 @@ class _VersesScreenState extends State<VersesScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Builder(builder: (context) {
-              final ref = (_currentReference ?? '').trim();
-              final looksSingleVerse = RegExp(r'^.+\s+\d+:\d+$').hasMatch(ref);
-              if (looksSingleVerse) {
-                return RichText(
-                  text: BibleRenderingService.buildVerseSpan(
-                    context,
-                    reference: ref,
-                    text: _passageText,
+            Builder(
+              builder: (context) {
+                final ref = (_currentReference ?? '').trim();
+                final looksSingleVerse = RegExp(
+                  r'^.+\s+\d+:\d+$',
+                ).hasMatch(ref);
+                if (looksSingleVerse) {
+                  return RichText(
+                    text: BibleRenderingService.buildVerseSpan(
+                      context,
+                      reference: ref,
+                      text: _passageText,
+                    ),
+                  );
+                }
+                return Text(
+                  _passageText,
+                  style: BibleReaderStyles.verseTextLegacy(
+                    fontScale,
+                    fontStyle: context.read<SettingsProvider>().readerFontStyle,
                   ),
                 );
-              }
-              return Text(
-                _passageText,
-                style: BibleReaderStyles.verseTextLegacy(
-                  fontScale,
-                  fontStyle: context.read<SettingsProvider>().readerFontStyle,
-                ),
-              );
-            }),
+              },
+            ),
           ],
         ],
       ),
@@ -895,15 +1018,34 @@ class _VersesScreenState extends State<VersesScreen> {
     final provider = context.watch<AppProvider>();
     // If nothing is selected yet, prompt the user
     if ((_selectedBook ?? '').isEmpty) {
-      return Container(
-        decoration: BibleReaderStyles.paperBackgroundDecoration(themeData),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24),
-            child: Text(
-              'Select a book and chapter to begin, or open Scripture from a Quest. ✨',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.auto_stories_outlined,
+                size: 40,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Make room for the Word.',
+                style: Theme.of(context).textTheme.headlineLarge,
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                'Choose a book and chapter. Your highlights, saved verses and reflections are always close at hand.',
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _openJumpToBookSheet,
+                icon: const Icon(Icons.menu_book_outlined),
+                label: const Text('Choose a passage'),
+              ),
+            ],
           ),
         ),
       );
@@ -921,12 +1063,31 @@ class _VersesScreenState extends State<VersesScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: _buildStreakRow(provider),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                Text(
+                  '$_selectedVersionCode • SCRIPTURE',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelSmall?.copyWith(letterSpacing: 1.2),
+                ),
+                Text(
+                  'Tap a verse to save, highlight or reflect',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+              ],
+            ),
           ),
           const Divider(height: 1),
           Expanded(
             child: _pageController == null
-                ? const Center(child: CircularProgressIndicator(color: GamerColors.accent))
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  )
                 : PageView.builder(
                     controller: _pageController,
                     itemCount: _pageCountForBook,
@@ -944,7 +1105,8 @@ class _VersesScreenState extends State<VersesScreen> {
                         loader: (b, c) => provider.loadKjvChapter(b, c),
                         fontScale: fontScale,
                         themeData: themeData,
-                        initialFocusVerse: (ch == chapter) ? widget.initialFocusVerse : null,
+                        initialFocusVerse:
+                            (ch == chapter) ? widget.initialFocusVerse : null,
                         onChapterCompleted: () {
                           // Progress daily quest if reading time threshold was met
                           _progressDailyQuestIfEligible(provider);
@@ -954,7 +1116,41 @@ class _VersesScreenState extends State<VersesScreen> {
                     },
                   ),
           ),
-          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextButton.icon(
+                    onPressed: chapter <= 1
+                        ? null
+                        : () => _pageController?.previousPage(
+                              duration: MediaQuery.disableAnimationsOf(context)
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                            ),
+                    icon: const Icon(Icons.chevron_left),
+                    label: const Text('Previous'),
+                  ),
+                ),
+                Expanded(
+                  child: TextButton.icon(
+                    onPressed: chapter >= _pageCountForBook
+                        ? null
+                        : () => _pageController?.nextPage(
+                              duration: MediaQuery.disableAnimationsOf(context)
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 220),
+                              curve: Curves.easeOut,
+                            ),
+                    icon: const Icon(Icons.chevron_right),
+                    label: const Text('Next chapter'),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -971,7 +1167,7 @@ class _VersesScreenState extends State<VersesScreen> {
     RewardToast.setBottomSheetOpen(true);
     await showModalBottomSheet(
       context: context,
-      backgroundColor: GamerColors.darkCard,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -987,7 +1183,10 @@ class _VersesScreenState extends State<VersesScreen> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.menu_book, color: GamerColors.accent),
+                    Icon(
+                      Icons.menu_book,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -998,7 +1197,7 @@ class _VersesScreenState extends State<VersesScreen> {
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.of(ctx).pop(),
-                    )
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -1011,8 +1210,11 @@ class _VersesScreenState extends State<VersesScreen> {
                   icon: const Icon(Icons.swap_horiz, size: 18),
                   label: const Text('Change Book'),
                   style: TextButton.styleFrom(
-                    foregroundColor: GamerColors.accent,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    foregroundColor: Theme.of(context).colorScheme.primary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     visualDensity: VisualDensity.compact,
                   ),
                 ),
@@ -1028,17 +1230,21 @@ class _VersesScreenState extends State<VersesScreen> {
                         for (int i = 1; i <= total; i++)
                           _ChapterChip(
                             label: '$i',
-                            selected: bookDisplay == _selectedBook && i == (_selectedChapter ?? -1),
+                            selected: bookDisplay == _selectedBook &&
+                                i == (_selectedChapter ?? -1),
                             read: provider.isChapterRead(bookDisplay, i),
                             onTap: () {
                               if (kDebugMode) {
-                                debugPrint('[ChaptersSheet] tapped book=$bookDisplay chapter=$i');
+                                debugPrint(
+                                  '[ChaptersSheet] tapped book=$bookDisplay chapter=$i',
+                                );
                               }
                               // Close this sheet and navigate
                               Navigator.of(ctx).pop();
-                              final uri = Uri(path: '/verses', queryParameters: {
-                                'ref': '$bookDisplay $i',
-                              });
+                              final uri = Uri(
+                                path: '/verses',
+                                queryParameters: {'ref': '$bookDisplay $i'},
+                              );
                               if (mounted) context.push(uri.toString());
                             },
                           ),
@@ -1066,15 +1272,27 @@ class _VersesScreenState extends State<VersesScreen> {
     VoidCallback? onTap,
   }) {
     final theme = Theme.of(context);
-    final t = (title ?? '').isEmpty ? null : Text(title!, style: theme.textTheme.titleMedium);
-    final sub = (subtitle ?? '').isEmpty ? null : Text(subtitle!, style: theme.textTheme.bodySmall?.copyWith(color: GamerColors.textSecondary));
+    final t = (title ?? '').isEmpty
+        ? null
+        : Text(title!, style: theme.textTheme.titleMedium);
+    final sub = (subtitle ?? '').isEmpty
+        ? null
+        : Text(
+            subtitle!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          );
     return ListTile(
       enabled: enabled,
       dense: false,
       visualDensity: const VisualDensity(horizontal: 0, vertical: -1),
       contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       minLeadingWidth: 28,
-      leading: Icon(icon, color: iconColor ?? GamerColors.accent),
+      leading: Icon(
+        icon,
+        color: iconColor ?? Theme.of(context).colorScheme.primary,
+      ),
       title: t,
       subtitle: sub,
       onTap: onTap,
@@ -1090,9 +1308,14 @@ class _VersesScreenState extends State<VersesScreen> {
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
         decoration: BoxDecoration(
-          color: GamerColors.darkCard,
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: GamerColors.accent.withValues(alpha: 0.25), width: 1),
+          border: Border.all(
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.25),
+            width: 1,
+          ),
         ),
         padding: const EdgeInsets.all(14),
         child: Row(
@@ -1102,10 +1325,20 @@ class _VersesScreenState extends State<VersesScreen> {
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: GamerColors.accent.withValues(alpha: 0.12),
-                border: Border.all(color: GamerColors.accent.withValues(alpha: 0.35), width: 1),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.12),
+                border: Border.all(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.35),
+                  width: 1,
+                ),
               ),
-              child: const Icon(Icons.self_improvement, color: GamerColors.accent),
+              child: Icon(
+                Icons.self_improvement,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1113,33 +1346,58 @@ class _VersesScreenState extends State<VersesScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Reflect on this chapter', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Reflect on this chapter',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 2),
-                  Builder(builder: (ctx) {
-                    final d = ctx.watch<SettingsProvider>().preferredQuizDifficulty;
-                    final n = d.desiredQuestionCount;
-                    return Text('Take a ${n}-question quiz', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: GamerColors.textSecondary));
-                  }),
+                  Builder(
+                    builder: (ctx) {
+                      final d =
+                          ctx.watch<SettingsProvider>().preferredQuizDifficulty;
+                      final n = d.desiredQuestionCount;
+                      return Text(
+                        'Take a ${n}-question quiz',
+                        style:
+                            Theme.of(context).textTheme.labelMedium?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
             const SizedBox(width: 12),
             ElevatedButton.icon(
               onPressed: () {
-                final uri = Uri(path: '/chapter-quiz', queryParameters: {
-                  'book': book,
-                  'chapter': '$chapter',
-                });
+                final uri = Uri(
+                  path: '/chapter-quiz',
+                  queryParameters: {'book': book, 'chapter': '$chapter'},
+                );
                 try {
-                  final bookRef = context.read<AppProvider>().bibleService.displayToRef(book);
-                  final diff = context.read<SettingsProvider>().preferredQuizDifficulty;
+                  final bookRef = context
+                      .read<AppProvider>()
+                      .bibleService
+                      .displayToRef(book);
+                  final diff =
+                      context.read<SettingsProvider>().preferredQuizDifficulty;
                   ProgressEngine.instance.emit(
-                    ProgressEvent.chapterQuizStarted(bookRef, chapter, diff.code),
+                    ProgressEvent.chapterQuizStarted(
+                      bookRef,
+                      chapter,
+                      diff.code,
+                    ),
                   );
                 } catch (_) {}
                 context.push(uri.toString());
               },
-              icon: const Icon(Icons.play_arrow, color: GamerColors.darkBackground),
+              icon: Icon(
+                Icons.play_arrow,
+                color: Theme.of(context).colorScheme.surface,
+              ),
               label: const Text('Start Quiz'),
             ),
           ],
@@ -1154,29 +1412,46 @@ class _VersesScreenState extends State<VersesScreen> {
     if (streak <= 0) return const SizedBox.shrink();
     return Row(
       children: [
-        const Icon(Icons.local_fire_department, color: GamerColors.danger, size: 18),
+        Icon(
+          Icons.local_fire_department,
+          color: Theme.of(context).colorScheme.error,
+          size: 18,
+        ),
         const SizedBox(width: 6),
         Text(
           'Streak: $streak day${streak == 1 ? '' : 's'}',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: GamerColors.danger),
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
         ),
         const SizedBox(width: 10),
         if (provider.hasStreakXpBonus)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: GamerColors.success.withValues(alpha: 0.10),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: GamerColors.success.withValues(alpha: 0.5), width: 1),
+              border: Border.all(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.5),
+                width: 1,
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.bolt, color: GamerColors.success, size: 14),
+                Icon(
+                  Icons.bolt,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 14,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'XP Bonus: +10%',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: GamerColors.success,
+                        color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -1192,30 +1467,41 @@ class _VersesScreenState extends State<VersesScreen> {
     final provider = context.watch<AppProvider>();
     return Container(
       decoration: BoxDecoration(
-        color: GamerColors.darkCard,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.25), width: 1),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
+          width: 1,
+        ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          const Icon(Icons.menu_book, color: GamerColors.accent),
+          Icon(Icons.menu_book, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 10),
           Expanded(
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _selectedVersionCode,
-                dropdownColor: GamerColors.darkCard,
-                iconEnabledColor: GamerColors.accent,
+                dropdownColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
+                iconEnabledColor: Theme.of(context).colorScheme.primary,
                 items: BibleVersions.all
-                    .map((v) => DropdownMenuItem<String>(
-                          value: v.code,
-                          child: Text('${v.name} (${v.abbr})',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: GamerColors.textPrimary)),
-                        ))
+                    .map(
+                      (v) => DropdownMenuItem<String>(
+                        value: v.code,
+                        child: Text(
+                          '${v.name} (${v.abbr})',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                        ),
+                      ),
+                    )
                     .toList(),
                 onChanged: (val) async {
                   if (val == null) return;
@@ -1243,28 +1529,38 @@ class _VersesScreenState extends State<VersesScreen> {
     final provider = context.watch<AppProvider>();
     return Container(
       decoration: BoxDecoration(
-        color: GamerColors.darkCard,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.25), width: 1),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
+          width: 1,
+        ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(
         children: [
-          const Icon(Icons.explore, color: GamerColors.accent),
+          Icon(Icons.explore, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 10),
           Expanded(
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _selectedBook,
                 hint: const Text('Select Book'),
-                dropdownColor: GamerColors.darkCard,
-                iconEnabledColor: GamerColors.accent,
+                dropdownColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
+                iconEnabledColor: Theme.of(context).colorScheme.primary,
                 items: provider.bibleService
                     .getAllBooks()
-                    .map((b) => DropdownMenuItem<String>(
-                          value: b,
-                          child: Text(b, style: Theme.of(context).textTheme.bodyMedium),
-                        ))
+                    .map(
+                      (b) => DropdownMenuItem<String>(
+                        value: b,
+                        child: Text(
+                          b,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    )
                     .toList(),
                 onChanged: (val) {
                   if (val == null) return;
@@ -1284,14 +1580,19 @@ class _VersesScreenState extends State<VersesScreen> {
               child: DropdownButton<int>(
                 value: _selectedChapter,
                 hint: const Text('Chapter'),
-                dropdownColor: GamerColors.darkCard,
-                iconEnabledColor: GamerColors.accent,
+                dropdownColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
+                iconEnabledColor: Theme.of(context).colorScheme.primary,
                 items: _buildChapterItems(provider),
                 onChanged: (val) {
                   if (val == null) return;
                   setState(() => _selectedChapter = val);
                   if (_selectedBook != null) {
-                    provider.setLastBibleSelection(bookDisplay: _selectedBook!, chapter: val);
+                    provider.setLastBibleSelection(
+                      bookDisplay: _selectedBook!,
+                      chapter: val,
+                    );
                     _updateSelectionChapterView(provider);
                   }
                 },
@@ -1314,7 +1615,11 @@ class _VersesScreenState extends State<VersesScreen> {
         child: Row(
           children: [
             if (provider.isChapterRead(book, i + 1))
-              const Icon(Icons.check, color: GamerColors.success, size: 16),
+              Icon(
+                Icons.check,
+                color: Theme.of(context).colorScheme.primary,
+                size: 16,
+              ),
             if (provider.isChapterRead(book, i + 1)) const SizedBox(width: 6),
             Text('Ch ${i + 1}', style: Theme.of(context).textTheme.bodyMedium),
           ],
@@ -1348,9 +1653,15 @@ class _VersesScreenState extends State<VersesScreen> {
       if (ch < 1) ch = 1;
       _selectedChapter = ch;
     }
-    _isChapterView = true; // use chapter pager; optional verse highlight could be added
+    _isChapterView =
+        true; // use chapter pager; optional verse highlight could be added
     if (_selectedBook != null && _selectedChapter != null) {
-      _setupPagerForBook(provider, book: _selectedBook!, initialChapter: _selectedChapter!, jump: true);
+      _setupPagerForBook(
+        provider,
+        book: _selectedBook!,
+        initialChapter: _selectedChapter!,
+        jump: true,
+      );
     }
   }
 
@@ -1391,7 +1702,12 @@ class _VersesScreenState extends State<VersesScreen> {
       _currentReference = '$book $chapter';
     });
     // Configure pager and move to selected chapter
-    _setupPagerForBook(provider, book: book, initialChapter: chapter, jump: !load);
+    _setupPagerForBook(
+      provider,
+      book: book,
+      initialChapter: chapter,
+      jump: !load,
+    );
     if (load) {
       _onChapterChanged(provider, chapter, persistOnly: true);
     }
@@ -1440,26 +1756,39 @@ class _VersesScreenState extends State<VersesScreen> {
     final count = provider.bibleService.getChapterCount(book);
     if (_pageController == null || _pageCountForBook != count) {
       _pageCountForBook = count;
-      final initialPage = ((_selectedChapter ?? 1) - 1).clamp(0, (_pageCountForBook - 1).clamp(0, 9999));
+      final initialPage = ((_selectedChapter ?? 1) - 1).clamp(
+        0,
+        (_pageCountForBook - 1).clamp(0, 9999),
+      );
       _pageController?.dispose();
       _pageController = PageController(initialPage: initialPage);
     }
   }
 
-  void _setupPagerForBook(AppProvider provider, {required String book, required int initialChapter, bool jump = true}) {
+  void _setupPagerForBook(
+    AppProvider provider, {
+    required String book,
+    required int initialChapter,
+    bool jump = true,
+  }) {
     setState(() {
       _selectedBook = book;
       _selectedChapter = initialChapter;
     });
     _ensurePagerConfigured(provider);
     if (_pageController != null) {
-      final target = (initialChapter - 1).clamp(0, (_pageCountForBook - 1).clamp(0, 9999));
+      final target = (initialChapter - 1).clamp(
+        0,
+        (_pageCountForBook - 1).clamp(0, 9999),
+      );
       _suppressPageEvents = true;
       if (jump) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || _pageController == null) return;
           if (kDebugMode) {
-            debugPrint('[BibleNav] navigateTo book=$book chapter=$initialChapter');
+            debugPrint(
+              '[BibleNav] navigateTo book=$book chapter=$initialChapter',
+            );
           }
           _pageController!.jumpToPage(target);
           _suppressPageEvents = false;
@@ -1475,19 +1804,30 @@ class _VersesScreenState extends State<VersesScreen> {
         });
       } else {
         _pageController!
-            .animateToPage(target, duration: const Duration(milliseconds: 250), curve: Curves.easeInOut)
+            .animateToPage(
+              target,
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+            )
             .whenComplete(() => _suppressPageEvents = false);
       }
     }
   }
 
-  Future<void> _onChapterChanged(AppProvider provider, int newChapter, {bool persistOnly = false}) async {
+  Future<void> _onChapterChanged(
+    AppProvider provider,
+    int newChapter, {
+    bool persistOnly = false,
+  }) async {
     if (_suppressPageEvents) return;
     setState(() {
       _selectedChapter = newChapter;
       _currentReference = '${_selectedBook ?? ''} $newChapter';
     });
-    provider.setLastBibleSelection(bookDisplay: _selectedBook ?? '', chapter: newChapter);
+    provider.setLastBibleSelection(
+      bookDisplay: _selectedBook ?? '',
+      chapter: newChapter,
+    );
     final refBook = provider.bibleService.displayToRef(_selectedBook ?? '');
     final chapterRef = '$refBook $newChapter';
     provider.setLastBibleReference(chapterRef);
@@ -1516,7 +1856,9 @@ class _VersesScreenState extends State<VersesScreen> {
     // Start/continue reading time tracking (user navigated to a new chapter)
     _startReadingTimer();
     if (kDebugMode) {
-      debugPrint('[BibleState] current book=${_selectedBook ?? ''} chapter=$newChapter');
+      debugPrint(
+        '[BibleState] current book=${_selectedBook ?? ''} chapter=$newChapter',
+      );
     }
   }
 
@@ -1545,9 +1887,9 @@ class _VersesScreenState extends State<VersesScreen> {
             await provider.removeBookmark(match.id);
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 behavior: SnackBarBehavior.floating,
-                backgroundColor: GamerColors.darkSurface,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 content: Text('Removed from Favorites'),
               ),
             );
@@ -1558,9 +1900,9 @@ class _VersesScreenState extends State<VersesScreen> {
             await provider.addBookmark(bm);
             if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 behavior: SnackBarBehavior.floating,
-                backgroundColor: GamerColors.darkSurface,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 content: Text('Added to Favorites'),
               ),
             );
@@ -1570,7 +1912,9 @@ class _VersesScreenState extends State<VersesScreen> {
       },
       icon: Icon(
         isBookmarked ? Icons.bookmark : Icons.bookmark_outline,
-        color: isBookmarked ? GamerColors.accent : GamerColors.textSecondary,
+        color: isBookmarked
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.onSurfaceVariant,
       ),
     );
   }
@@ -1580,8 +1924,13 @@ class _VersesScreenState extends State<VersesScreen> {
       final ref = (_currentReference ?? '').trim();
       if (ref.isEmpty) return null;
       // Determine book/chapter/verse
-      String displayBook = _selectedBook ?? provider.bibleService.refToDisplay(provider.bibleService.parseReference(ref)['bookRef'] as String? ?? '');
-      int chapter = _selectedChapter ?? (provider.bibleService.parseReference(ref)['chapter'] as int? ?? 1);
+      String displayBook = _selectedBook ??
+          provider.bibleService.refToDisplay(
+            provider.bibleService.parseReference(ref)['bookRef'] as String? ??
+                '',
+          );
+      int chapter = _selectedChapter ??
+          (provider.bibleService.parseReference(ref)['chapter'] as int? ?? 1);
       int? verse;
       final m = RegExp(r':(\d+)').firstMatch(ref);
       if (!_isChapterView && m != null) {
@@ -1625,8 +1974,10 @@ class _ChapterPage extends StatefulWidget {
   final double fontScale;
   final BibleReaderThemeData themeData;
   final int? initialFocusVerse;
-  final VoidCallback? onChapterCompleted; // Called when user taps "Complete Chapter"
-  final bool Function() hasMetReadingThreshold; // Returns true if reading time threshold was met
+  final VoidCallback?
+      onChapterCompleted; // Called when user taps "Complete Chapter"
+  final bool Function()
+      hasMetReadingThreshold; // Returns true if reading time threshold was met
   const _ChapterPage({
     super.key,
     required this.book,
@@ -1653,24 +2004,25 @@ class _ChapterPageState extends State<_ChapterPage> {
   int? _focusedVerse;
   bool _didInitialFocus = false;
   final ScrollController _scrollController = ScrollController();
-  
+
   // Complete Chapter eligibility tracking (v2.2)
   DateTime? _chapterLoadedAt; // Presence timer start
-  bool _hasScrolled = false; // User started scrolling (via ScrollStartNotification)
+  bool _hasScrolled =
+      false; // User started scrolling (via ScrollStartNotification)
   bool _isShortChapter = false; // Content fits viewport (no scroll needed)
   static const int _minPresenceSeconds = 12; // Minimum time on chapter screen
-  
+
   // Live countdown timer for button label
   Timer? _countdownTimer;
   int _remainingSeconds = _minPresenceSeconds;
-  
+
   @override
   void dispose() {
     _countdownTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
-  
+
   /// Start or restart the countdown timer when panel becomes visible
   void _startCountdownTimer() {
     _countdownTimer?.cancel();
@@ -1689,7 +2041,7 @@ class _ChapterPageState extends State<_ChapterPage> {
       });
     }
   }
-  
+
   /// Update remaining seconds based on presence time
   void _updateRemainingSeconds() {
     if (_chapterLoadedAt == null) {
@@ -1697,9 +2049,12 @@ class _ChapterPageState extends State<_ChapterPage> {
       return;
     }
     final elapsed = DateTime.now().difference(_chapterLoadedAt!).inSeconds;
-    _remainingSeconds = (_minPresenceSeconds - elapsed).clamp(0, _minPresenceSeconds);
+    _remainingSeconds = (_minPresenceSeconds - elapsed).clamp(
+      0,
+      _minPresenceSeconds,
+    );
   }
-  
+
   /// Get the button label based on eligibility
   String _getButtonLabel() {
     if (_isEligibleToComplete()) {
@@ -1711,21 +2066,22 @@ class _ChapterPageState extends State<_ChapterPage> {
     }
     return 'Complete Chapter';
   }
-  
+
   /// Check if content fits viewport and mark as short chapter if so
   /// Uses actual scroll metrics from ScrollController after layout
   void _checkIfViewportFit() {
     if (!mounted || _isShortChapter || _showEndPanel) return;
-    
+
     // Schedule check after layout is complete
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _isShortChapter || _showEndPanel) return;
-      
+
       // Check if scroll controller has position and if content fits viewport
       if (_scrollController.hasClients) {
         final maxExtent = _scrollController.position.maxScrollExtent;
         // If content requires minimal or no scrolling, it's a viewport-fit chapter
-        if (maxExtent <= 100) { // 100px threshold covers chapters that barely need scrolling
+        if (maxExtent <= 100) {
+          // 100px threshold covers chapters that barely need scrolling
           setState(() {
             _isShortChapter = true;
             _showEndPanel = true;
@@ -1734,11 +2090,11 @@ class _ChapterPageState extends State<_ChapterPage> {
           return;
         }
       }
-      
+
       // Fallback: If scroll controller not ready, retry after a short delay
       Future.delayed(const Duration(milliseconds: 300), () {
         if (!mounted || _isShortChapter || _showEndPanel) return;
-        
+
         if (_scrollController.hasClients) {
           final maxExtent = _scrollController.position.maxScrollExtent;
           if (maxExtent <= 100) {
@@ -1773,7 +2129,7 @@ class _ChapterPageState extends State<_ChapterPage> {
       _load();
     }
   }
-  
+
   /// Check if Complete Chapter is eligible (v2.2 foolproof logic)
   /// Eligible when BOTH conditions met:
   /// A) Minimum presence time >= 12 seconds
@@ -1787,14 +2143,17 @@ class _ChapterPageState extends State<_ChapterPage> {
     if (_chapterLoadedAt == null) return false;
     final presence = DateTime.now().difference(_chapterLoadedAt!).inSeconds;
     if (presence < _minPresenceSeconds) return false;
-    
+
     // Condition B: at least one engagement
     // Panel visibility (_showEndPanel) is an engagement signal - user either scrolled
     // to 92% of content or it's a short chapter that auto-revealed the panel
     final hasReadingThreshold = widget.hasMetReadingThreshold();
-    return hasReadingThreshold || _isShortChapter || _hasScrolled || _showEndPanel;
+    return hasReadingThreshold ||
+        _isShortChapter ||
+        _hasScrolled ||
+        _showEndPanel;
   }
-  
+
   /// Get message for why completion is disabled
   String _getDisabledReason() {
     if (_chapterLoadedAt == null) return 'Loading...';
@@ -1862,16 +2221,26 @@ class _ChapterPageState extends State<_ChapterPage> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: GamerColors.accent));
+      return Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      );
     }
     final text = _text ?? '';
     final fontScale = widget.fontScale;
     final themeData = widget.themeData;
-    final showRed = context.select<SettingsProvider, bool>((sp) => sp.redLettersEnabled);
-    final fontStyle = context.select<SettingsProvider, ReaderFontStyle>((sp) => sp.readerFontStyle);
+    final showRed = context.select<SettingsProvider, bool>(
+      (sp) => sp.redLettersEnabled,
+    );
+    final fontStyle = context.select<SettingsProvider, ReaderFontStyle>(
+      (sp) => sp.readerFontStyle,
+    );
     final verses = _parseVerses(text);
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 220),
       switchInCurve: Curves.easeIn,
       switchOutCurve: Curves.easeOut,
       child: Stack(
@@ -1888,7 +2257,8 @@ class _ChapterPageState extends State<_ChapterPage> {
                 if (!_isShortChapter) {
                   setState(() {
                     _isShortChapter = true;
-                    _showEndPanel = true; // Always show panel for viewport-fit chapters
+                    _showEndPanel =
+                        true; // Always show panel for viewport-fit chapters
                   });
                   // Start countdown timer when panel becomes visible
                   _startCountdownTimer();
@@ -1900,7 +2270,8 @@ class _ChapterPageState extends State<_ChapterPage> {
                 _hasScrolled = true;
               }
               final pct = n.metrics.pixels / n.metrics.maxScrollExtent;
-              final shouldShow = pct >= 0.92; // Slightly earlier reveal (was 0.95)
+              final shouldShow =
+                  pct >= 0.92; // Slightly earlier reveal (was 0.95)
               if (shouldShow != _showEndPanel) {
                 setState(() => _showEndPanel = shouldShow);
                 // Start countdown timer when panel becomes visible
@@ -1912,14 +2283,51 @@ class _ChapterPageState extends State<_ChapterPage> {
             },
             child: ListView.builder(
               controller: _scrollController,
-              key: ValueKey('${widget.book}-${widget.chapter}-${text.hashCode}'),
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 140),
-              itemCount: verses.length,
+              key: ValueKey(
+                '${widget.book}-${widget.chapter}-${text.hashCode}',
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              itemCount: verses.length + 2,
               itemBuilder: (context, index) {
-                final v = verses[index];
-                _verseKeys.putIfAbsent(v.number, () => GlobalKey(debugLabel: 'v_${v.number}'));
+                if (index == 0)
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 16, 12, 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.book,
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Chapter ${widget.chapter}',
+                          style: Theme.of(context).textTheme.headlineLarge,
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: 40,
+                          child: Divider(
+                            thickness: 2,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                if (index == verses.length + 1)
+                  return _buildChapterEnd(context);
+                final v = verses[index - 1];
+                _verseKeys.putIfAbsent(
+                  v.number,
+                  () => GlobalKey(debugLabel: 'v_${v.number}'),
+                );
                 final app = context.read<AppProvider>();
-                final verseKey = app.verseKeyFor(widget.book, widget.chapter, v.number);
+                final verseKey = app.verseKeyFor(
+                  widget.book,
+                  widget.chapter,
+                  v.number,
+                );
                 final colorKey = app.getHighlightColorKey(verseKey);
                 final isJesus = BibleRedLetterHelper.isJesusSpeaking(
                   bookName: widget.book,
@@ -1928,11 +2336,19 @@ class _ChapterPageState extends State<_ChapterPage> {
                 );
                 final bg = (colorKey == null)
                     ? null
-                    : BibleReaderStyles.highlightColor(colorKey).withValues(alpha: 0.18);
+                    : BibleReaderStyles.highlightColor(
+                        colorKey,
+                      ).withValues(alpha: 0.18);
                 final isHighlighted = colorKey != null;
-                final isFocus = (_focusedVerse != null && v.number == _focusedVerse);
+                final isFocus =
+                    (_focusedVerse != null && v.number == _focusedVerse);
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
+                  onTap: () => _showVerseActions(
+                    verseKey: verseKey,
+                    verseNumber: v.number,
+                    verseText: v.text,
+                  ),
                   onLongPress: () => _showVerseActions(
                     verseKey: verseKey,
                     verseNumber: v.number,
@@ -1940,37 +2356,59 @@ class _ChapterPageState extends State<_ChapterPage> {
                   ),
                   child: AnimatedContainer(
                     key: _verseKeys[v.number],
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                    duration: const Duration(milliseconds: 600),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 7,
+                    ),
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 600),
                     curve: Curves.easeOut,
                     decoration: BoxDecoration(
                       color: isHighlighted
                           ? bg
-                          : (isFocus ? GamerColors.accent.withValues(alpha: 0.08) : null),
+                          : (isFocus
+                              ? Theme.of(
+                                  context,
+                                ).colorScheme.primary.withValues(alpha: 0.08)
+                              : null),
                       borderRadius: BorderRadius.zero,
                       border: isHighlighted
                           ? Border(
                               left: BorderSide(
-                                color: BibleReaderStyles
-                                    .highlightColor(colorKey!)
-                                    .withValues(alpha: 0.9),
+                                color: BibleReaderStyles.highlightColor(
+                                  colorKey!,
+                                ).withValues(alpha: 0.9),
                                 width: 2.0,
                               ),
                             )
                           : null,
                     ),
                     child: RichText(
+                      textScaler: MediaQuery.textScalerOf(context),
                       text: TextSpan(
                         children: [
                           TextSpan(
                             text: '${v.number} ',
-                            style: BibleReaderStyles.verseNumber(fontScale, themeData, fontStyle: fontStyle),
+                            style: BibleReaderStyles.verseNumber(
+                              fontScale,
+                              themeData,
+                              fontStyle: fontStyle,
+                            ),
                           ),
                           TextSpan(
                             text: v.text.trim(),
                             style: (showRed && isJesus)
-                                ? BibleReaderStyles.jesusWords(fontScale, themeData, fontStyle: fontStyle)
-                                : BibleReaderStyles.verseBody(fontScale, themeData, fontStyle: fontStyle),
+                                ? BibleReaderStyles.jesusWords(
+                                    fontScale,
+                                    themeData,
+                                    fontStyle: fontStyle,
+                                  )
+                                : BibleReaderStyles.verseBody(
+                                    fontScale,
+                                    themeData,
+                                    fontStyle: fontStyle,
+                                  ),
                           ),
                         ],
                       ),
@@ -1980,151 +2418,189 @@ class _ChapterPageState extends State<_ChapterPage> {
               },
             ),
           ),
-          // Bottom-of-chapter reveal panel
-          Positioned(
-            left: 12,
-            right: 12,
-            bottom: 12,
-            child: IgnorePointer(
-              ignoring: !_showEndPanel,
-              child: AnimatedSlide(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeInOut,
-                offset: _showEndPanel ? Offset.zero : const Offset(0, 0.2),
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeInOut,
-                  opacity: _showEndPanel ? 1.0 : 0.0,
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: GamerColors.darkCard,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: GamerColors.accent.withValues(alpha: 0.25), width: 1),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: GamerColors.accent.withValues(alpha: 0.12),
-                                border: Border.all(color: GamerColors.accent.withValues(alpha: 0.35), width: 1),
-                              ),
-                              child: const Icon(Icons.menu_book_outlined, color: GamerColors.accent),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                'You reached the end of this chapter',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton(
-                                onPressed: _isEligibleToComplete()
-                                    ? () async {
-                                        if (kDebugMode) {
-                                          debugPrint('[CompleteChapter] pressed book=${widget.book} chapter=${widget.chapter} eligible=true');
-                                        }
-                                        HapticFeedback.lightImpact();
-                                        final app = context.read<AppProvider>();
-                                        // Record chapter completion (updates stats, weekly quest only if time threshold met)
-                                        final hasMetThreshold = widget.hasMetReadingThreshold();
-                                        await app.recordChapterRead(widget.book, widget.chapter, hasMetReadingThreshold: hasMetThreshold);
-                                        if (kDebugMode) {
-                                          debugPrint('[CompleteChapter] persisted=true');
-                                        }
-                                        // Notify parent about chapter completion (for daily quest tracking)
-                                        widget.onChapterCompleted?.call();
-                                        if (!mounted) return;
-                                        RewardToast.showSuccess(
-                                          context,
-                                          title: 'Chapter completed',
-                                          subtitle: '${widget.book} ${widget.chapter}',
-                                        );
-                                        try {
-                                          final bookRef = app.bibleService.displayToRef(widget.book);
-                                          await ProgressEngine.instance.emit(
-                                            ProgressEvent.chapterCompleted(
-                                              bookRef,
-                                              widget.book,
-                                              widget.chapter,
-                                            ),
-                                          );
-                                        } catch (_) {}
-                                        // Show a subtle in-page completion banner (+10 XP)
-                                        if (mounted) {
-                                          setState(() => _showCompletionBanner = true);
-                                          Future.delayed(const Duration(milliseconds: 2600), () {
-                                            if (mounted) {
-                                              setState(() => _showCompletionBanner = false);
-                                            }
-                                          });
-                                        }
-                                      }
-                                    : null, // Disabled when not eligible
-                                child: Text(_getButtonLabel()),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Builder(
-                              builder: (ctx) {
-                                // Use display name for quiz lookup (ChapterQuizService uses display names)
-                                final quizAvailable = ChapterQuizService.getQuizForChapter(widget.book, widget.chapter) != null;
-                                return OutlinedButton.icon(
-                                  onPressed: quizAvailable
-                                      ? () {
-                                          final uri = Uri(path: '/chapter-quiz', queryParameters: {
-                                            'book': widget.book,
-                                            'chapter': '${widget.chapter}',
-                                          });
-                                          try {
-                                            final app = ctx.read<AppProvider>();
-                                            final bookRef = app.bibleService.displayToRef(widget.book);
-                                            final diff = ctx.read<SettingsProvider>().preferredQuizDifficulty;
-                                            ProgressEngine.instance.emit(
-                                              ProgressEvent.chapterQuizStarted(bookRef, widget.chapter, diff.code),
-                                            );
-                                          } catch (_) {}
-                                          context.push(uri.toString());
-                                        }
-                                      : null,
-                                  icon: const Icon(Icons.quiz_outlined),
-                                  label: Text(quizAvailable ? 'Take Chapter Quiz' : 'Quiz (Coming soon)'),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
           // Small animated banner when chapter completion occurs
           Positioned(
             left: 16,
             right: 16,
             bottom: 16,
-            child: IgnorePointer(ignoring: !_showCompletionBanner, child: _CompletionBanner(visible: _showCompletionBanner)),
+            child: IgnorePointer(
+              ignoring: !_showCompletionBanner,
+              child: _CompletionBanner(visible: _showCompletionBanner),
+            ),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildChapterEnd(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(8, 24, 8, 24),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.12),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.35),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.menu_book_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'A moment to take it in',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Complete the chapter to record your reading. Reading quests also require 45 seconds in the reader.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isEligibleToComplete()
+                          ? () async {
+                              if (kDebugMode) {
+                                debugPrint(
+                                  '[CompleteChapter] pressed book=${widget.book} chapter=${widget.chapter} eligible=true',
+                                );
+                              }
+                              HapticFeedback.lightImpact();
+                              final app = context.read<AppProvider>();
+                              // Record chapter completion (updates stats, weekly quest only if time threshold met)
+                              final hasMetThreshold =
+                                  widget.hasMetReadingThreshold();
+                              await app.recordChapterRead(
+                                widget.book,
+                                widget.chapter,
+                                hasMetReadingThreshold: hasMetThreshold,
+                              );
+                              if (kDebugMode) {
+                                debugPrint('[CompleteChapter] persisted=true');
+                              }
+                              // Notify parent about chapter completion (for daily quest tracking)
+                              widget.onChapterCompleted?.call();
+                              if (!mounted) return;
+                              try {
+                                final bookRef = app.bibleService.displayToRef(
+                                  widget.book,
+                                );
+                                await ProgressEngine.instance.emit(
+                                  ProgressEvent.chapterCompleted(
+                                    bookRef,
+                                    widget.book,
+                                    widget.chapter,
+                                  ),
+                                );
+                              } catch (_) {}
+                              // Show a subtle in-page completion banner (+10 XP)
+                              if (mounted) {
+                                setState(() => _showCompletionBanner = true);
+                                Future.delayed(
+                                  const Duration(milliseconds: 2600),
+                                  () {
+                                    if (mounted) {
+                                      setState(
+                                          () => _showCompletionBanner = false);
+                                    }
+                                  },
+                                );
+                              }
+                            }
+                          : null, // Disabled when not eligible
+                      child: Text(_getButtonLabel()),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Builder(
+                    builder: (ctx) {
+                      // Use display name for quiz lookup (ChapterQuizService uses display names)
+                      final quizAvailable =
+                          ChapterQuizService.getQuizForChapter(
+                                widget.book,
+                                widget.chapter,
+                              ) !=
+                              null;
+                      if (!quizAvailable) return const SizedBox.shrink();
+                      return OutlinedButton.icon(
+                        onPressed: quizAvailable
+                            ? () {
+                                final uri = Uri(
+                                  path: '/chapter-quiz',
+                                  queryParameters: {
+                                    'book': widget.book,
+                                    'chapter': '${widget.chapter}',
+                                  },
+                                );
+                                try {
+                                  final app = ctx.read<AppProvider>();
+                                  final bookRef = app.bibleService.displayToRef(
+                                    widget.book,
+                                  );
+                                  final diff = ctx
+                                      .read<SettingsProvider>()
+                                      .preferredQuizDifficulty;
+                                  ProgressEngine.instance.emit(
+                                    ProgressEvent.chapterQuizStarted(
+                                      bookRef,
+                                      widget.chapter,
+                                      diff.code,
+                                    ),
+                                  );
+                                } catch (_) {}
+                                context.push(uri.toString());
+                              }
+                            : null,
+                        icon: const Icon(Icons.quiz_outlined),
+                        label: Text(
+                          quizAvailable
+                              ? 'Take Chapter Quiz'
+                              : 'Quiz (Coming soon)',
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
 
   Future<void> _showVerseActions({
     required String verseKey,
@@ -2133,12 +2609,13 @@ class _ChapterPageState extends State<_ChapterPage> {
   }) {
     final app = context.read<AppProvider>();
     final current = app.getHighlightColorKey(verseKey);
-    final title = 'Verse Actions — ${widget.book} ${widget.chapter}:$verseNumber';
+    final title =
+        'Verse Actions — ${widget.book} ${widget.chapter}:$verseNumber';
     final isFav = app.isFavoriteVerse(verseKey);
     RewardToast.setBottomSheetOpen(true);
     return showModalBottomSheet(
       context: context,
-      backgroundColor: GamerColors.darkCard,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2151,8 +2628,8 @@ class _ChapterPageState extends State<_ChapterPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                Row(
-                  children: [
+                  Row(
+                    children: [
                       Expanded(
                         child: Text(
                           title,
@@ -2162,174 +2639,195 @@ class _ChapterPageState extends State<_ChapterPage> {
                           softWrap: true,
                         ),
                       ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                // Section 1 — Favorite
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    isFav ? Icons.favorite : Icons.favorite_border,
-                    color: isFav ? GamerColors.neonPurple : GamerColors.textSecondary,
-                  ),
-                  title: Text(isFav ? 'Unfavorite verse' : 'Favorite verse'),
-                  onTap: () async {
-                    await app.toggleFavoriteVerse(verseKey);
-                    if (mounted) Navigator.of(ctx).pop();
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                // Section 2 — Journal
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.edit_note),
-                  title: const Text('Journal this verse'),
-                  subtitle: const Text(
-                    'Start a new entry with this verse',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: true,
-                  ),
-                  onTap: () async {
-                    final ref = '${widget.book} ${widget.chapter}:$verseNumber';
-                    final body = '$ref — "${verseText.trim()}"\n\n';
-                    final refRoute = Uri(path: '/verses', queryParameters: {
-                      'ref': ref,
-                    }).toString();
-                    Navigator.of(ctx).pop();
-                    // Open Journal editor in create mode with prefilled content
-                    RewardToast.setBottomSheetOpen(true);
-                    await showModalBottomSheet<bool>(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (bctx) => JournalEditorSheet(
-                        initialTitle: ref,
-                        initialBody: body,
-                        initialTags: const ['Study', 'Notes'],
-                        initialLinkedRef: ref,
-                        initialLinkedRefRoute: refRoute,
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(ctx).pop(),
                       ),
-                    ).whenComplete(() => RewardToast.setBottomSheetOpen(false));
-                  },
-                ),
-
-                // Section 2 — Memorize
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.flag_outlined),
-                  title: const Text('Memorize this verse'),
-                  subtitle: const Text(
-                    'Open memorization practice',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: true,
+                    ],
                   ),
-                  onTap: () async {
-                    // Ensure it appears in memorization list by favoriting if needed
-                    if (!app.isFavoriteVerse(verseKey)) {
+                  const SizedBox(height: 8),
+
+                  // Section 1 — Favorite
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      isFav ? Icons.favorite : Icons.favorite_border,
+                      color: isFav
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    title: Text(isFav ? 'Unfavorite verse' : 'Favorite verse'),
+                    onTap: () async {
                       await app.toggleFavoriteVerse(verseKey);
-                    }
-                    final uri = Uri(path: '/memorization-practice', queryParameters: {
-                      'key': verseKey,
-                    });
-                    Navigator.of(ctx).pop();
-                    if (mounted) context.push(uri.toString());
-                  },
-                ),
-
-                const SizedBox(height: 12),
-
-                // Section 3 — Highlight
-                Text('Highlight', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: GamerColors.accent)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    _HighlightChip(
-                      label: 'Sun',
-                      color: BibleReaderStyles.highlightColor('sun'),
-                      selected: current == 'sun',
-                      onTap: () async {
-                        await app.setHighlight(verseKey, 'sun');
-                        if (mounted) Navigator.of(ctx).pop();
-                      },
-                    ),
-                    _HighlightChip(
-                      label: 'Mint',
-                      color: BibleReaderStyles.highlightColor('mint'),
-                      selected: current == 'mint',
-                      onTap: () async {
-                        await app.setHighlight(verseKey, 'mint');
-                        if (mounted) Navigator.of(ctx).pop();
-                      },
-                    ),
-                    _HighlightChip(
-                      label: 'Violet',
-                      color: BibleReaderStyles.highlightColor('violet'),
-                      selected: current == 'violet',
-                      onTap: () async {
-                        await app.setHighlight(verseKey, 'violet');
-                        if (mounted) Navigator.of(ctx).pop();
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                if (current != null)
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () async {
-                        await app.clearHighlight(verseKey);
-                        if (mounted) Navigator.of(ctx).pop();
-                      },
-                      icon: const Icon(Icons.clear, color: GamerColors.textSecondary),
-                      label: const Text(
-                        'Clear highlight',
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                      if (mounted) Navigator.of(ctx).pop();
+                    },
                   ),
 
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                // Section 4 — Copy
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.copy),
-                  title: const Text('Copy verse'),
-                  onTap: () async {
-                    final payload = '${widget.book} ${widget.chapter}:$verseNumber — ${verseText.trim()}';
-                    await Clipboard.setData(ClipboardData(text: payload));
-                    RewardToast.showSuccess(context, title: 'Copied to clipboard');
-                    if (mounted) Navigator.of(ctx).pop();
-                  },
-                ),
+                  // Section 2 — Journal
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.edit_note),
+                    title: const Text('Journal this verse'),
+                    subtitle: const Text(
+                      'Start a new entry with this verse',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
+                    ),
+                    onTap: () async {
+                      final ref =
+                          '${widget.book} ${widget.chapter}:$verseNumber';
+                      final body = '$ref — "${verseText.trim()}"\n\n';
+                      final refRoute = Uri(
+                        path: '/verses',
+                        queryParameters: {'ref': ref},
+                      ).toString();
+                      Navigator.of(ctx).pop();
+                      // Open Journal editor in create mode with prefilled content
+                      RewardToast.setBottomSheetOpen(true);
+                      await showModalBottomSheet<bool>(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (bctx) => JournalEditorSheet(
+                          initialTitle: ref,
+                          initialBody: body,
+                          initialTags: const ['Study', 'Notes'],
+                          initialLinkedRef: ref,
+                          initialLinkedRefRoute: refRoute,
+                        ),
+                      ).whenComplete(
+                        () => RewardToast.setBottomSheetOpen(false),
+                      );
+                    },
+                  ),
 
-                // Section 5 — Share
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.ios_share),
-                  title: const Text('Share verse'),
-                  onTap: () async {
-                    final payload = '${widget.book} ${widget.chapter}:$verseNumber — ${verseText.trim()}';
-                    await Share.share(
-                      payload,
-                      subject: 'Scripture Quest™ — ${widget.book} ${widget.chapter}:$verseNumber',
-                    );
-                    if (mounted) Navigator.of(ctx).pop();
-                  },
-                ),
-              ],
+                  // Section 2 — Memorize
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.flag_outlined),
+                    title: const Text('Memorize this verse'),
+                    subtitle: const Text(
+                      'Open memorization practice',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
+                    ),
+                    onTap: () async {
+                      // Ensure it appears in memorization list by favoriting if needed
+                      if (!app.isFavoriteVerse(verseKey)) {
+                        await app.toggleFavoriteVerse(verseKey);
+                      }
+                      final uri = Uri(
+                        path: '/memorization-practice',
+                        queryParameters: {'key': verseKey},
+                      );
+                      Navigator.of(ctx).pop();
+                      if (mounted) context.push(uri.toString());
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Section 3 — Highlight
+                  Text(
+                    'Highlight',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _HighlightChip(
+                        label: 'Sun',
+                        color: BibleReaderStyles.highlightColor('sun'),
+                        selected: current == 'sun',
+                        onTap: () async {
+                          await app.setHighlight(verseKey, 'sun');
+                          if (mounted) Navigator.of(ctx).pop();
+                        },
+                      ),
+                      _HighlightChip(
+                        label: 'Mint',
+                        color: BibleReaderStyles.highlightColor('mint'),
+                        selected: current == 'mint',
+                        onTap: () async {
+                          await app.setHighlight(verseKey, 'mint');
+                          if (mounted) Navigator.of(ctx).pop();
+                        },
+                      ),
+                      _HighlightChip(
+                        label: 'Violet',
+                        color: BibleReaderStyles.highlightColor('violet'),
+                        selected: current == 'violet',
+                        onTap: () async {
+                          await app.setHighlight(verseKey, 'violet');
+                          if (mounted) Navigator.of(ctx).pop();
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  if (current != null)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () async {
+                          await app.clearHighlight(verseKey);
+                          if (mounted) Navigator.of(ctx).pop();
+                        },
+                        icon: Icon(
+                          Icons.clear,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        label: const Text(
+                          'Clear highlight',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 12),
+
+                  // Section 4 — Copy
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.copy),
+                    title: const Text('Copy verse'),
+                    onTap: () async {
+                      final payload =
+                          '${widget.book} ${widget.chapter}:$verseNumber — ${verseText.trim()}';
+                      await Clipboard.setData(ClipboardData(text: payload));
+                      RewardToast.showSuccess(
+                        context,
+                        title: 'Copied to clipboard',
+                      );
+                      if (mounted) Navigator.of(ctx).pop();
+                    },
+                  ),
+
+                  // Section 5 — Share
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.ios_share),
+                    title: const Text('Share verse'),
+                    onTap: () async {
+                      final payload =
+                          '${widget.book} ${widget.chapter}:$verseNumber — ${verseText.trim()}';
+                      await Share.share(
+                        payload,
+                        subject:
+                            'Scripture Quest™ — ${widget.book} ${widget.chapter}:$verseNumber',
+                      );
+                      if (mounted) Navigator.of(ctx).pop();
+                    },
+                  ),
+                ],
               ),
             ),
           ),
@@ -2372,13 +2870,22 @@ class _HighlightChip extends StatelessWidget {
   final Color color;
   final bool selected;
   final VoidCallback onTap;
-  const _HighlightChip({required this.label, required this.color, required this.selected, required this.onTap});
+  const _HighlightChip({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected ? color.withValues(alpha: 0.25) : color.withValues(alpha: 0.12);
-    final border = selected ? color.withValues(alpha: 0.55) : color.withValues(alpha: 0.35);
-    final textColor = Colors.white;
+    final bg = selected
+        ? color.withValues(alpha: 0.25)
+        : color.withValues(alpha: 0.12);
+    final border = selected
+        ? color.withValues(alpha: 0.55)
+        : color.withValues(alpha: 0.35);
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
@@ -2398,7 +2905,12 @@ class _HighlightChip extends StatelessWidget {
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 8),
-            Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: textColor)),
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: textColor),
+            ),
           ],
         ),
       ),
@@ -2421,12 +2933,12 @@ class _ChapterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = selected
-        ? GamerColors.accent.withValues(alpha: 0.22)
-        : GamerColors.accent.withValues(alpha: 0.10);
+        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.22)
+        : Theme.of(context).colorScheme.primary.withValues(alpha: 0.10);
     final border = selected
-        ? GamerColors.accent.withValues(alpha: 0.60)
-        : GamerColors.accent.withValues(alpha: 0.35);
-    final textColor = Colors.white;
+        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.60)
+        : Theme.of(context).colorScheme.primary.withValues(alpha: 0.35);
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
@@ -2441,10 +2953,19 @@ class _ChapterChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (read) ...[
-              const Icon(Icons.check, color: GamerColors.success, size: 14),
+              Icon(
+                Icons.check,
+                color: Theme.of(context).colorScheme.primary,
+                size: 14,
+              ),
               const SizedBox(width: 6),
             ],
-            Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: textColor)),
+            Text(
+              label,
+              style: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(color: textColor),
+            ),
           ],
         ),
       ),
@@ -2456,13 +2977,19 @@ class _BookChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _BookChip({required this.label, required this.selected, required this.onTap});
+  const _BookChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final base = GamerColors.accent;
-    final bg = selected ? base.withValues(alpha: 0.22) : base.withValues(alpha: 0.10);
-    final border = selected ? base.withValues(alpha: 0.60) : base.withValues(alpha: 0.35);
+    final base = Theme.of(context).colorScheme.primary;
+    final bg =
+        selected ? base.withValues(alpha: 0.22) : base.withValues(alpha: 0.10);
+    final border =
+        selected ? base.withValues(alpha: 0.60) : base.withValues(alpha: 0.35);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -2475,14 +3002,20 @@ class _BookChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            const Icon(Icons.menu_book_outlined, color: GamerColors.accent, size: 18),
+            Icon(
+              Icons.menu_book_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              size: 18,
+            ),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
               ),
             ),
           ],
@@ -2492,7 +3025,12 @@ class _BookChip extends StatelessWidget {
   }
 }
 
-Widget _segButton({required String label, required bool selected, required VoidCallback onTap}) {
+Widget _segButton({
+  required BuildContext context,
+  required String label,
+  required bool selected,
+  required VoidCallback onTap,
+}) {
   return Expanded(
     child: InkWell(
       onTap: onTap,
@@ -2500,15 +3038,22 @@ Widget _segButton({required String label, required bool selected, required VoidC
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? GamerColors.accent.withValues(alpha: 0.18) : Colors.transparent,
+          color: selected
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.18)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? GamerColors.accent.withValues(alpha: 0.6) : Colors.transparent, width: 1),
+          border: Border.all(
+            color: selected
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.6)
+                : Colors.transparent,
+            width: 1,
+          ),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: TextStyle(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.onSurface,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
@@ -2524,18 +3069,27 @@ class _CompletionBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedSlide(
-      duration: const Duration(milliseconds: 220),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 220),
       curve: Curves.easeInOut,
       offset: visible ? Offset.zero : const Offset(0, 0.2),
       child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 220),
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 220),
         curve: Curves.easeInOut,
         opacity: visible ? 1.0 : 0.0,
         child: Container(
           decoration: BoxDecoration(
-            color: GamerColors.darkCard,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: GamerColors.accent.withValues(alpha: 0.25), width: 1),
+            border: Border.all(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.25),
+              width: 1,
+            ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
@@ -2545,25 +3099,44 @@ class _CompletionBanner extends StatelessWidget {
                 height: 34,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: GamerColors.success.withValues(alpha: 0.12),
-                  border: Border.all(color: GamerColors.success.withValues(alpha: 0.45), width: 1),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.12),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.45),
+                    width: 1,
+                  ),
                 ),
-                child: const Icon(Icons.check, color: GamerColors.success, size: 18),
+                child: Icon(
+                  Icons.check,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Text(
                       'Chapter complete! +10 XP',
-                      style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     SizedBox(height: 2),
                     Text(
                       'Great job staying in the Word.',
-                      style: TextStyle(color: GamerColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -2619,14 +3192,20 @@ class _SchemeChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  const _SchemeChip({required this.label, required this.selected, required this.onTap});
+  const _SchemeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final base = GamerColors.accent;
-    final bg = selected ? base.withValues(alpha: 0.20) : base.withValues(alpha: 0.10);
-    final border = selected ? base.withValues(alpha: 0.65) : base.withValues(alpha: 0.35);
-    final textColor = Colors.white;
+    final base = Theme.of(context).colorScheme.primary;
+    final bg =
+        selected ? base.withValues(alpha: 0.20) : base.withValues(alpha: 0.10);
+    final border =
+        selected ? base.withValues(alpha: 0.65) : base.withValues(alpha: 0.35);
+    final textColor = Theme.of(context).colorScheme.onSurface;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
@@ -2641,12 +3220,22 @@ class _SchemeChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-              color: selected ? GamerColors.neonCyan : GamerColors.textSecondary,
+              selected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+              color: selected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
               size: 16,
             ),
             const SizedBox(width: 8),
-            Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(color: textColor, fontWeight: FontWeight.w600)),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
           ],
         ),
       ),
@@ -2746,15 +3335,22 @@ class _TextSizeSlider extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.text_decrease, color: GamerColors.textSecondary),
+            Icon(
+              Icons.text_decrease,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             Expanded(
               child: SliderTheme(
                 data: SliderTheme.of(context).copyWith(
                   trackHeight: 3,
-                  activeTrackColor: GamerColors.accent,
-                  inactiveTrackColor: GamerColors.accent.withValues(alpha: 0.25),
-                  thumbColor: GamerColors.accent,
-                  overlayColor: GamerColors.accent.withValues(alpha: 0.12),
+                  activeTrackColor: Theme.of(context).colorScheme.primary,
+                  inactiveTrackColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.25),
+                  thumbColor: Theme.of(context).colorScheme.primary,
+                  overlayColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.12),
                 ),
                 child: Slider(
                   min: 0.8,
@@ -2764,13 +3360,18 @@ class _TextSizeSlider extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.text_increase, color: GamerColors.textSecondary),
+            Icon(
+              Icons.text_increase,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           'Current: ${(v * 100).round()}%',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
       ],
     );

@@ -41,7 +41,8 @@ class _MainNavigationState extends State<MainNavigation> {
     final app = context.watch<AppProvider>();
 
     // If a new quest progress event arrived, show a small floating snackbar
-    if (app.questProgressEvent != 0 && app.questProgressEvent != _lastQuestProgressEvent) {
+    if (app.questProgressEvent != 0 &&
+        app.questProgressEvent != _lastQuestProgressEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _lastQuestProgressEvent = app.questProgressEvent;
         // Avoid stacked toasts: replace current if visible
@@ -52,14 +53,25 @@ class _MainNavigationState extends State<MainNavigation> {
         _isShowingToast = true;
         final controller = messenger.showSnackBar(
           SnackBar(
-            content: Text(app.questProgressMessage.isNotEmpty ? app.questProgressMessage : '+Quest Progress'),
+            content: Text(
+              app.questProgressMessage.isNotEmpty
+                  ? app.questProgressMessage
+                  : '+Quest Progress',
+            ),
             duration: const Duration(milliseconds: 1700),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest,
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1),
+              side: BorderSide(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.2),
+                width: 1,
+              ),
             ),
           ),
         );
@@ -77,7 +89,8 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     // Achievement unlock overlay trigger
-    if (app.achievementUnlockEvent != 0 && app.achievementUnlockEvent != _lastAchievementEvent) {
+    if (app.achievementUnlockEvent != 0 &&
+        app.achievementUnlockEvent != _lastAchievementEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _lastAchievementEvent = app.achievementUnlockEvent;
         if (!mounted) return;
@@ -92,7 +105,8 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     // New Artifact acquired: use high-contrast RewardToast
-    if (app.newArtifactEvent != 0 && app.newArtifactEvent != _lastNewArtifactEvent) {
+    if (app.newArtifactEvent != 0 &&
+        app.newArtifactEvent != _lastNewArtifactEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _lastNewArtifactEvent = app.newArtifactEvent;
         // Replace any current toast to avoid stacking
@@ -115,7 +129,8 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     // Book-specific reward reveals: open full-screen modal(s) in sequence
-    if (app.bookRewardQueueEvent != 0 && app.bookRewardQueueEvent != _lastBookRewardEvent) {
+    if (app.bookRewardQueueEvent != 0 &&
+        app.bookRewardQueueEvent != _lastBookRewardEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _lastBookRewardEvent = app.bookRewardQueueEvent;
         await _presentBookRewardModals(context);
@@ -123,7 +138,8 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     // Questline completion overlay trigger
-    if (app.questlineCompletionEvent != 0 && app.questlineCompletionEvent != _lastQuestlineEvent) {
+    if (app.questlineCompletionEvent != 0 &&
+        app.questlineCompletionEvent != _lastQuestlineEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _lastQuestlineEvent = app.questlineCompletionEvent;
         if (!mounted) return;
@@ -132,7 +148,8 @@ class _MainNavigationState extends State<MainNavigation> {
         if (!mounted) return;
         setState(() => _showQuestlineOverlay = false);
         try {
-          if (mounted) context.read<AppProvider>().ackQuestlineCompletionSignal();
+          if (mounted)
+            context.read<AppProvider>().ackQuestlineCompletionSignal();
         } catch (_) {}
       });
     }
@@ -154,7 +171,11 @@ class _MainNavigationState extends State<MainNavigation> {
     }
     // Only arm Quick Tour on Tasks, after Personalized Setup completion, and if not already completed
     // Disable Quick Tour entirely for beta builds to avoid misaligned overlays.
-    if (!kIsBetaBuild && onTasks && settings.hasCompletedPersonalizedSetup && !settings.hasCompletedQuickTour && !_armedQuickTour) {
+    if (!kIsBetaBuild &&
+        onTasks &&
+        settings.hasCompletedPersonalizedSetup &&
+        !settings.hasCompletedQuickTour &&
+        !_armedQuickTour) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         setState(() {
@@ -189,29 +210,37 @@ class _MainNavigationState extends State<MainNavigation> {
               ),
             ),
           // Questline completion overlay
-          if (_showQuestlineOverlay && app.latestQuestlineCompletionTitle != null)
+          if (_showQuestlineOverlay &&
+              app.latestQuestlineCompletionTitle != null)
             Positioned(
               left: 16,
               right: 16,
-              top: MediaQuery.of(context).padding.top + 16 + 84, // stack below achievement if both fire
+              top: MediaQuery.of(context).padding.top +
+                  16 +
+                  84, // stack below achievement if both fire
               child: _QuestlineCompleteCard(
                 title: app.latestQuestlineCompletionTitle!,
                 summary: app.latestQuestlineRewardsSummary,
               ),
             ),
           // Quick Tour overlay (runs once)
-          if (_showQuickTour) Positioned.fill(child: _QuickTourOverlay(
-            step: _quickTourStep,
-            onNext: () {
-              if (_quickTourStep < 3) {
-                setState(() => _quickTourStep += 1);
-              } else {
-                // Finish
-                setState(() => _showQuickTour = false);
-                context.read<SettingsProvider>().setHasCompletedQuickTour(true);
-              }
-            },
-          )),
+          if (_showQuickTour)
+            Positioned.fill(
+              child: _QuickTourOverlay(
+                step: _quickTourStep,
+                onNext: () {
+                  if (_quickTourStep < 3) {
+                    setState(() => _quickTourStep += 1);
+                  } else {
+                    // Finish
+                    setState(() => _showQuickTour = false);
+                    context.read<SettingsProvider>().setHasCompletedQuickTour(
+                          true,
+                        );
+                  }
+                },
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: const _BottomNavBar(),
@@ -230,9 +259,12 @@ class _MainNavigationState extends State<MainNavigation> {
       for (int i = 1; i <= total; i++) {
         final ev = app.dequeueNextBookRewardEvent();
         if (ev == null) break;
-        await Navigator.of(context).push(RewardFullScreenRoute(index: i, total: total, event: ev));
+        await Navigator.of(
+          context,
+        ).push(RewardFullScreenRoute(index: i, total: total, event: ev));
       }
-    } catch (_) {} finally {
+    } catch (_) {
+    } finally {
       _bookModalOpen = false;
     }
   }
@@ -272,16 +304,27 @@ class _BottomNavBarState extends State<_BottomNavBar> {
     // 0: Quest Hub, 1: Bible, 2: Profile
     if (location == '/' || location.startsWith('/tasks')) {
       currentIndex = 0;
-    } else if (location.startsWith('/bible') || location.startsWith('/verses') || location.startsWith('/scripture') || location.startsWith('/favorites')) {
+    } else if (location.startsWith('/bible') ||
+        location.startsWith('/verses') ||
+        location.startsWith('/scripture') ||
+        location.startsWith('/favorites')) {
       currentIndex = 1;
-    } else if (location.startsWith('/profile') || location.startsWith('/player') || location.startsWith('/avatar') || location.startsWith('/equip') || location.startsWith('/inventory') || location.startsWith('/community') || location.startsWith('/friends') || location.startsWith('/leaderboards')) {
+    } else if (location.startsWith('/profile') ||
+        location.startsWith('/player') ||
+        location.startsWith('/avatar') ||
+        location.startsWith('/equip') ||
+        location.startsWith('/inventory') ||
+        location.startsWith('/community') ||
+        location.startsWith('/friends') ||
+        location.startsWith('/leaderboards')) {
       currentIndex = 2;
     }
     // For home and root, don't highlight any tab (user may be on detail screens, quests, etc.)
     // This prevents incorrect highlighting when on non-tab screens
 
     // Nudge when a new event arrives
-    if (app.questTabNudgeEvent != 0 && app.questTabNudgeEvent != _lastNudgeEvent) {
+    if (app.questTabNudgeEvent != 0 &&
+        app.questTabNudgeEvent != _lastNudgeEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _lastNudgeEvent = app.questTabNudgeEvent;
         _triggerNudge();
@@ -294,7 +337,10 @@ class _BottomNavBarState extends State<_BottomNavBar> {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(
-          top: BorderSide(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1),
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+            width: 1,
+          ),
         ),
       ),
       child: SafeArea(
@@ -305,7 +351,7 @@ class _BottomNavBarState extends State<_BottomNavBar> {
             children: [
               _NavItem(
                 icon: Icons.home_outlined,
-                label: 'Quest Hub',
+                label: 'Today',
                 isSelected: currentIndex == 0,
                 onTap: () => context.go('/'),
                 scale: _nudgeActive ? 1.12 : 1.0,
@@ -328,7 +374,7 @@ class _BottomNavBarState extends State<_BottomNavBar> {
                   onTap: () => context.go('/profile'),
                 ),
               ),
-            ],
+            ].map((item) => Expanded(child: item)).toList(),
           ),
         ),
       ),
@@ -355,67 +401,91 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
         child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-            color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5) : Colors.transparent,
-            width: 1,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+                  : Colors.transparent,
+              width: 1,
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                AnimatedScale(
-                  scale: scale,
-                  duration: const Duration(milliseconds: 320),
-                  curve: Curves.easeOutBack,
-                  child: Icon(
-                    icon,
-                    color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
-                    size: 26,
-                  ),
-                ),
-                if (badge != null)
-                  Positioned(
-                    right: -8,
-                    top: -6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.5)),
-                      ),
-                      child: Text(
-                        badge!,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AnimatedScale(
+                    scale: scale,
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOutBack,
+                    child: Icon(
+                      icon,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                      size: 26,
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  if (badge != null)
+                    Positioned(
+                      right: -8,
+                      top: -6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Text(
+                          badge!,
+                          style: Theme.of(context)
+                              .textTheme
+                              .labelSmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -458,10 +528,13 @@ class _AchievementUnlockCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String rarity = (achievement.rarity ?? achievement.displayRarity ?? 'common').toString();
+    final String rarity =
+        (achievement.rarity ?? achievement.displayRarity ?? 'common')
+            .toString();
     final borderColor = _rarityColor(rarity).withValues(alpha: 0.6);
     final title = 'Achievement Unlocked';
-    final achName = (achievement.name ?? achievement.title) as String? ?? 'Achievement';
+    final achName =
+        (achievement.name ?? achievement.title) as String? ?? 'Achievement';
     final achDesc = (achievement.description as String?) ?? '';
 
     return AnimatedOpacity(
@@ -470,7 +543,7 @@ class _AchievementUnlockCard extends StatelessWidget {
       curve: Curves.easeOut,
       child: Container(
         decoration: BoxDecoration(
-          color: GamerColors.darkCard.withValues(alpha: 0.95),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: borderColor, width: 1),
         ),
@@ -478,7 +551,11 @@ class _AchievementUnlockCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.emoji_events, color: Theme.of(context).colorScheme.primary, size: 26),
+            Icon(
+              Icons.emoji_events,
+              color: Theme.of(context).colorScheme.primary,
+              size: 26,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -488,10 +565,16 @@ class _AchievementUnlockCard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+                        child: Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: borderColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(999),
@@ -499,7 +582,9 @@ class _AchievementUnlockCard extends StatelessWidget {
                         ),
                         child: Text(
                           _rarityLabel(rarity),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: borderColor),
+                          style: Theme.of(
+                            context,
+                          ).textTheme.labelSmall?.copyWith(color: borderColor),
                         ),
                       ),
                     ],
@@ -522,7 +607,12 @@ class _AchievementUnlockCard extends StatelessWidget {
                   ],
                   if (summary != null && summary!.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text(summary!, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
+                    Text(
+                      summary!,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                    ),
                   ],
                 ],
               ),
@@ -548,28 +638,48 @@ class _QuestlineCompleteCard extends StatelessWidget {
       curve: Curves.easeOut,
       child: Container(
         decoration: BoxDecoration(
-          color: GamerColors.darkCard.withValues(alpha: 0.95),
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6), width: 1),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
+            width: 1,
+          ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.auto_awesome, color: Theme.of(context).colorScheme.primary, size: 26),
+            Icon(
+              Icons.auto_awesome,
+              color: Theme.of(context).colorScheme.primary,
+              size: 26,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Quest Complete', style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    'Quest Complete',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 4),
-                  Text(title, style: Theme.of(context).textTheme.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   if (summary != null && summary!.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Text(summary!, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Theme.of(context).colorScheme.primary)),
-                  ]
+                    Text(
+                      summary!,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -680,7 +790,10 @@ class _QuickTourOverlay extends StatelessWidget {
             decoration: BoxDecoration(
               color: cs.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: cs.primary.withValues(alpha: 0.25), width: 1),
+              border: Border.all(
+                color: cs.primary.withValues(alpha: 0.25),
+                width: 1,
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,

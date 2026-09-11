@@ -15,7 +15,14 @@ import 'package:level_up_your_faith/widgets/reward_toast.dart';
 class TaskCard extends StatelessWidget {
   final TaskModel quest;
 
-  const TaskCard({super.key, required this.quest});
+  final bool readingV2;
+  final bool featured;
+  const TaskCard({
+    super.key,
+    required this.quest,
+    this.readingV2 = false,
+    this.featured = false,
+  });
 
   IconData _getQuestIcon() {
     switch (quest.type) {
@@ -61,6 +68,7 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (readingV2) return _buildReadingCard(context);
     final questColor = _getQuestColor();
     final progress = quest.progress;
     final isManual = !quest.isAutoTracked;
@@ -75,288 +83,595 @@ class TaskCard extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         opacity: quest.isCompleted ? 0.75 : 1.0,
         child: Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          // Unify card outline for Purple theme; keep success highlight when completed
-          color: quest.isCompleted
-              ? GamerColors.success.withValues(alpha: 0.5)
-              : (purple?.cardOutline ?? questColor.withValues(alpha: 0.3)),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header: Icon + Title
-          Row(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              // Unify card outline for Purple theme; keep success highlight when completed
+              color: quest.isCompleted
+                  ? GamerColors.success.withValues(alpha: 0.5)
+                  : (purple?.cardOutline ?? questColor.withValues(alpha: 0.3)),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(_getQuestIcon(), color: questColor, size: 24),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  quest.title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        decoration: quest.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                        decorationColor: GamerColors.textTertiary,
-                      ),
-                ),
-              ),
-              if (quest.isCompleted)
-                const Icon(Icons.check_circle_rounded, color: GamerColors.success, size: 20),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Secondary description: max 2 lines, ellipsis
-          Text(
-            quest.description,
-            style: Theme.of(context).textTheme.bodySmall,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          // Streak Recovery badge & countdown if applicable
-          Consumer<AppProvider>(builder: (context, provider, _) {
-            final isRecovery = provider.activeStreakRecoveryQuestId != null &&
-                provider.activeStreakRecoveryQuestId == quest.id &&
-                provider.hasActiveStreakRecoveryQuest;
-            if (!isRecovery) return const SizedBox.shrink();
-            final exp = provider.streakRecoveryExpiresAt;
-            String timeLeft = '';
-            if (exp != null) {
-              final now = DateTime.now();
-              final diff = exp.difference(now);
-              if (diff.inDays >= 2) {
-                timeLeft = 'Expires in ${diff.inDays} days';
-              } else if (diff.inDays == 1) {
-                timeLeft = 'Expires tomorrow';
-              } else if (diff.inHours > 0) {
-                timeLeft = 'Expires in ${diff.inHours}h';
-              } else {
-                final mins = diff.inMinutes.clamp(0, 59);
-                timeLeft = 'Expires today (${mins}m)';
-              }
-            }
-            return Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
+              // Header: Icon + Title
+              Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: GamerColors.accentSecondary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: GamerColors.accentSecondary.withValues(alpha: 0.45), width: 1),
+                  Icon(_getQuestIcon(), color: questColor, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      quest.title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            decoration: quest.isCompleted
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                            decorationColor: GamerColors.textTertiary,
+                          ),
                     ),
+                  ),
+                  if (quest.isCompleted)
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: GamerColors.success,
+                      size: 20,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Secondary description: max 2 lines, ellipsis
+              Text(
+                quest.description,
+                style: Theme.of(context).textTheme.bodySmall,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              // Streak Recovery badge & countdown if applicable
+              Consumer<AppProvider>(
+                builder: (context, provider, _) {
+                  final isRecovery =
+                      provider.activeStreakRecoveryQuestId != null &&
+                          provider.activeStreakRecoveryQuestId == quest.id &&
+                          provider.hasActiveStreakRecoveryQuest;
+                  if (!isRecovery) return const SizedBox.shrink();
+                  final exp = provider.streakRecoveryExpiresAt;
+                  String timeLeft = '';
+                  if (exp != null) {
+                    final now = DateTime.now();
+                    final diff = exp.difference(now);
+                    if (diff.inDays >= 2) {
+                      timeLeft = 'Expires in ${diff.inDays} days';
+                    } else if (diff.inDays == 1) {
+                      timeLeft = 'Expires tomorrow';
+                    } else if (diff.inHours > 0) {
+                      timeLeft = 'Expires in ${diff.inHours}h';
+                    } else {
+                      final mins = diff.inMinutes.clamp(0, 59);
+                      timeLeft = 'Expires today (${mins}m)';
+                    }
+                  }
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.favorite, size: 14, color: GamerColors.textSecondary),
-                        const SizedBox(width: 6),
-                        Text('Streak Recovery', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: GamerColors.accentSecondary.withValues(
+                              alpha: 0.15,
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: GamerColors.accentSecondary.withValues(
+                                alpha: 0.45,
+                              ),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.favorite,
+                                size: 14,
+                                color: GamerColors.textSecondary,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Streak Recovery',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: GamerColors.textSecondary,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (timeLeft.isNotEmpty) ...[
+                          const SizedBox(width: 10),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.timer_outlined,
+                                size: 14,
+                                color: GamerColors.textTertiary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                timeLeft,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(color: GamerColors.textTertiary),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
-                  ),
-                  if (timeLeft.isNotEmpty) ...[
-                    const SizedBox(width: 10),
-                    Row(children: [
-                      const Icon(Icons.timer_outlined, size: 14, color: GamerColors.textTertiary),
-                      const SizedBox(width: 4),
-                      Text(timeLeft, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textTertiary)),
-                    ])
-                  ]
-                ],
+                  );
+                },
               ),
-            );
-          }),
-          if ((quest.scriptureReference ?? '').isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.menu_book_rounded, size: 14, color: GamerColors.textTertiary),
-                const SizedBox(width: 6),
-                Text(
-                  quest.scriptureReference!,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textTertiary),
+              if ((quest.scriptureReference ?? '').isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.menu_book_rounded,
+                      size: 14,
+                      color: GamerColors.textTertiary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      quest.scriptureReference!,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: GamerColors.textTertiary,
+                          ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-          const SizedBox(height: 12),
-          // Bottom row: Left — task category chip; Right — XP reward text with icon
-          Row(
-            children: [
-              _buildCategoryPillStrong(context),
-              const Spacer(),
+              const SizedBox(height: 12),
+              // Bottom row: Left — task category chip; Right — XP reward text with icon
               Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.stars_rounded, color: purple?.accent ?? Theme.of(context).colorScheme.primary, size: 16),
-                  const SizedBox(width: 6),
-                  Text(
-                    '+${quest.xpReward} XP',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+                  _buildCategoryPillStrong(context),
+                  const Spacer(),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.stars_rounded,
+                        color: purple?.accent ??
+                            Theme.of(context).colorScheme.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '+${quest.xpReward} XP',
+                        style: Theme.of(context)
+                            .textTheme
+                            .labelMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
 
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              icon: const Icon(Icons.info_rounded),
-              label: const Text('Details'),
-              onPressed: () => _showDetailsSheet(context),
-            ),
-          ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.info_rounded),
+                  label: const Text('Details'),
+                  onPressed: () => _showDetailsSheet(context),
+                ),
+              ),
 
-          const SizedBox(height: 4),
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 200),
-            opacity: (quest.isInProgress || quest.isCompleted) ? 1 : 0.0,
-            child: (quest.isInProgress || quest.isCompleted)
-                ? Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: purple?.progressTrack ?? GamerColors.darkSurface,
-                            borderRadius: BorderRadius.circular(purple != null ? 8 : 4),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(purple != null ? 8 : 4),
-                            child: FractionallySizedBox(
-                              widthFactor: progress,
-                              alignment: Alignment.centerLeft,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: (purple == null)
-                                      ? LinearGradient(
-                                          colors: quest.isCompleted
-                                              ? [GamerColors.success, GamerColors.success]
-                                              : [questColor, questColor.withValues(alpha: 0.6)],
-                                        )
-                                      : null,
-                                  color: purple?.progressFill,
+              const SizedBox(height: 4),
+              AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: (quest.isInProgress || quest.isCompleted) ? 1 : 0.0,
+                child: (quest.isInProgress || quest.isCompleted)
+                    ? Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: purple?.progressTrack ??
+                                    GamerColors.darkSurface,
+                                borderRadius: BorderRadius.circular(
+                                  purple != null ? 8 : 4,
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  purple != null ? 8 : 4,
+                                ),
+                                child: FractionallySizedBox(
+                                  widthFactor: progress,
+                                  alignment: Alignment.centerLeft,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: (purple == null)
+                                          ? LinearGradient(
+                                              colors: quest.isCompleted
+                                                  ? [
+                                                      GamerColors.success,
+                                                      GamerColors.success,
+                                                    ]
+                                                  : [
+                                                      questColor,
+                                                      questColor.withValues(
+                                                        alpha: 0.6,
+                                                      ),
+                                                    ],
+                                            )
+                                          : null,
+                                      color: purple?.progressFill,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text('${quest.currentProgress}/${quest.targetCount}', style: Theme.of(context).textTheme.labelMedium),
-                    ],
-                  )
-                : const SizedBox.shrink(),
-          ),
-
-          const SizedBox(height: 12),
-          Consumer<AppProvider>(
-            builder: (context, provider, _) {
-              if (quest.isCompleted) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: GamerColors.success.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: GamerColors.success.withValues(alpha: 0.4), width: 1),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                           const Icon(Icons.check_circle_rounded, color: GamerColors.success, size: 18),
-                          const SizedBox(width: 8),
-                          Text('Completed', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: GamerColors.success)),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${quest.currentProgress}/${quest.targetCount}',
+                            style: Theme.of(context).textTheme.labelMedium,
+                          ),
                         ],
-                      ),
-                    ),
-                    if (quest.completedAt != null) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        'Completed on ${_formatDate(quest.completedAt!)}',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textTertiary),
-                      ),
-                    ]
-                  ],
-                );
-              }
+                      )
+                    : const SizedBox.shrink(),
+              ),
 
-              if (quest.isNotStarted) {
-                return SizedBox(
-                  width: double.infinity,
-                    child: ElevatedButton.icon(
-                    icon: Icon(Icons.play_arrow_rounded, color: Theme.of(context).colorScheme.onPrimary),
-                    label: const Text('Start Task'),
-                    onPressed: () async {
-                      await provider.startQuest(quest.id);
-                      if (context.mounted) {
-                        _navigateForQuestType(context, provider);
-                      }
+              const SizedBox(height: 12),
+              Consumer<AppProvider>(
+                builder: (context, provider, _) {
+                  if (quest.isCompleted) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: GamerColors.success.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: GamerColors.success.withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.check_circle_rounded,
+                                color: GamerColors.success,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Completed',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelMedium
+                                    ?.copyWith(color: GamerColors.success),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (quest.completedAt != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'Completed on ${_formatDate(quest.completedAt!)}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(color: GamerColors.textTertiary),
+                          ),
+                        ],
+                      ],
+                    );
+                  }
+
+                  if (quest.isNotStarted) {
+                    return SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: Icon(
+                          Icons.play_arrow_rounded,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        label: const Text('Start Task'),
+                        onPressed: () async {
+                          await provider.startQuest(quest.id);
+                          if (context.mounted) {
+                            _navigateForQuestType(context, provider);
+                          }
+                        },
+                      ),
+                    );
+                  }
+
+                  // In progress controls
+                  return Builder(
+                    builder: (ctx) {
+                      final requiresScripture =
+                          (quest.scriptureReference ?? '').isNotEmpty;
+                      final hasOpened = context
+                          .read<AppProvider>()
+                          .hasOpenedScriptureForQuest(quest.id);
+                      final scriptureLocked = requiresScripture && !hasOpened;
+                      final hasMetTarget =
+                          quest.currentProgress >= quest.targetCount;
+                      // Auto-tracked: only allow completion from UI after progress meets target
+                      final canCompleteAuto = !scriptureLocked && hasMetTarget;
+                      // Manual: allow gentle one-tap completion when user has done the task
+                      final canCompleteManual = !scriptureLocked;
+
+                      final enabled =
+                          isManual ? canCompleteManual : canCompleteAuto;
+                      final label = isManual ? 'Mark Complete' : 'Complete';
+
+                      return SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: Icon(
+                            Icons.check_rounded,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                          label: Text(label),
+                          onPressed:
+                              enabled ? () => _handleComplete(context) : null,
+                        ),
+                      );
                     },
-                  ),
-                );
-              }
-
-              // In progress controls
-              return Builder(builder: (ctx) {
-                final requiresScripture = (quest.scriptureReference ?? '').isNotEmpty;
-                final hasOpened = context.read<AppProvider>().hasOpenedScriptureForQuest(quest.id);
-                final scriptureLocked = requiresScripture && !hasOpened;
-                final hasMetTarget = quest.currentProgress >= quest.targetCount;
-                // Auto-tracked: only allow completion from UI after progress meets target
-                final canCompleteAuto = !scriptureLocked && hasMetTarget;
-                // Manual: allow gentle one-tap completion when user has done the task
-                final canCompleteManual = !scriptureLocked;
-
-                final enabled = isManual ? canCompleteManual : canCompleteAuto;
-                final label = isManual ? 'Mark Complete' : 'Complete';
-
-                return SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: Icon(Icons.check_rounded, color: Theme.of(context).colorScheme.onPrimary),
-                    label: Text(label),
-                    onPressed: enabled ? () => _handleComplete(context) : null,
-                  ),
-                );
-              });
-            },
-          ),
-          // Helper hint when completion is locked until scripture opened
-          Consumer<AppProvider>(
-            builder: (context, provider, _) {
-              final requiresScripture = (quest.scriptureReference ?? '').isNotEmpty;
-              final hasOpened = provider.hasOpenedScriptureForQuest(quest.id);
-              if (!(requiresScripture && !hasOpened) || quest.isCompleted) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.lock_clock_rounded, size: 16, color: GamerColors.textTertiary),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Open the scripture for this task before completing.',
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textTertiary),
-                      ),
+                  );
+                },
+              ),
+              // Helper hint when completion is locked until scripture opened
+              Consumer<AppProvider>(
+                builder: (context, provider, _) {
+                  final requiresScripture =
+                      (quest.scriptureReference ?? '').isNotEmpty;
+                  final hasOpened = provider.hasOpenedScriptureForQuest(
+                    quest.id,
+                  );
+                  if (!(requiresScripture && !hasOpened) || quest.isCompleted)
+                    return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.lock_clock_rounded,
+                          size: 16,
+                          color: GamerColors.textTertiary,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Open the scripture for this task before completing.',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(color: GamerColors.textTertiary),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReadingCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isReading =
+        quest.questType.trim().toLowerCase() == 'scripture_reading';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(featured ? 24 : 18),
+      decoration: BoxDecoration(
+        color: featured
+            ? cs.primaryContainer.withValues(alpha: 0.45)
+            : cs.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(featured ? 28 : 20),
+        border: Border.all(color: cs.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                quest.isCompleted
+                    ? Icons.check_circle_outline
+                    : isReading
+                        ? Icons.menu_book_outlined
+                        : Icons.spa_outlined,
+                color: cs.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  quest.isCompleted
+                      ? 'COMPLETED'
+                      : featured
+                          ? 'TODAY’S READING QUEST'
+                          : 'OPTIONAL NEXT STEP',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    letterSpacing: 1.1,
+                    color: cs.primary,
+                  ),
                 ),
-              );
-            },
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text(
+            quest.title,
+            style: featured
+                ? theme.textTheme.headlineMedium
+                : theme.textTheme.titleMedium,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            quest.description,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+          if ((quest.scriptureReference ?? '').isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              quest.scriptureReference!,
+              style: theme.textTheme.titleSmall?.copyWith(color: cs.primary),
+            ),
+          ],
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: [
+              Text(
+                '${quest.xpReward} XP on completion',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
+              if (quest.isInProgress || quest.isCompleted)
+                Text(
+                  '${quest.currentProgress} / ${quest.targetCount}',
+                  style: theme.textTheme.labelMedium,
+                ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          if (!quest.isCompleted)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                icon: Icon(
+                  isReading ? Icons.arrow_forward : Icons.play_arrow_outlined,
+                ),
+                label: Text(
+                  isReading
+                      ? (quest.isNotStarted
+                          ? 'Begin reading'
+                          : 'Continue reading')
+                      : (quest.isNotStarted ? 'Begin' : 'Continue'),
+                ),
+                onPressed: () async {
+                  final provider = context.read<AppProvider>();
+                  if (quest.isNotStarted) await provider.startQuest(quest.id);
+                  if (context.mounted) _navigateForQuestType(context, provider);
+                },
+              ),
+            ),
+          TextButton.icon(
+            onPressed: () => _showReadingDetails(context),
+            icon: const Icon(Icons.info_outline, size: 18),
+            label: Text(
+              quest.isCompleted
+                  ? 'View completed quest'
+                  : 'Details & completion',
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _showReadingDetails(BuildContext context) async {
+    // Retain the established completion controls and eligibility checks.
+    final provider = context.read<AppProvider>();
+    final hasOpened = provider.hasOpenedScriptureForQuest(quest.id);
+    final scriptureLocked =
+        (quest.scriptureReference ?? '').isNotEmpty && !hasOpened;
+    final canComplete = !scriptureLocked &&
+        (!quest.isAutoTracked || quest.currentProgress >= quest.targetCount);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            8,
+            24,
+            24 + MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(quest.title, style: Theme.of(ctx).textTheme.headlineSmall),
+              const SizedBox(height: 16),
+              Text(quest.description),
+              const SizedBox(height: 16),
+              Text(
+                quest.isCompleted
+                    ? 'Quest completed'
+                    : '${quest.currentProgress} of ${quest.targetCount} complete',
+              ),
+              const SizedBox(height: 12),
+              if (scriptureLocked)
+                const Text(
+                  'Open the Scripture for this quest before completing it.',
+                ),
+              if (quest.isAutoTracked && !canComplete && !quest.isCompleted)
+                const Text(
+                  'Progress is recorded through the matching activity. Reading quests also use the existing reading-time requirement.',
+                ),
+              if (quest.isInProgress) ...[
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: canComplete
+                        ? () async {
+                            Navigator.of(ctx).pop();
+                            await _handleComplete(context);
+                          }
+                        : null,
+                    child: Text(
+                      quest.isAutoTracked ? 'Complete quest' : 'Mark complete',
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -368,7 +683,9 @@ class TaskCard extends StatelessWidget {
     late final String label;
     late final Color color;
 
-    if (quest.isWeekly || quest.category == 'weekly' || quest.questFrequency == 'weekly') {
+    if (quest.isWeekly ||
+        quest.category == 'weekly' ||
+        quest.questFrequency == 'weekly') {
       label = 'WEEKLY QUEST';
       color = GamerColors.neonPurple;
     } else if (quest.category == 'event' || quest.category == 'seasonal') {
@@ -408,6 +725,7 @@ class TaskCard extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildCategoryChip(BuildContext context) {
     final TaskCategory cat = quest.resolvedCategory;
     late final String label;
@@ -433,9 +751,15 @@ class TaskCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: color.withValues(alpha: 0.35), width: 1),
       ),
-      child: Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary)),
+      child: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary),
+      ),
     );
   }
+
   Widget _buildTypeChip(BuildContext context) {
     final color = _typeColor();
     return Container(
@@ -450,7 +774,12 @@ class TaskCard extends StatelessWidget {
         children: [
           Icon(_typeIcon(), size: 14, color: GamerColors.textSecondary),
           const SizedBox(width: 6),
-          Text(_typeLabel(), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary)),
+          Text(
+            _typeLabel(),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary),
+          ),
         ],
       ),
     );
@@ -468,9 +797,18 @@ class TaskCard extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.label_important_outline, size: 14, color: GamerColors.textSecondary),
+          const Icon(
+            Icons.label_important_outline,
+            size: 14,
+            color: GamerColors.textSecondary,
+          ),
           const SizedBox(width: 6),
-          Text(quest.spiritualFocus!, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary)),
+          Text(
+            quest.spiritualFocus!,
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary),
+          ),
         ],
       ),
     );
@@ -523,7 +861,7 @@ class TaskCard extends StatelessWidget {
 
   // ---------------------- Quest Type Navigation ----------------------
   /// Navigates to the appropriate screen based on quest type.
-  /// 
+  ///
   /// Safety guarantee (v2.1):
   /// - EVERY quest type ALWAYS resolves to a non-null Start action
   /// - Unknown/missing quest types fallback to Details sheet
@@ -560,12 +898,16 @@ class TaskCard extends StatelessWidget {
           // Check if last-read reference is in the same book
           final lastRef = (provider.lastBibleReference ?? '').trim();
           if (lastRef.isNotEmpty) {
-            final lastBookLower = lastRef.split(RegExp(r'\s+\d'))[0].trim().toLowerCase();
-            if (lastBookLower == bookName.toLowerCase() || 
-                lastBookLower.replaceAll(' ', '') == bookName.toLowerCase().replaceAll(' ', '')) {
+            final lastBookLower =
+                lastRef.split(RegExp(r'\s+\d'))[0].trim().toLowerCase();
+            if (lastBookLower == bookName.toLowerCase() ||
+                lastBookLower.replaceAll(' ', '') ==
+                    bookName.toLowerCase().replaceAll(' ', '')) {
               // Extract chapter from last reference (handles "Psalms 23:1" → 23)
               // Match first number after book name, stopping at colon if present
-              final chapterMatch = RegExp(r'\s(\d+)(?::|$|\s|$)').firstMatch(lastRef);
+              final chapterMatch = RegExp(
+                r'\s(\d+)(?::|$|\s|$)',
+              ).firstMatch(lastRef);
               if (chapterMatch != null) {
                 targetChapter = int.tryParse(chapterMatch.group(1)!) ?? 1;
               }
@@ -573,7 +915,9 @@ class TaskCard extends StatelessWidget {
           }
           final target = '$bookName $targetChapter';
           if (kDebugMode) {
-            debugPrint('[TaskCard.Start] targetBook=$bookName, using chapter $targetChapter');
+            debugPrint(
+              '[TaskCard.Start] targetBook=$bookName, using chapter $targetChapter',
+            );
           }
           final encoded = Uri.encodeComponent(target);
           context.go('/verses?ref=$encoded');
@@ -610,7 +954,9 @@ class TaskCard extends StatelessWidget {
 
     // Defensive debug warning for unknown quest types (debug builds only)
     if (usedFallback && kDebugMode) {
-      debugPrint('[TaskCard] WARNING: Unknown quest type "$qt" for quest "${quest.title}" - using fallback Details sheet');
+      debugPrint(
+        '[TaskCard] WARNING: Unknown quest type "$qt" for quest "${quest.title}" - using fallback Details sheet',
+      );
     }
   }
 
@@ -640,112 +986,183 @@ class TaskCard extends StatelessWidget {
                 children: [
                   Icon(_getQuestIcon(), color: _getQuestColor(), size: 22),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(quest.title, style: Theme.of(ctx).textTheme.titleLarge)),
+                  Expanded(
+                    child: Text(
+                      quest.title,
+                      style: Theme.of(ctx).textTheme.titleLarge,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(quest.description, style: Theme.of(ctx).textTheme.bodyMedium),
+              Text(
+                quest.description,
+                style: Theme.of(ctx).textTheme.bodyMedium,
+              ),
               const SizedBox(height: 12),
-              Wrap(spacing: 8, runSpacing: 8, children: [
-                _buildTypeChip(ctx),
-                if ((quest.spiritualFocus ?? '').isNotEmpty) _buildFocusChip(ctx),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _difficultyColor().withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: _difficultyColor().withValues(alpha: 0.4), width: 1),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildTypeChip(ctx),
+                  if ((quest.spiritualFocus ?? '').isNotEmpty)
+                    _buildFocusChip(ctx),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _difficultyColor().withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: _difficultyColor().withValues(alpha: 0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.bolt,
+                          size: 14,
+                          color: GamerColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          quest.difficulty,
+                          style: Theme.of(ctx).textTheme.labelSmall?.copyWith(
+                                color: GamerColors.textSecondary,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.bolt, size: 14, color: GamerColors.textSecondary),
-                    const SizedBox(width: 6),
-                    Text(quest.difficulty, style: Theme.of(ctx).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary)),
-                  ]),
-                ),
-              ]),
+                ],
+              ),
               if ((quest.scriptureReference ?? '').isNotEmpty) ...[
                 const SizedBox(height: 14),
-                Row(children: [
-                  const Icon(Icons.menu_book_rounded, size: 16, color: GamerColors.textTertiary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(quest.scriptureReference!, style: Theme.of(ctx).textTheme.labelMedium?.copyWith(color: GamerColors.textTertiary)),
-                  ),
-                  TextButton.icon(
-                    icon: const Icon(Icons.open_in_new_rounded),
-                    label: const Text('Open Scripture'),
-                    onPressed: () {
-                      // Mark that user opened the scripture for this task (gate for completion)
-                      try {
-                        context.read<AppProvider>().markQuestScriptureOpened(quest.id);
-                      } catch (e) {
-                        debugPrint('markQuestScriptureOpened from TaskCard sheet failed: $e');
-                      }
-                      final ref = Uri.encodeComponent(quest.scriptureReference!);
-                      Navigator.of(ctx).pop();
-                      context.go('/verses?ref=$ref');
-                    },
-                  ),
-                ]),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.menu_book_rounded,
+                      size: 16,
+                      color: GamerColors.textTertiary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        quest.scriptureReference!,
+                        style: Theme.of(ctx).textTheme.labelMedium?.copyWith(
+                              color: GamerColors.textTertiary,
+                            ),
+                      ),
+                    ),
+                    TextButton.icon(
+                      icon: const Icon(Icons.open_in_new_rounded),
+                      label: const Text('Open Scripture'),
+                      onPressed: () {
+                        // Mark that user opened the scripture for this task (gate for completion)
+                        try {
+                          context.read<AppProvider>().markQuestScriptureOpened(
+                                quest.id,
+                              );
+                        } catch (e) {
+                          debugPrint(
+                            'markQuestScriptureOpened from TaskCard sheet failed: $e',
+                          );
+                        }
+                        final ref = Uri.encodeComponent(
+                          quest.scriptureReference!,
+                        );
+                        Navigator.of(ctx).pop();
+                        context.go('/verses?ref=$ref');
+                      },
+                    ),
+                  ],
+                ),
               ],
               // ================= Possible Rewards preview =================
               if (quest.possibleRewardGearIds.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                Text('Possible Rewards', style: Theme.of(ctx).textTheme.titleSmall),
+                Text(
+                  'Possible Rewards',
+                  style: Theme.of(ctx).textTheme.titleSmall,
+                ),
                 const SizedBox(height: 8),
                 _PossibleRewardsPreview(gearIds: quest.possibleRewardGearIds),
                 const SizedBox(height: 6),
                 Text(
-                  (quest.guaranteedFirstClearGearId != null && quest.guaranteedFirstClearGearId!.trim().isNotEmpty)
+                  (quest.guaranteedFirstClearGearId != null &&
+                          quest.guaranteedFirstClearGearId!.trim().isNotEmpty)
                       ? 'First clear guarantees one of these artifacts.'
                       : 'Artifacts you may earn by completing this task.',
-                  style: Theme.of(ctx).textTheme.labelSmall?.copyWith(color: GamerColors.textTertiary),
+                  style: Theme.of(ctx).textTheme.labelSmall?.copyWith(
+                        color: GamerColors.textTertiary,
+                      ),
                 ),
               ],
               if ((quest.reflectionPrompt ?? '').isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Text('Reflection', style: Theme.of(ctx).textTheme.titleSmall),
                 const SizedBox(height: 6),
-                Text(quest.reflectionPrompt!, style: Theme.of(ctx).textTheme.bodySmall),
+                Text(
+                  quest.reflectionPrompt!,
+                  style: Theme.of(ctx).textTheme.bodySmall,
+                ),
               ],
               const SizedBox(height: 18),
-              Consumer<AppProvider>(builder: (context, provider, _) {
-                final isManual = !quest.isAutoTracked;
-                final requiresScripture = (quest.scriptureReference ?? '').isNotEmpty;
-                final hasOpened = context.read<AppProvider>().hasOpenedScriptureForQuest(quest.id);
-                final scriptureLocked = requiresScripture && !hasOpened;
-                final hasMetTarget = quest.currentProgress >= quest.targetCount;
-                final canComplete = isManual ? !scriptureLocked : (!scriptureLocked && hasMetTarget);
-                final label = isManual ? 'Mark Complete' : 'Complete';
-                return Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                    icon: Icon(Icons.play_arrow_rounded, color: Theme.of(context).colorScheme.primary),
-                        label: const Text('Start'),
-                        onPressed: () async {
-                          await provider.startQuest(quest.id);
-                          if (context.mounted) {
-                            Navigator.of(ctx).pop();
-                            _navigateForQuestType(context, provider);
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      icon: Icon(Icons.check_rounded, color: Theme.of(context).colorScheme.onPrimary),
-                      label: Text(label),
-                      onPressed: canComplete
-                          ? () async {
-                              if (context.mounted) Navigator.of(ctx).pop();
-                              await _handleComplete(context);
+              Consumer<AppProvider>(
+                builder: (context, provider, _) {
+                  final isManual = !quest.isAutoTracked;
+                  final requiresScripture =
+                      (quest.scriptureReference ?? '').isNotEmpty;
+                  final hasOpened = context
+                      .read<AppProvider>()
+                      .hasOpenedScriptureForQuest(quest.id);
+                  final scriptureLocked = requiresScripture && !hasOpened;
+                  final hasMetTarget =
+                      quest.currentProgress >= quest.targetCount;
+                  final canComplete = isManual
+                      ? !scriptureLocked
+                      : (!scriptureLocked && hasMetTarget);
+                  final label = isManual ? 'Mark Complete' : 'Complete';
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: Icon(
+                            Icons.play_arrow_rounded,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          label: const Text('Start'),
+                          onPressed: () async {
+                            await provider.startQuest(quest.id);
+                            if (context.mounted) {
+                              Navigator.of(ctx).pop();
+                              _navigateForQuestType(context, provider);
                             }
-                          : null,
-                    ),
-                  ],
-                );
-              })
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        icon: Icon(
+                          Icons.check_rounded,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        label: Text(label),
+                        onPressed: canComplete
+                            ? () async {
+                                if (context.mounted) Navigator.of(ctx).pop();
+                                await _handleComplete(context);
+                              }
+                            : null,
+                      ),
+                    ],
+                  );
+                },
+              ),
             ],
           ),
         );
@@ -764,12 +1181,14 @@ class TaskCard extends StatelessWidget {
       final result = await showModalBottomSheet<String?>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: GamerColors.darkCard,
+        backgroundColor: readingV2
+            ? Theme.of(context).colorScheme.surface
+            : GamerColors.darkCard,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         builder: (ctx) {
-          return Padding(
+          return SingleChildScrollView(
             padding: EdgeInsets.only(
               left: 20,
               right: 20,
@@ -780,9 +1199,15 @@ class TaskCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Quick Reflection', style: Theme.of(ctx).textTheme.titleLarge),
+                Text(
+                  'Quick Reflection',
+                  style: Theme.of(ctx).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 8),
-                Text(quest.reflectionPrompt!, style: Theme.of(ctx).textTheme.bodyMedium),
+                Text(
+                  quest.reflectionPrompt!,
+                  style: Theme.of(ctx).textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: controller,
@@ -790,10 +1215,15 @@ class TaskCard extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: 'Type a quick thought (optional)...',
                     filled: true,
-                    fillColor: GamerColors.darkSurface,
+                    fillColor: readingV2
+                        ? Theme.of(ctx).colorScheme.surfaceContainerHighest
+                        : GamerColors.darkSurface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: GamerColors.accent.withValues(alpha: 0.2), width: 1),
+                      borderSide: BorderSide(
+                        color: GamerColors.accent.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
                     ),
                   ),
                 ),
@@ -809,12 +1239,13 @@ class TaskCard extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+                        onPressed: () =>
+                            Navigator.of(ctx).pop(controller.text.trim()),
                         child: const Text('Done'),
                       ),
-                    )
+                    ),
                   ],
-                )
+                ),
               ],
             ),
           );
@@ -823,7 +1254,11 @@ class TaskCard extends StatelessWidget {
       // If reflection text provided, save to Journal via provider
       if (result != null && result.isNotEmpty) {
         try {
-          final unlockedFromJournal = await provider.addJournalEntryFromReflection(quest: quest, reflectionText: result);
+          final unlockedFromJournal =
+              await provider.addJournalEntryFromReflection(
+            quest: quest,
+            reflectionText: result,
+          );
           if (context.mounted && unlockedFromJournal.isNotEmpty) {
             final a = unlockedFromJournal.first;
             final xp = a.xpReward;
@@ -848,7 +1283,10 @@ class TaskCard extends StatelessWidget {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.stars_rounded, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              Icons.stars_rounded,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(width: 8),
             Text('Task complete! +${quest.xpReward} XP'),
           ],
@@ -861,6 +1299,7 @@ class TaskCard extends StatelessWidget {
     await showTaskCompleteModal(
       context: context,
       quest: quest,
+      readingV2: readingV2,
       onClaim: () async {
         await provider.claimQuestRewards(quest.id);
         if (!context.mounted) return;
@@ -919,46 +1358,58 @@ class _PossibleRewardsPreview extends StatelessWidget {
       runSpacing: 8,
       children: [
         for (final id in gearIds)
-          Builder(builder: (ctx) {
-            final item = _findItem(id);
-            final owned = (item != null && gear != null) ? gear.containsItem(item.id) : false;
-            if (item == null) {
-              // Unknown entry
-              return _RewardChipUnknown(theme: theme);
-            }
-            final color = gearRarityColor(item.rarity, theme);
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: GamerColors.darkSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(_slotIcon(item), color: color, size: 18),
-                  const SizedBox(width: 8),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        owned ? item.name : 'Unknown Artifact',
-                        style: theme.textTheme.labelMedium,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        owned ? _rarityLabel(item.rarity) : 'Unseen',
-                        style: theme.textTheme.labelSmall?.copyWith(color: GamerColors.textTertiary),
-                      ),
-                    ],
-                  )
-                ],
-              ),
-            );
-          }),
+          Builder(
+            builder: (ctx) {
+              final item = _findItem(id);
+              final owned = (item != null && gear != null)
+                  ? gear.containsItem(item.id)
+                  : false;
+              if (item == null) {
+                // Unknown entry
+                return _RewardChipUnknown(theme: theme);
+              }
+              final color = gearRarityColor(item.rarity, theme);
+              return Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: GamerColors.darkSurface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: color.withValues(alpha: 0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_slotIcon(item), color: color, size: 18),
+                    const SizedBox(width: 8),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          owned ? item.name : 'Unknown Artifact',
+                          style: theme.textTheme.labelMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          owned ? _rarityLabel(item.rarity) : 'Unseen',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: GamerColors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
       ],
     );
   }
@@ -990,21 +1441,29 @@ class _RewardChipUnknown extends StatelessWidget {
       decoration: BoxDecoration(
         color: GamerColors.darkSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outline.withValues(alpha: 0.35), width: 1),
+        border: Border.all(
+          color: theme.colorScheme.outline.withValues(alpha: 0.35),
+          width: 1,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-           Icon(Icons.help_rounded, color: theme.colorScheme.outline, size: 18),
+          Icon(Icons.help_rounded, color: theme.colorScheme.outline, size: 18),
           const SizedBox(width: 8),
           Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Unknown Artifact', style: theme.textTheme.labelMedium),
-              Text('Unseen', style: theme.textTheme.labelSmall?.copyWith(color: GamerColors.textTertiary)),
+              Text(
+                'Unseen',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: GamerColors.textTertiary,
+                ),
+              ),
             ],
-          )
+          ),
         ],
       ),
     );
@@ -1013,7 +1472,20 @@ class _RewardChipUnknown extends StatelessWidget {
 
 String _formatDate(DateTime dt) {
   // e.g., Jan 5, 2025
-  final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  final months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   final m = months[dt.month - 1];
   return '$m ${dt.day}, ${dt.year}';
 }

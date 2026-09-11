@@ -1,3 +1,4 @@
+import 'package:level_up_your_faith/widgets/reading_v2/reading_design.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
@@ -95,8 +96,14 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => SettingsProvider()..initialize()),
         // Soul Avatar equipment provider (depends on GearInventoryService and AppProvider user)
-        ChangeNotifierProxyProvider2<GearInventoryService, AppProvider, EquipmentProvider>(
-          create: (ctx) => EquipmentProvider(gearInventoryService: ctx.read<GearInventoryService>()),
+        ChangeNotifierProxyProvider2<
+          GearInventoryService,
+          AppProvider,
+          EquipmentProvider
+        >(
+          create: (ctx) => EquipmentProvider(
+            gearInventoryService: ctx.read<GearInventoryService>(),
+          ),
           update: (ctx, gear, app, eq) {
             eq ??= EquipmentProvider(gearInventoryService: gear);
             eq.setUser(app.currentUser?.id);
@@ -148,17 +155,17 @@ final _router = GoRouter(
       builder: (context, state) => const PersonalizedSetupFlow(),
     ),
     ShellRoute(
-      builder: (context, state, child) => MainNavigation(child: child),
+      builder: (context, state, child) {
+        final path = state.uri.path;
+        final shell = MainNavigation(child: child);
+        return path == '/' || path == '/bible' || path == '/verses'
+            ? ReadingDesign(child: shell)
+            : shell;
+      },
       routes: [
-        GoRoute(
-          path: '/',
-          builder: (context, state) => const QuestHubScreen(),
-        ),
-            // Convenience alias to always navigate Home via /home
-            GoRoute(
-              path: '/home',
-              builder: (context, state) => const HomeScreen(),
-            ),
+        GoRoute(path: '/', builder: (context, state) => const QuestHubScreen()),
+        // Convenience alias to always navigate Home via /home
+        GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
         // Bible center tab convenience route
         GoRoute(
           path: '/bible',
@@ -170,7 +177,10 @@ final _router = GoRouter(
             final ref = state.uri.queryParameters['ref'];
             final focusStr = state.uri.queryParameters['focus'];
             final focus = focusStr == null ? null : int.tryParse(focusStr);
-            return VersesScreen(selectedReference: ref, initialFocusVerse: focus);
+            return VersesScreen(
+              selectedReference: ref,
+              initialFocusVerse: focus,
+            );
           },
         ),
         GoRoute(
