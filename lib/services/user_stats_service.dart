@@ -26,10 +26,10 @@ class UserStatsService {
         });
         return out;
       }
-      return <String, int>{};
+      throw const FormatException('Invalid saved statistics');
     } catch (e) {
       debugPrint('UserStatsService._load error: $e');
-      return <String, int>{};
+      rethrow;
     }
   }
 
@@ -38,6 +38,7 @@ class UserStatsService {
       await _storage.save(_key(uid), jsonEncode(stats));
     } catch (e) {
       debugPrint('UserStatsService._save error: $e');
+      rethrow;
     }
   }
 
@@ -50,14 +51,31 @@ class UserStatsService {
     return next;
   }
 
+  /// Counter and receipt share one persisted record. Retrying an event heals
+  /// partially completed XP/stat writes without incrementing the counter twice.
+  Future<int> incrementOnce(String uid, String counter, String receipt) async {
+    final stats = await _load(uid);
+    final key = 'receipt:$counter:$receipt';
+    if (stats[key] == 1) return stats[counter] ?? 0;
+    stats[counter] = (stats[counter] ?? 0) + 1;
+    stats[key] = 1;
+    await _save(uid, stats);
+    return stats[counter]!;
+  }
+
   // Public counter APIs
-  Future<int> incChaptersCompleted(String uid) => _inc(uid, 'totalChaptersCompleted');
-  Future<int> incQuizzesCompleted(String uid) => _inc(uid, 'totalQuizzesCompleted');
+  Future<int> incChaptersCompleted(String uid) =>
+      _inc(uid, 'totalChaptersCompleted');
+  Future<int> incQuizzesCompleted(String uid) =>
+      _inc(uid, 'totalQuizzesCompleted');
   Future<int> incQuizzesPassed(String uid) => _inc(uid, 'totalQuizzesPassed');
   Future<int> incTasksCompleted(String uid) => _inc(uid, 'tasksCompleted');
-  Future<int> incReflectionsCompleted(String uid) => _inc(uid, 'reflectionsCompleted');
-  Future<int> incQuestStepsCompleted(String uid) => _inc(uid, 'questStepsCompleted');
-  Future<int> incReadingPlanDaysCompleted(String uid) => _inc(uid, 'readingPlanDaysCompleted');
+  Future<int> incReflectionsCompleted(String uid) =>
+      _inc(uid, 'reflectionsCompleted');
+  Future<int> incQuestStepsCompleted(String uid) =>
+      _inc(uid, 'questStepsCompleted');
+  Future<int> incReadingPlanDaysCompleted(String uid) =>
+      _inc(uid, 'readingPlanDaysCompleted');
   Future<int> incStreakDaysKept(String uid) => _inc(uid, 'streakDaysKept');
   Future<int> incStreakBreaks(String uid) => _inc(uid, 'streakBreaks');
 

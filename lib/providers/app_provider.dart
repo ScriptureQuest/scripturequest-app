@@ -1,3 +1,4 @@
+import '../utils/integrity/serial_queue.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'dart:math';
@@ -14,8 +15,8 @@ import 'package:level_up_your_faith/services/storage_service.dart';
 import 'package:level_up_your_faith/services/user_service.dart';
 import 'package:level_up_your_faith/services/verse_service.dart';
 import 'package:level_up_your_faith/services/quest_service.dart';
-  import 'package:level_up_your_faith/services/quest_board_service.dart';
-  import 'package:level_up_your_faith/services/quest_progress_service.dart';
+import 'package:level_up_your_faith/services/quest_board_service.dart';
+import 'package:level_up_your_faith/services/quest_progress_service.dart';
 import 'package:level_up_your_faith/services/achievement_service.dart';
 import 'package:level_up_your_faith/services/reflection_service.dart';
 import 'package:level_up_your_faith/services/journal_service.dart';
@@ -36,8 +37,8 @@ import 'package:level_up_your_faith/services/gear_inventory_service.dart';
 import 'package:level_up_your_faith/services/loot_service.dart';
 import 'package:level_up_your_faith/services/book_reward_service.dart';
 import 'package:level_up_your_faith/services/book_mastery_service.dart';
-  import 'package:level_up_your_faith/services/equipment_service.dart';
-  import 'package:level_up_your_faith/services/faith_power_service.dart';
+import 'package:level_up_your_faith/services/equipment_service.dart';
+import 'package:level_up_your_faith/services/faith_power_service.dart';
 import 'package:level_up_your_faith/data/book_reward_map.dart';
 import 'package:level_up_your_faith/models/reward.dart';
 import 'package:level_up_your_faith/models/player_inventory.dart';
@@ -46,14 +47,14 @@ import 'package:level_up_your_faith/services/progress/progress_event.dart';
 import 'package:level_up_your_faith/models/inventory_item.dart';
 import 'package:level_up_your_faith/models/questline.dart';
 import 'package:level_up_your_faith/services/questline_service.dart';
-  import 'package:level_up_your_faith/models/reward_event.dart';
+import 'package:level_up_your_faith/models/reward_event.dart';
 import 'package:level_up_your_faith/models/book_mastery.dart';
-  import 'package:level_up_your_faith/models/gear_item.dart';
-  import 'package:level_up_your_faith/models/reading_plan.dart';
-  import 'package:level_up_your_faith/services/reading_plan_service.dart';
+import 'package:level_up_your_faith/models/gear_item.dart';
+import 'package:level_up_your_faith/models/reading_plan.dart';
+import 'package:level_up_your_faith/services/reading_plan_service.dart';
 import 'package:level_up_your_faith/services/chapter_quiz_service.dart';
-  import 'package:level_up_your_faith/data/title_seeds.dart';
-  import 'package:level_up_your_faith/services/user_stats_service.dart';
+import 'package:level_up_your_faith/data/title_seeds.dart';
+import 'package:level_up_your_faith/services/user_stats_service.dart';
 
 // Memorization status for favorite verses
 enum MemorizationStatus { newItem, practicing, learned }
@@ -156,11 +157,14 @@ class AppProvider extends ChangeNotifier {
   // Questlines v0.6 — Step interaction tracking (ephemeral session-only)
   // Key: "<questlineId>|<stepId>", Value: set of interaction flags
   // e.g., {"readOpened", "journalSaved", "memorizeOpened"}
-  final Map<String, Set<String>> _questStepInteractions = <String, Set<String>>{};
+  final Map<String, Set<String>> _questStepInteractions =
+      <String, Set<String>>{};
 
-  String _questStepKey(String questlineId, String stepId) => '$questlineId|$stepId';
+  String _questStepKey(String questlineId, String stepId) =>
+      '$questlineId|$stepId';
 
-  bool hasQuestStepInteraction(String questlineId, String stepId, String interaction) {
+  bool hasQuestStepInteraction(
+      String questlineId, String stepId, String interaction) {
     try {
       final key = _questStepKey(questlineId, stepId);
       final set = _questStepInteractions[key];
@@ -171,7 +175,8 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  void recordQuestStepInteraction(String questlineId, String stepId, String interaction) {
+  void recordQuestStepInteraction(
+      String questlineId, String stepId, String interaction) {
     try {
       final key = _questStepKey(questlineId, stepId);
       final set = _questStepInteractions.putIfAbsent(key, () => <String>{});
@@ -203,8 +208,10 @@ class AppProvider extends ChangeNotifier {
   final FaithPowerService _faithPowerService = const FaithPowerService();
 
   PlayerInventory get playerInventory => _playerInventory;
-  Map<String, String?> get equippedGearSlots => _playerInventory.equipped.gearSlots;
-  Map<String, String?> get equippedCosmetics => _playerInventory.equipped.cosmetics;
+  Map<String, String?> get equippedGearSlots =>
+      _playerInventory.equipped.gearSlots;
+  Map<String, String?> get equippedCosmetics =>
+      _playerInventory.equipped.cosmetics;
   String? get equippedTitleId => _playerInventory.equipped.titleId;
 
   // ================== Bible reading progress ==================
@@ -226,7 +233,8 @@ class AppProvider extends ChangeNotifier {
   // ================== Learning Games (v1.0) ==================
   // Simple counter to track completed learning mini-games (Matching, Scramble, etc.)
   int _learningGamesCompleted = 0;
-  String _learningGamesCompletedKey(String uid) => 'learning_games_completed_$uid';
+  String _learningGamesCompletedKey(String uid) =>
+      'learning_games_completed_$uid';
   int get learningGamesCompleted => _learningGamesCompleted;
   Future<void> incrementLearningGamesCompleted() async {
     try {
@@ -235,8 +243,10 @@ class AppProvider extends ChangeNotifier {
       }
       final uid = _currentUser?.id ?? '';
       if (uid.isEmpty) return;
-      _learningGamesCompleted = (_learningGamesCompleted <= 0) ? 1 : _learningGamesCompleted + 1;
-      await _storageService.save<int>(_learningGamesCompletedKey(uid), _learningGamesCompleted);
+      _learningGamesCompleted =
+          (_learningGamesCompleted <= 0) ? 1 : _learningGamesCompleted + 1;
+      await _storageService.save<int>(
+          _learningGamesCompletedKey(uid), _learningGamesCompleted);
       // Unlock thresholds
       try {
         if (_learningGamesCompleted >= 1) {
@@ -345,8 +355,10 @@ class AppProvider extends ChangeNotifier {
   void setCosmeticAuraLocal(String? auraId) {
     try {
       final cos = {..._playerInventory.equipped.cosmetics};
-      cos['aura'] = (auraId == null || auraId.trim().isEmpty) ? null : auraId.trim();
-      _playerInventory = _playerInventory.copyWith(equipped: _playerInventory.equipped.copyWith(cosmetics: cos));
+      cos['aura'] =
+          (auraId == null || auraId.trim().isEmpty) ? null : auraId.trim();
+      _playerInventory = _playerInventory.copyWith(
+          equipped: _playerInventory.equipped.copyWith(cosmetics: cos));
       notifyListeners();
     } catch (e) {
       debugPrint('setCosmeticAuraLocal error: $e');
@@ -357,8 +369,10 @@ class AppProvider extends ChangeNotifier {
   void setCosmeticFrameLocal(String? frameId) {
     try {
       final cos = {..._playerInventory.equipped.cosmetics};
-      cos['frame'] = (frameId == null || frameId.trim().isEmpty) ? null : frameId.trim();
-      _playerInventory = _playerInventory.copyWith(equipped: _playerInventory.equipped.copyWith(cosmetics: cos));
+      cos['frame'] =
+          (frameId == null || frameId.trim().isEmpty) ? null : frameId.trim();
+      _playerInventory = _playerInventory.copyWith(
+          equipped: _playerInventory.equipped.copyWith(cosmetics: cos));
       notifyListeners();
     } catch (e) {
       debugPrint('setCosmeticFrameLocal error: $e');
@@ -368,7 +382,8 @@ class AppProvider extends ChangeNotifier {
   // ================== Titles & Achievements v1.0 flags ==================
   bool _hasCompletedAnyQuestline = false;
   bool get hasCompletedAnyQuestline => _hasCompletedAnyQuestline;
-  String _anyQuestlineCompletedKey(String uid) => 'has_completed_any_questline_$uid';
+  String _anyQuestlineCompletedKey(String uid) =>
+      'has_completed_any_questline_$uid';
 
   // ================== Favorite Verses (v1.0) ==================
   // Keys like 'John:3:16' where book is display name
@@ -474,7 +489,8 @@ class AppProvider extends ChangeNotifier {
   // Returns bookmark keys ordered by most recent first
   List<String> get bookmarkKeys {
     try {
-      final ordered = _bookmarksV1.toList(); // insertion order (oldest -> newest)
+      final ordered =
+          _bookmarksV1.toList(); // insertion order (oldest -> newest)
       return ordered.reversed.toList(); // newest first
     } catch (e) {
       debugPrint('bookmarkKeys error: $e');
@@ -528,7 +544,8 @@ class AppProvider extends ChangeNotifier {
     try {
       final parts = key.split(':');
       if (parts.length == 2) {
-        return parts[0].trim().isNotEmpty && (int.tryParse(parts[1].trim()) ?? 0) > 0;
+        return parts[0].trim().isNotEmpty &&
+            (int.tryParse(parts[1].trim()) ?? 0) > 0;
       }
       if (parts.length == 3) {
         return parts[0].trim().isNotEmpty &&
@@ -583,7 +600,8 @@ class AppProvider extends ChangeNotifier {
   Future<void> _persistBookmarksV1(String uid) async {
     try {
       // Save in insertion order; newest should be last
-      await _storageService.save<String>(_bookmarksKeyV1(uid), jsonEncode(_bookmarksV1.toList()));
+      await _storageService.save<String>(
+          _bookmarksKeyV1(uid), jsonEncode(_bookmarksV1.toList()));
     } catch (e) {
       debugPrint('_persistBookmarksV1 error: $e');
     }
@@ -592,7 +610,9 @@ class AppProvider extends ChangeNotifier {
   void _loadLastReadingKey(String uid) {
     try {
       final raw = _storageService.getString(_lastReadingStorageKey(uid));
-      final s = (raw == null || raw.trim().isEmpty) ? null : _normalizeBookmarkKey(raw.trim());
+      final s = (raw == null || raw.trim().isEmpty)
+          ? null
+          : _normalizeBookmarkKey(raw.trim());
       _lastReadingKey = (s != null && _isValidBookmarkKey(s)) ? s : null;
       if (raw != null && s == null) {
         debugPrint('lastReadingKey stored value was malformed; ignoring');
@@ -627,7 +647,8 @@ class AppProvider extends ChangeNotifier {
       }
       final uid = _currentUser?.id ?? '';
       if (uid.isEmpty) return;
-      _verseHighlights[k] = _HighlightEntry(colorKey: colorKey, updatedAt: DateTime.now());
+      _verseHighlights[k] =
+          _HighlightEntry(colorKey: colorKey, updatedAt: DateTime.now());
       await _persistVerseHighlights(uid);
       notifyListeners();
     } catch (e) {
@@ -683,7 +704,8 @@ class AppProvider extends ChangeNotifier {
   Future<void> _persistVerseHighlights(String uid) async {
     try {
       final map = _verseHighlights.map((k, v) => MapEntry(k, v.toJson()));
-      await _storageService.save<String>(_verseHighlightsKey(uid), jsonEncode(map));
+      await _storageService.save<String>(
+          _verseHighlightsKey(uid), jsonEncode(map));
     } catch (e) {
       debugPrint('_persistVerseHighlights error: $e');
     }
@@ -762,7 +784,8 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> _persistFavoriteVerses(String uid) async {
     try {
-      await _storageService.save<String>(_favoriteVersesKey(uid), jsonEncode(_favoriteVerses.toList()));
+      await _storageService.save<String>(
+          _favoriteVersesKey(uid), jsonEncode(_favoriteVerses.toList()));
     } catch (e) {
       debugPrint('_persistFavoriteVerses error: $e');
     }
@@ -787,14 +810,16 @@ class AppProvider extends ChangeNotifier {
   }
 
   // ================== Memorization (v1.0) ==================
-  final Map<String, MemorizationStatus> _memorizationStatus = <String, MemorizationStatus>{};
+  final Map<String, MemorizationStatus> _memorizationStatus =
+      <String, MemorizationStatus>{};
   final Map<String, int> _memorizationPracticeCount = <String, int>{};
   String _memStatusKey(String uid) => 'memorization_status_$uid';
   String _memPracticeKey(String uid) => 'memorization_practice_$uid';
   // v1.0 additions: last success day per verse (yyyy-MM-dd), and total successes
   final Map<String, String> _memorizationLastSuccessDay = <String, String>{};
   int _memorizationSuccessTotal = 0;
-  String _memLastSuccessDayKey(String uid) => 'memorization_last_success_day_$uid';
+  String _memLastSuccessDayKey(String uid) =>
+      'memorization_last_success_day_$uid';
   String _memSuccessTotalKey(String uid) => 'memorization_success_total_$uid';
 
   MemorizationStatus getMemorizationStatus(String verseKey) {
@@ -819,7 +844,8 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> recordMemorizationPractice(String verseKey, {int learnedThreshold = 3}) async {
+  Future<void> recordMemorizationPractice(String verseKey,
+      {int learnedThreshold = 3}) async {
     try {
       final key = verseKey.trim();
       if (key.isEmpty) return;
@@ -855,11 +881,15 @@ class AppProvider extends ChangeNotifier {
       _memorizationStatus.forEach((k, v) {
         statusMap[k] = v.name; // enum to string
       });
-      await _storageService.save<String>(_memStatusKey(uid), jsonEncode(statusMap));
-      await _storageService.save<String>(_memPracticeKey(uid), jsonEncode(_memorizationPracticeCount));
+      await _storageService.save<String>(
+          _memStatusKey(uid), jsonEncode(statusMap));
+      await _storageService.save<String>(
+          _memPracticeKey(uid), jsonEncode(_memorizationPracticeCount));
       // v1.0 additions
-      await _storageService.save<String>(_memLastSuccessDayKey(uid), jsonEncode(_memorizationLastSuccessDay));
-      await _storageService.save<int>(_memSuccessTotalKey(uid), _memorizationSuccessTotal);
+      await _storageService.save<String>(
+          _memLastSuccessDayKey(uid), jsonEncode(_memorizationLastSuccessDay));
+      await _storageService.save<int>(
+          _memSuccessTotalKey(uid), _memorizationSuccessTotal);
     } catch (e) {
       debugPrint('_persistMemorizationState error: $e');
     }
@@ -926,7 +956,8 @@ class AppProvider extends ChangeNotifier {
               final day = (v ?? '').toString().trim();
               if (key.isEmpty || day.isEmpty) return;
               // very light validation yyyy-MM-dd
-              if (RegExp(r'^\d{4}-\d{2}-\d{2} ?$').hasMatch(day) || RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(day)) {
+              if (RegExp(r'^\d{4}-\d{2}-\d{2} ?$').hasMatch(day) ||
+                  RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(day)) {
                 _memorizationLastSuccessDay[key] = day.substring(0, 10);
               } else {
                 _memorizationLastSuccessDay[key] = day;
@@ -940,7 +971,8 @@ class AppProvider extends ChangeNotifier {
 
       // total successes
       try {
-        _memorizationSuccessTotal = _storageService.getInt(_memSuccessTotalKey(uid)) ?? 0;
+        _memorizationSuccessTotal =
+            _storageService.getInt(_memSuccessTotalKey(uid)) ?? 0;
       } catch (_) {
         _memorizationSuccessTotal = 0;
       }
@@ -954,7 +986,8 @@ class AppProvider extends ChangeNotifier {
     try {
       final favs = favoriteVerseKeys.toSet();
       return _memorizationStatus.entries
-          .where((e) => favs.contains(e.key) && e.value == MemorizationStatus.learned)
+          .where((e) =>
+              favs.contains(e.key) && e.value == MemorizationStatus.learned)
           .length;
     } catch (_) {
       return 0;
@@ -967,7 +1000,8 @@ class AppProvider extends ChangeNotifier {
     try {
       final favs = favoriteVerseKeys.toSet();
       return _memorizationStatus.entries
-          .where((e) => favs.contains(e.key) && e.value != MemorizationStatus.learned)
+          .where((e) =>
+              favs.contains(e.key) && e.value != MemorizationStatus.learned)
           .length;
     } catch (_) {
       return 0;
@@ -976,7 +1010,8 @@ class AppProvider extends ChangeNotifier {
 
   /// v1.0 training outcome: success increments streak, promotes to learned at threshold.
   /// Returns XP awarded (0 if none). Awards XP only first success per verse per day.
-  Future<int> recordMemorizationSuccess(String verseKey, {int learnedThreshold = 3, int dailyXp = 10}) async {
+  Future<int> recordMemorizationSuccess(String verseKey,
+      {int learnedThreshold = 3, int dailyXp = 10}) async {
     try {
       final key = verseKey.trim();
       if (key.isEmpty) return 0;
@@ -995,12 +1030,14 @@ class AppProvider extends ChangeNotifier {
       final current = _memorizationStatus[key] ?? MemorizationStatus.newItem;
       if (next >= learnedThreshold) {
         _memorizationStatus[key] = MemorizationStatus.learned;
-      } else if (current == MemorizationStatus.newItem || current == MemorizationStatus.practicing) {
+      } else if (current == MemorizationStatus.newItem ||
+          current == MemorizationStatus.practicing) {
         _memorizationStatus[key] = MemorizationStatus.practicing;
       }
 
       // Count total successful sessions
-      _memorizationSuccessTotal = (_memorizationSuccessTotal <= 0) ? 1 : _memorizationSuccessTotal + 1;
+      _memorizationSuccessTotal =
+          (_memorizationSuccessTotal <= 0) ? 1 : _memorizationSuccessTotal + 1;
 
       // Award XP once per day per verse
       int xpAwarded = 0;
@@ -1011,7 +1048,9 @@ class AppProvider extends ChangeNotifier {
           final base = dailyXp;
           final award = _applyStreakBonusToXp(base);
           if (award > 0) {
-            _currentUser = await _rewardService.applyReward(Reward(type: RewardTypes.xp, amount: award, label: '$award XP'), xpOverride: award);
+            _currentUser = await _rewardService.applyReward(
+                Reward(type: RewardTypes.xp, amount: award, label: '$award XP'),
+                xpOverride: award);
             _triggerXpBurst(award);
             xpAwarded = award;
           }
@@ -1058,7 +1097,9 @@ class AppProvider extends ChangeNotifier {
 
       _memorizationPracticeCount[key] = 0;
       final current = _memorizationStatus[key] ?? MemorizationStatus.newItem;
-      _memorizationStatus[key] = (current == MemorizationStatus.newItem) ? MemorizationStatus.newItem : MemorizationStatus.practicing;
+      _memorizationStatus[key] = (current == MemorizationStatus.newItem)
+          ? MemorizationStatus.newItem
+          : MemorizationStatus.practicing;
       await _persistMemorizationState(uid);
       notifyListeners();
     } catch (e) {
@@ -1100,13 +1141,15 @@ class AppProvider extends ChangeNotifier {
 
   bool shouldOfferQuiz(String bookId, int chapter) {
     try {
-      return isQuizAvailable(bookId, chapter) && !hasCompletedQuiz(bookId, chapter);
+      return isQuizAvailable(bookId, chapter) &&
+          !hasCompletedQuiz(bookId, chapter);
     } catch (_) {
       return false;
     }
   }
 
-  Future<void> markQuizCompleted(String bookId, int chapter, {bool awardXp = true}) async {
+  Future<void> markQuizCompleted(String bookId, int chapter,
+      {bool awardXp = true}) async {
     try {
       if (_currentUser == null) {
         _currentUser = await _userService.getCurrentUser();
@@ -1149,7 +1192,7 @@ class AppProvider extends ChangeNotifier {
   int _currentBibleStreak = 0;
   int _longestBibleStreak = 0;
   DateTime? _lastBibleReadDate; // date-only (local)
-  
+
   // Streak celebration animation event (increment to trigger animation)
   int _streakCelebrationEvent = 0;
   int _streakCelebrationValue = 0;
@@ -1185,8 +1228,10 @@ class AppProvider extends ChangeNotifier {
 
   // Keys per user
   String _streakRecoveryPrevKey(String uid) => 'streak_recovery_prev_$uid';
-  String _streakRecoveryQuestIdKey(String uid) => 'streak_recovery_quest_id_$uid';
-  String _streakRecoveryExpiresKey(String uid) => 'streak_recovery_expires_$uid';
+  String _streakRecoveryQuestIdKey(String uid) =>
+      'streak_recovery_quest_id_$uid';
+  String _streakRecoveryExpiresKey(String uid) =>
+      'streak_recovery_expires_$uid';
 
   // Public accessors
   bool get hasActiveStreakRecoveryQuest =>
@@ -1211,9 +1256,12 @@ class AppProvider extends ChangeNotifier {
   String? get activeReadingPlanId => _activeReadingPlanId;
   DateTime? get activeReadingPlanStartDate => _activeReadingPlanStartDate;
   ReadingPlan? get activeReadingPlan =>
-      (_activeReadingPlanId == null || _activeReadingPlanId!.isEmpty) ? null : ReadingPlanService.getById(_activeReadingPlanId!);
+      (_activeReadingPlanId == null || _activeReadingPlanId!.isEmpty)
+          ? null
+          : ReadingPlanService.getById(_activeReadingPlanId!);
 
-  Set<int> _completedStepsForPlan(String planId) => _planProgress[planId] ?? <int>{};
+  Set<int> _completedStepsForPlan(String planId) =>
+      _planProgress[planId] ?? <int>{};
 
   bool isPlanStepCompleted(ReadingPlan plan, int stepIndex) {
     try {
@@ -1342,15 +1390,18 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> _persistReadingPlanState(String uid) async {
     try {
-      await _storageService.save<String>(_planActiveIdKey(uid), _activeReadingPlanId ?? '');
+      await _storageService.save<String>(
+          _planActiveIdKey(uid), _activeReadingPlanId ?? '');
       if (_activeReadingPlanStartDate != null) {
-        await _storageService.save<String>(_planActiveStartKey(uid), _activeReadingPlanStartDate!.toIso8601String());
+        await _storageService.save<String>(_planActiveStartKey(uid),
+            _activeReadingPlanStartDate!.toIso8601String());
       } else {
         await _storageService.delete(_planActiveStartKey(uid));
       }
       final serializable = <String, List<int>>{};
       _planProgress.forEach((k, v) => serializable[k] = v.toList()..sort());
-      await _storageService.save<String>(_planProgressKey(uid), jsonEncode(serializable));
+      await _storageService.save<String>(
+          _planProgressKey(uid), jsonEncode(serializable));
     } catch (e) {
       debugPrint('_persistReadingPlanState error: $e');
     }
@@ -1361,7 +1412,10 @@ class AppProvider extends ChangeNotifier {
       final id = _storageService.getString(_planActiveIdKey(uid)) ?? '';
       _activeReadingPlanId = id.trim().isEmpty ? null : id.trim();
       final startStr = _storageService.getString(_planActiveStartKey(uid));
-      _activeReadingPlanStartDate = (startStr == null || startStr.trim().isEmpty) ? null : DateTime.tryParse(startStr.trim());
+      _activeReadingPlanStartDate =
+          (startStr == null || startStr.trim().isEmpty)
+              ? null
+              : DateTime.tryParse(startStr.trim());
       final raw = _storageService.getString(_planProgressKey(uid));
       _planProgress = <String, Set<int>>{};
       if (raw != null && raw.isNotEmpty) {
@@ -1371,7 +1425,8 @@ class AppProvider extends ChangeNotifier {
             decoded.forEach((k, v) {
               final pid = (k as String).trim();
               if (pid.isEmpty) return;
-              final list = (v as List<dynamic>? ?? const <dynamic>[])// ignore: avoid_dynamic_calls
+              final list = (v as List<dynamic>? ??
+                      const <dynamic>[]) // ignore: avoid_dynamic_calls
                   .map((e) => int.tryParse('$e') ?? -1)
                   .where((n) => n >= 0)
                   .toSet();
@@ -1469,8 +1524,10 @@ class AppProvider extends ChangeNotifier {
   List<TaskModel> get quests => _quests;
   List<AchievementModel> get achievements => _achievements;
   List<board.Quest> get activeQuests => _activeQuests;
-  List<AchievementModel> get unlockedAchievements => _achievements.where((a) => a.isUnlocked).toList();
-  List<AchievementModel> get lockedAchievements => _achievements.where((a) => !a.isUnlocked).toList();
+  List<AchievementModel> get unlockedAchievements =>
+      _achievements.where((a) => a.isUnlocked).toList();
+  List<AchievementModel> get lockedAchievements =>
+      _achievements.where((a) => !a.isUnlocked).toList();
   bool get isLoading => _isLoading;
   int get xpBurstEvent => _xpBurstEvent;
   int get xpBurstAmount => _xpBurstAmount;
@@ -1605,7 +1662,8 @@ class AppProvider extends ChangeNotifier {
   int get faithPower {
     try {
       final lvl = currentLevel;
-      final masteredBooks = totalBooksCompleted; // gentle proxy; v1.1: wire mastery tiers if needed
+      final masteredBooks =
+          totalBooksCompleted; // gentle proxy; v1.1: wire mastery tiers if needed
       final equippedItems = _getEquippedGearItems();
       return _faithPowerService.calculateFaithPower(
         soulLevel: lvl,
@@ -1620,16 +1678,18 @@ class AppProvider extends ChangeNotifier {
 
   List<GearItem> _getEquippedGearItems() {
     try {
-      final eq = _equipmentService?.equipped ?? const {
-        SlotType.head: null,
-        SlotType.chest: null,
-        SlotType.hand: null,
-        SlotType.relic1: null,
-        SlotType.relic2: null,
-        SlotType.aura: null,
-      };
+      final eq = _equipmentService?.equipped ??
+          const {
+            SlotType.head: null,
+            SlotType.chest: null,
+            SlotType.hand: null,
+            SlotType.relic1: null,
+            SlotType.relic2: null,
+            SlotType.aura: null,
+          };
       final list = <GearItem>[];
-      GearItem? resolve(String? id) => (id == null || id.trim().isEmpty) ? null : _lootService?.getById(id);
+      GearItem? resolve(String? id) =>
+          (id == null || id.trim().isEmpty) ? null : _lootService?.getById(id);
       for (final s in [
         SlotType.head,
         SlotType.chest,
@@ -1689,6 +1749,7 @@ class AppProvider extends ChangeNotifier {
       return AppThemeMode.sacredDark;
     }
   }
+
   int get totalQuestsCompleted {
     try {
       return _quests.where((q) => q.isCompleted).length;
@@ -1705,7 +1766,8 @@ class AppProvider extends ChangeNotifier {
       final key = 'bible_opened_refs_$uid';
       final raw = _storageService.getString(key);
       if (raw == null) return 0;
-      final set = (jsonDecode(raw) as List<dynamic>).map((e) => e.toString()).toSet();
+      final set =
+          (jsonDecode(raw) as List<dynamic>).map((e) => e.toString()).toSet();
       return set.length;
     } catch (e) {
       debugPrint('totalScripturesOpened decode error: $e');
@@ -1795,7 +1857,8 @@ class AppProvider extends ChangeNotifier {
   // ================== Bible completion stats ==================
   int get totalChaptersRead {
     try {
-      return _readChaptersPerBook.values.fold<int>(0, (sum, s) => sum + s.length);
+      return _readChaptersPerBook.values
+          .fold<int>(0, (sum, s) => sum + s.length);
     } catch (e) {
       debugPrint('totalChaptersRead error: $e');
       return 0;
@@ -1805,7 +1868,9 @@ class AppProvider extends ChangeNotifier {
   // Count of distinct books with at least one chapter read
   int get distinctBooksRead {
     try {
-      return _readChaptersPerBook.entries.where((e) => e.value.isNotEmpty).length;
+      return _readChaptersPerBook.entries
+          .where((e) => e.value.isNotEmpty)
+          .length;
     } catch (e) {
       debugPrint('distinctBooksRead error: $e');
       return 0;
@@ -1827,7 +1892,8 @@ class AppProvider extends ChangeNotifier {
       final key = _normalizeDisplayBook(book);
       final result = _readChaptersPerBook[key]?.contains(chapter) ?? false;
       if (kDebugMode && result) {
-        debugPrint('[CompletionState] isChapterCompleted book=$book chapter=$chapter result=$result');
+        debugPrint(
+            '[CompletionState] isChapterCompleted book=$book chapter=$chapter result=$result');
       }
       return result;
     } catch (e) {
@@ -1853,7 +1919,8 @@ class AppProvider extends ChangeNotifier {
     try {
       int count = 0;
       for (final entry in bookTotalChapters.entries) {
-        final read = _readChaptersPerBook[_normalizeDisplayBook(entry.key)]?.length ?? 0;
+        final read =
+            _readChaptersPerBook[_normalizeDisplayBook(entry.key)]?.length ?? 0;
         if (read >= entry.value) count++;
       }
       return count;
@@ -1870,7 +1937,8 @@ class AppProvider extends ChangeNotifier {
           .where((a) => a.id.startsWith('book_completed_') && a.isUnlocked)
           .toList();
       if (comps.isEmpty) return null;
-      comps.sort((a, b) => (b.unlockedAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+      comps.sort((a, b) => (b.unlockedAt ??
+              DateTime.fromMillisecondsSinceEpoch(0))
           .compareTo(a.unlockedAt ?? DateTime.fromMillisecondsSinceEpoch(0)));
       // Title format: "Completed {Book}"
       final t = comps.first.title;
@@ -1907,7 +1975,8 @@ class AppProvider extends ChangeNotifier {
     _userService = UserService(_storageService);
     _verseService = VerseService(_storageService);
     _questService = TaskService(_storageService);
-    _questProgressService = QuestProgressService(questService: _questService, verseService: _verseService);
+    _questProgressService = QuestProgressService(
+        questService: _questService, verseService: _verseService);
     _questBoardService = QuestBoardService();
     _achievementService = AchievementService(_storageService);
     _reflectionService = ReflectionService(_storageService);
@@ -1921,7 +1990,8 @@ class AppProvider extends ChangeNotifier {
     // Unified reward services
     _titlesService = TitlesService(_storageService);
     _inventoryService = InventoryService(_storageService);
-    _rewardService = RewardService(_userService, _titlesService, _inventoryService);
+    _rewardService =
+        RewardService(_userService, _titlesService, _inventoryService);
     _questlineService = QuestlineService(_storageService, _questService);
 
     await loadData();
@@ -1973,7 +2043,9 @@ class AppProvider extends ChangeNotifier {
       var inv = await _inventoryService.getInventoryForUser(uid);
       // Sync equipped title from TitlesService for canonical source
       final titleRaw = await _titlesService.getEquippedTitle(uid: uid);
-      final title = (titleRaw == null || titleRaw.trim().isEmpty) ? null : titleRaw.trim();
+      final title = (titleRaw == null || titleRaw.trim().isEmpty)
+          ? null
+          : titleRaw.trim();
       if (inv.equipped.titleId != title) {
         inv = inv.copyWith(equipped: inv.equipped.copyWith(titleId: title));
       }
@@ -2004,7 +2076,8 @@ class AppProvider extends ChangeNotifier {
       if (_currentUser == null) {
         _currentUser = await _userService.getCurrentUser();
       }
-      final t = (tagline == null || tagline.trim().isEmpty) ? null : tagline.trim();
+      final t =
+          (tagline == null || tagline.trim().isEmpty) ? null : tagline.trim();
       final updated = _currentUser!.copyWith(tagline: t);
       await _userService.updateUser(updated);
       _currentUser = updated;
@@ -2048,7 +2121,8 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  void setLastBibleSelection({required String bookDisplay, required int chapter}) {
+  void setLastBibleSelection(
+      {required String bookDisplay, required int chapter}) {
     final book = bookDisplay.trim();
     if (book.isEmpty || chapter <= 0) return;
     try {
@@ -2119,7 +2193,8 @@ class AppProvider extends ChangeNotifier {
       _achievements = await _achievementService.getAchievementsForUser(uid);
     } else {
       _achievements = AchievementService.definitions
-          .map((d) => d.copyWith(isUnlocked: false, unlockedAt: null, progress: 0))
+          .map((d) =>
+              d.copyWith(isUnlocked: false, unlockedAt: null, progress: 0))
           .toList();
     }
 
@@ -2209,7 +2284,8 @@ class AppProvider extends ChangeNotifier {
     // Load learning games completed counter per user
     try {
       if (uid.isNotEmpty) {
-        _learningGamesCompleted = _storageService.getInt(_learningGamesCompletedKey(uid)) ?? 0;
+        _learningGamesCompleted =
+            _storageService.getInt(_learningGamesCompletedKey(uid)) ?? 0;
       } else {
         _learningGamesCompleted = 0;
       }
@@ -2233,44 +2309,51 @@ class AppProvider extends ChangeNotifier {
       _lastReadingKey = null;
     }
 
-      // Load Guided Start first-run flags per user
-      try {
-        if (uid.isNotEmpty) {
-          _hasSeenGuidedStart = _storageService.getBool(_guidedStartSeenKey(uid)) ?? false;
-          _hasCompletedFirstReading = _storageService.getBool(_firstReadingDoneKey(uid)) ?? false;
-          _hasCompletedFirstJournal = _storageService.getBool(_firstJournalDoneKey(uid)) ?? false;
-          _hasVisitedQuestlines = _storageService.getBool(_questlinesVisitedKey(uid)) ?? false;
-        } else {
-          _hasSeenGuidedStart = false;
-          _hasCompletedFirstReading = false;
-          _hasCompletedFirstJournal = false;
-          _hasVisitedQuestlines = false;
-        }
-      } catch (e) {
-        debugPrint('loadData guided start flags error: $e');
+    // Load Guided Start first-run flags per user
+    try {
+      if (uid.isNotEmpty) {
+        _hasSeenGuidedStart =
+            _storageService.getBool(_guidedStartSeenKey(uid)) ?? false;
+        _hasCompletedFirstReading =
+            _storageService.getBool(_firstReadingDoneKey(uid)) ?? false;
+        _hasCompletedFirstJournal =
+            _storageService.getBool(_firstJournalDoneKey(uid)) ?? false;
+        _hasVisitedQuestlines =
+            _storageService.getBool(_questlinesVisitedKey(uid)) ?? false;
+      } else {
         _hasSeenGuidedStart = false;
         _hasCompletedFirstReading = false;
         _hasCompletedFirstJournal = false;
         _hasVisitedQuestlines = false;
       }
+    } catch (e) {
+      debugPrint('loadData guided start flags error: $e');
+      _hasSeenGuidedStart = false;
+      _hasCompletedFirstReading = false;
+      _hasCompletedFirstJournal = false;
+      _hasVisitedQuestlines = false;
+    }
 
-      // Load Onboarding v2.0 completion flag per user
-      try {
-        if (uid.isNotEmpty) {
-          _hasCompletedOnboarding = _storageService.getBool(_onboardingCompletedKey(uid)) ?? false;
-        } else {
-          _hasCompletedOnboarding = false;
-        }
-      } catch (e) {
-        debugPrint('loadData onboarding flag error: $e');
+    // Load Onboarding v2.0 completion flag per user
+    try {
+      if (uid.isNotEmpty) {
+        _hasCompletedOnboarding =
+            _storageService.getBool(_onboardingCompletedKey(uid)) ?? false;
+      } else {
         _hasCompletedOnboarding = false;
       }
+    } catch (e) {
+      debugPrint('loadData onboarding flag error: $e');
+      _hasCompletedOnboarding = false;
+    }
 
     // Load Bible reading streak per user
     try {
       if (uid.isNotEmpty) {
-        _currentBibleStreak = _storageService.getInt(_streakCurrentKey(uid)) ?? 0;
-        _longestBibleStreak = _storageService.getInt(_streakLongestKey(uid)) ?? 0;
+        _currentBibleStreak =
+            _storageService.getInt(_streakCurrentKey(uid)) ?? 0;
+        _longestBibleStreak =
+            _storageService.getInt(_streakLongestKey(uid)) ?? 0;
         final lastStr = _storageService.getString(_streakLastDateKey(uid));
         _lastBibleReadDate = (lastStr == null || lastStr.trim().isEmpty)
             ? null
@@ -2324,10 +2407,15 @@ class AppProvider extends ChangeNotifier {
     // Load streak recovery metadata per user
     try {
       if (uid.isNotEmpty) {
-        _previousBibleStreakBeforeBreak = _storageService.getInt(_streakRecoveryPrevKey(uid));
-        _activeStreakRecoveryQuestId = _storageService.getString(_streakRecoveryQuestIdKey(uid));
-        final expStr = _storageService.getString(_streakRecoveryExpiresKey(uid));
-        _streakRecoveryExpiresAt = (expStr == null || expStr.trim().isEmpty) ? null : DateTime.tryParse(expStr.trim());
+        _previousBibleStreakBeforeBreak =
+            _storageService.getInt(_streakRecoveryPrevKey(uid));
+        _activeStreakRecoveryQuestId =
+            _storageService.getString(_streakRecoveryQuestIdKey(uid));
+        final expStr =
+            _storageService.getString(_streakRecoveryExpiresKey(uid));
+        _streakRecoveryExpiresAt = (expStr == null || expStr.trim().isEmpty)
+            ? null
+            : DateTime.tryParse(expStr.trim());
       } else {
         _previousBibleStreakBeforeBreak = null;
         _activeStreakRecoveryQuestId = null;
@@ -2366,11 +2454,15 @@ class AppProvider extends ChangeNotifier {
     try {
       if (uid.isNotEmpty) {
         final lastOpenedStr = _storageService.getString(_lastOpenedAtKey(uid));
-        _lastOpenedAt = (lastOpenedStr == null || lastOpenedStr.trim().isEmpty) ? null : DateTime.tryParse(lastOpenedStr.trim());
-        final welcomeDayStr = _storageService.getString(_welcomeShownDayKey(uid));
-        _lastWelcomeShownForDay = (welcomeDayStr == null || welcomeDayStr.trim().isEmpty)
+        _lastOpenedAt = (lastOpenedStr == null || lastOpenedStr.trim().isEmpty)
             ? null
-            : _parseYmd(welcomeDayStr.trim());
+            : DateTime.tryParse(lastOpenedStr.trim());
+        final welcomeDayStr =
+            _storageService.getString(_welcomeShownDayKey(uid));
+        _lastWelcomeShownForDay =
+            (welcomeDayStr == null || welcomeDayStr.trim().isEmpty)
+                ? null
+                : _parseYmd(welcomeDayStr.trim());
       } else {
         _lastOpenedAt = null;
         _lastWelcomeShownForDay = null;
@@ -2383,7 +2475,8 @@ class AppProvider extends ChangeNotifier {
     // Titles & Achievements v1.0 flags
     try {
       if (uid.isNotEmpty) {
-        _hasCompletedAnyQuestline = _storageService.getBool(_anyQuestlineCompletedKey(uid)) ?? false;
+        _hasCompletedAnyQuestline =
+            _storageService.getBool(_anyQuestlineCompletedKey(uid)) ?? false;
       } else {
         _hasCompletedAnyQuestline = false;
       }
@@ -2398,7 +2491,8 @@ class AppProvider extends ChangeNotifier {
         final defs = await _questlineService.getAvailableQuestlines(uid);
         final act = await _questlineService.getActiveQuestlines(uid);
         _activeQuestlines = act.map((p) {
-          final def = defs.firstWhere((d) => d.id == p.questlineId, orElse: () => defs.first);
+          final def = defs.firstWhere((d) => d.id == p.questlineId,
+              orElse: () => defs.first);
           return QuestlineProgressView(questline: def, progress: p);
         }).toList();
       } else {
@@ -2429,7 +2523,8 @@ class AppProvider extends ChangeNotifier {
           if (item is Map<String, dynamic>) {
             list.add(CompletedBoardQuestEntry.fromJson(item));
           } else if (item is Map) {
-            list.add(CompletedBoardQuestEntry.fromJson(item.cast<String, dynamic>()));
+            list.add(CompletedBoardQuestEntry.fromJson(
+                item.cast<String, dynamic>()));
           }
         } catch (e) {
           debugPrint('Skipping malformed completed quest: $e');
@@ -2447,7 +2542,8 @@ class AppProvider extends ChangeNotifier {
   Future<void> _saveCompletedBoardQuests(String uid) async {
     try {
       final list = _completedBoardQuests.map((e) => e.toJson()).toList();
-      await _storageService.save<String>(_completedBoardQuestsKey(uid), jsonEncode(list));
+      await _storageService.save<String>(
+          _completedBoardQuestsKey(uid), jsonEncode(list));
     } catch (e) {
       debugPrint('_saveCompletedBoardQuests error: $e');
     }
@@ -2484,18 +2580,31 @@ class AppProvider extends ChangeNotifier {
     await _verseService.completeVerse(verseId);
     _currentUser = await _userService.completeVerse(verseId);
     _currentUser = await _userService.updateStreak();
-    
+
     final verse = _verses.firstWhere((v) => v.id == verseId);
     final award = _applyStreakBonusToXp(verse.xpReward);
     _currentUser = await _userService.addXP(award);
     _triggerXpBurst(award);
-    
+
     // Check level achievements after XP gains
     await _checkLevelMilestones();
     await loadData();
   }
 
-  Future<List<AchievementModel>> completeQuest(String questId, {bool claimRewards = true}) async {
+  final Map<String, Future<List<AchievementModel>>> _taskCompletions = {};
+  final _claimQueue = SerialQueue();
+
+  Future<List<AchievementModel>> completeQuest(String questId,
+      {bool claimRewards = true}) {
+    final pending = _taskCompletions[questId];
+    if (pending != null) return pending;
+    final future = _completeQuestOnce(questId, claimRewards: claimRewards);
+    _taskCompletions[questId] = future;
+    return future.whenComplete(() => _taskCompletions.remove(questId));
+  }
+
+  Future<List<AchievementModel>> _completeQuestOnce(String questId,
+      {bool claimRewards = true}) async {
     // In-memory Quest Board completion path
     try {
       final index = _activeQuests.indexWhere((q) => q.id == questId);
@@ -2511,13 +2620,19 @@ class AppProvider extends ChangeNotifier {
           try {
             final rewards = (q.rewards.isNotEmpty)
                 ? q.rewards
-                : [Reward(type: RewardTypes.xp, amount: q.xpReward, label: '${q.xpReward} XP')];
+                : [
+                    Reward(
+                        type: RewardTypes.xp,
+                        amount: q.xpReward,
+                        label: '${q.xpReward} XP')
+                  ];
             final labels = <String>[];
             for (final r in rewards) {
               if (r.type == RewardTypes.xp) {
                 final amt = _applyStreakBonusToXp(r.amount ?? 0);
                 if (amt > 0) {
-                  _currentUser = await _rewardService.applyReward(r, xpOverride: amt);
+                  _currentUser =
+                      await _rewardService.applyReward(r, xpOverride: amt);
                   _triggerXpBurst(amt);
                   labels.add('$amt XP');
                 }
@@ -2587,9 +2702,21 @@ class AppProvider extends ChangeNotifier {
       debugPrint('completeQuest (board) error: $e');
     }
 
+    _quests = await _questService.getAllQuests();
+    final candidates = _quests.where((q) => q.id == questId).toList();
+    if (candidates.isEmpty || candidates.first.isExpired) return const [];
+    final before = await _userService.getCurrentUser();
+    if (before.completedQuests.contains(questId)) {
+      await ProgressEngine.instance
+          .countCompletedTask(questId, candidates.first.resolvedCategory.name);
+      if (claimRewards) await claimQuestRewards(questId);
+      return const [];
+    }
     await _questService.completeQuest(questId);
     _currentUser = await _userService.completeQuest(questId);
-    
+    await ProgressEngine.instance
+        .countCompletedTask(questId, candidates.first.resolvedCategory.name);
+
     final quest = _quests.firstWhere((q) => q.id == questId);
     // Mastery: record quest completed for the associated book if derivable
     try {
@@ -2603,34 +2730,7 @@ class AppProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('mastery recordQuestCompleted hook error: $e');
     }
-    if (claimRewards) {
-      try {
-        final rewards = (quest.rewards.isNotEmpty)
-            ? quest.rewards
-            : [Reward(type: RewardTypes.xp, amount: quest.xpReward, label: '${quest.xpReward} XP')];
-        final labels = <String>[];
-        for (final r in rewards) {
-          if (r.type == RewardTypes.xp) {
-            final amt = _applyStreakBonusToXp(r.amount ?? 0);
-            if (amt > 0) {
-              _currentUser = await _rewardService.applyReward(r, xpOverride: amt);
-              _triggerXpBurst(amt);
-              labels.add('$amt XP');
-            }
-          } else {
-            _currentUser = await _rewardService.applyReward(r);
-            labels.add(RewardService.formatRewardLabel(r));
-          }
-        }
-        if (labels.isNotEmpty) {
-          _emitQuestCompletionToast(labels.join(' • '));
-        }
-        // Mark claimed in persistent storage
-        await _questService.markQuestClaimed(questId);
-      } catch (e) {
-        debugPrint('completeQuest reward award error: $e');
-      }
-    }
+    if (claimRewards) await claimQuestRewards(questId);
 
     // Quest-specific artifact rewards (metadata-driven): grant and enqueue modal
     try {
@@ -2705,7 +2805,8 @@ class AppProvider extends ChangeNotifier {
       // 2) First-ever quest milestone → Mustard Seed Pendant (alias supported)
       final total = (_currentUser?.completedQuests.length ?? 0);
       if (total == 1) {
-        final granted = _lootService?.grantByIdIfUnowned('mustard_seed_pendant');
+        final granted =
+            _lootService?.grantByIdIfUnowned('mustard_seed_pendant');
         if (granted != null) emitNewArtifactAcquired(granted);
       }
     } catch (e) {
@@ -2716,17 +2817,21 @@ class AppProvider extends ChangeNotifier {
     try {
       final uid = _currentUser?.id ?? '';
       if (uid.isNotEmpty) {
-        final mapping = await _questlineService.questlineStepForQuestId(uid, questId);
+        final mapping =
+            await _questlineService.questlineStepForQuestId(uid, questId);
         if (mapping != null) {
           final qlId = mapping['questlineId']!;
           final stepId = mapping['stepId']!;
-          final updated = await _questlineService.markStepComplete(uid, qlId, stepId);
+          final updated =
+              await _questlineService.markStepComplete(uid, qlId, stepId);
           if (updated != null) {
             // Refresh local questlines cache
             try {
               final defs = await _questlineService.getAvailableQuestlines(uid);
-              _activeQuestlines = (await _questlineService.getActiveQuestlines(uid)).map((p) {
-                final def = defs.firstWhere((d) => d.id == p.questlineId, orElse: () => defs.first);
+              _activeQuestlines =
+                  (await _questlineService.getActiveQuestlines(uid)).map((p) {
+                final def = defs.firstWhere((d) => d.id == p.questlineId,
+                    orElse: () => defs.first);
                 return QuestlineProgressView(questline: def, progress: p);
               }).toList();
             } catch (e) {
@@ -2743,7 +2848,8 @@ class AppProvider extends ChangeNotifier {
             // If questline completed now, award final rewards and emit overlay
             if (updated.isCompleted) {
               try {
-                final defs = await _questlineService.getAvailableQuestlines(uid);
+                final defs =
+                    await _questlineService.getAvailableQuestlines(uid);
                 final def = defs.firstWhere((d) => d.id == updated.questlineId);
                 final labels = <String>[];
                 if (def.rewards.isNotEmpty) {
@@ -2751,7 +2857,8 @@ class AppProvider extends ChangeNotifier {
                     if (r.type == RewardTypes.xp) {
                       final amt = _applyStreakBonusToXp(r.amount ?? 0);
                       if (amt > 0) {
-                        _currentUser = await _rewardService.applyReward(r, xpOverride: amt);
+                        _currentUser = await _rewardService.applyReward(r,
+                            xpOverride: amt);
                         _triggerXpBurst(amt);
                         labels.add('$amt XP');
                       }
@@ -2761,8 +2868,10 @@ class AppProvider extends ChangeNotifier {
                     }
                   }
                 }
-                final summary = labels.where((e) => e.trim().isNotEmpty).join(' • ');
-                emitQuestlineCompletion(def.title, summary.isEmpty ? null : summary);
+                final summary =
+                    labels.where((e) => e.trim().isNotEmpty).join(' • ');
+                emitQuestlineCompletion(
+                    def.title, summary.isEmpty ? null : summary);
                 // Titles & Achievements v1.0 hooks on questline completion
                 await _onQuestlineCompleted(def.id);
               } catch (e) {
@@ -2778,7 +2887,9 @@ class AppProvider extends ChangeNotifier {
 
     // If this completed quest is the active streak recovery quest, restore streak (previous - 3, min 7)
     try {
-      if (_activeStreakRecoveryQuestId != null && questId == _activeStreakRecoveryQuestId && _previousBibleStreakBeforeBreak != null) {
+      if (_activeStreakRecoveryQuestId != null &&
+          questId == _activeStreakRecoveryQuestId &&
+          _previousBibleStreakBeforeBreak != null) {
         final previous = _previousBibleStreakBeforeBreak!;
         final restored = previous - 3;
         final restoredStreak = restored < 7 ? 7 : restored;
@@ -2807,33 +2918,47 @@ class AppProvider extends ChangeNotifier {
   }
 
   /// Claim rewards for a previously completed quest (v2.0 modal flow)
-  Future<void> claimQuestRewards(String questId) async {
-    try {
-      final q = _quests.firstWhere((e) => e.id == questId, orElse: () =>
-          TaskModel(id: '', title: '', description: '', targetCount: 1, xpReward: 0, startDate: DateTime.now(), createdAt: DateTime.now(), updatedAt: DateTime.now()));
-      if (q.id.isEmpty) return;
-      if (!q.isCompleted || q.isClaimed) return;
-      // Award using existing path
-      await completeQuest(questId, claimRewards: true);
-      // Refresh local cache
-      _quests = await _questService.getAllQuests();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('claimQuestRewards error: $e');
-    }
-  }
+  Future<void> claimQuestRewards(String questId) => _claimQueue.run(() async {
+        final all = await _questService.getAllQuests();
+        final matches = all.where((q) => q.id == questId).toList();
+        if (matches.isEmpty) return;
+        final q = matches.first;
+        if (!q.isCompleted || q.isClaimed) return;
+        final rewards = q.rewards.isNotEmpty
+            ? q.rewards
+            : [
+                Reward(
+                    type: RewardTypes.xp,
+                    amount: q.xpReward,
+                    label: '${q.xpReward} XP')
+              ];
+        for (var i = 0; i < rewards.length; i++) {
+          final reward = rewards[i];
+          final amount = reward.type == RewardTypes.xp
+              ? _applyStreakBonusToXp(reward.amount ?? 0)
+              : null;
+          _currentUser = await _rewardService.applyReward(reward,
+              xpOverride: amount, receiptId: 'task:$questId:reward:$i');
+        }
+        await _questService.markQuestClaimed(questId);
+        _quests = await _questService.getAllQuests();
+        notifyListeners();
+      });
 
   // ================== Questlines public helpers ==================
   Future<QuestlineProgressView?> enrollInQuestline(String questlineId) async {
     try {
       final uid = _currentUser?.id ?? '';
       if (uid.isEmpty) return null;
-      final progress = await _questlineService.enrollInQuestline(uid, questlineId);
+      final progress =
+          await _questlineService.enrollInQuestline(uid, questlineId);
       final defs = await _questlineService.getAvailableQuestlines(uid);
-      final def = defs.firstWhere((d) => d.id == questlineId, orElse: () => defs.first);
+      final def =
+          defs.firstWhere((d) => d.id == questlineId, orElse: () => defs.first);
       final view = QuestlineProgressView(questline: def, progress: progress);
       // Update cache
-      final idx = _activeQuestlines.indexWhere((v) => v.questline.id == questlineId);
+      final idx =
+          _activeQuestlines.indexWhere((v) => v.questline.id == questlineId);
       if (idx == -1) {
         _activeQuestlines = [..._activeQuestlines, view];
       } else {
@@ -2877,10 +3002,12 @@ class AppProvider extends ChangeNotifier {
           .where((v) => !v.progress.isCompleted && v.completedSteps > 0)
           .toList();
       if (inProgress.isNotEmpty) {
-        inProgress.sort((a, b) => b.completionRatio.compareTo(a.completionRatio));
+        inProgress
+            .sort((a, b) => b.completionRatio.compareTo(a.completionRatio));
         return inProgress.first;
       }
-      final candidates = _activeQuestlines.where((v) => !v.progress.isCompleted).toList();
+      final candidates =
+          _activeQuestlines.where((v) => !v.progress.isCompleted).toList();
       if (candidates.isEmpty) return null;
       candidates.sort((a, b) => b.completionRatio.compareTo(a.completionRatio));
       return candidates.first;
@@ -2900,7 +3027,8 @@ class AppProvider extends ChangeNotifier {
     try {
       final view = getQuestlineProgressView(questlineId);
       if (view == null) return null;
-      final ordered = [...view.questline.steps]..sort((a, b) => a.order.compareTo(b.order));
+      final ordered = [...view.questline.steps]
+        ..sort((a, b) => a.order.compareTo(b.order));
       for (final s in ordered) {
         if (!view.progress.completedStepIds.contains(s.id)) return s;
       }
@@ -2918,17 +3046,23 @@ class AppProvider extends ChangeNotifier {
   /// Lightweight sync check for whether a step is completed using cached state.
   bool isQuestStepCompleted(String questlineId, String stepId) {
     try {
-      final v = _activeQuestlines.firstWhere((e) => e.questline.id == questlineId, orElse: () =>
-          QuestlineProgressView(
-            questline: Questline(
-              id: questlineId,
-              title: '',
-              description: '',
-              category: 'onboarding',
-              steps: const [],
-            ),
-            progress: QuestlineProgress(questlineId: questlineId, activeStepIds: const [], completedStepIds: const [], stepQuestIds: const {}, dateStarted: DateTime.now()),
-          ));
+      final v =
+          _activeQuestlines.firstWhere((e) => e.questline.id == questlineId,
+              orElse: () => QuestlineProgressView(
+                    questline: Questline(
+                      id: questlineId,
+                      title: '',
+                      description: '',
+                      category: 'onboarding',
+                      steps: const [],
+                    ),
+                    progress: QuestlineProgress(
+                        questlineId: questlineId,
+                        activeStepIds: const [],
+                        completedStepIds: const [],
+                        stepQuestIds: const {},
+                        dateStarted: DateTime.now()),
+                  ));
       return v.progress.completedStepIds.contains(stepId);
     } catch (_) {
       return false;
@@ -2937,19 +3071,23 @@ class AppProvider extends ChangeNotifier {
 
   /// Manually complete a questline step and grant a small XP reward.
   /// Also checks for questline completion and applies final rewards if defined.
-  Future<void> markQuestlineStepDone(String questlineId, String stepId, {int stepXp = 25}) async {
+  Future<void> markQuestlineStepDone(String questlineId, String stepId,
+      {int stepXp = 25}) async {
     try {
       final uid = _currentUser?.id ?? '';
       if (uid.isEmpty) return;
 
-      final updated = await _questlineService.markStepComplete(uid, questlineId, stepId);
+      final updated =
+          await _questlineService.markStepComplete(uid, questlineId, stepId);
       if (updated == null) return;
 
       // Refresh active questlines cache
       try {
         final defs = await _questlineService.getAvailableQuestlines(uid);
-        _activeQuestlines = (await _questlineService.getActiveQuestlines(uid)).map((p) {
-          final def = defs.firstWhere((d) => d.id == p.questlineId, orElse: () => defs.first);
+        _activeQuestlines =
+            (await _questlineService.getActiveQuestlines(uid)).map((p) {
+          final def = defs.firstWhere((d) => d.id == p.questlineId,
+              orElse: () => defs.first);
           return QuestlineProgressView(questline: def, progress: p);
         }).toList();
       } catch (e) {
@@ -2967,7 +3105,9 @@ class AppProvider extends ChangeNotifier {
       try {
         final award = _applyStreakBonusToXp(stepXp);
         if (award > 0) {
-          _currentUser = await _rewardService.applyReward(Reward(type: RewardTypes.xp, amount: award, label: '$award XP'), xpOverride: award);
+          _currentUser = await _rewardService.applyReward(
+              Reward(type: RewardTypes.xp, amount: award, label: '$award XP'),
+              xpOverride: award);
           _triggerXpBurst(award);
         }
       } catch (e) {
@@ -2985,7 +3125,8 @@ class AppProvider extends ChangeNotifier {
               if (r.type == RewardTypes.xp) {
                 final amt = _applyStreakBonusToXp(r.amount ?? 0);
                 if (amt > 0) {
-                  _currentUser = await _rewardService.applyReward(r, xpOverride: amt);
+                  _currentUser =
+                      await _rewardService.applyReward(r, xpOverride: amt);
                   _triggerXpBurst(amt);
                   labels.add('$amt XP');
                 }
@@ -3008,14 +3149,18 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> markQuestStepDone(String questId, String stepId, {int stepXp = 25}) async {
+  Future<void> markQuestStepDone(String questId, String stepId,
+      {int stepXp = 25}) async {
     return markQuestlineStepDone(questId, stepId, stepXp: stepXp);
   }
 
   void emitQuestlineCompletion(String questlineTitle, [String? rewardSummary]) {
     try {
       _latestQuestlineCompletionTitle = questlineTitle;
-      _latestQuestlineRewardsSummary = (rewardSummary == null || rewardSummary.trim().isEmpty) ? null : rewardSummary.trim();
+      _latestQuestlineRewardsSummary =
+          (rewardSummary == null || rewardSummary.trim().isEmpty)
+              ? null
+              : rewardSummary.trim();
       _questlineCompletionEvent++;
       notifyListeners();
     } catch (e) {
@@ -3083,11 +3228,15 @@ class AppProvider extends ChangeNotifier {
           refreshQuests();
         },
       );
+      _quests = await _questService.getAllQuests();
+      notifyListeners();
       if (kDebugMode) {
-        debugPrint('[AppProvider] progressDailyReadingQuest: book=$book, chapter=$chapter');
+        debugPrint(
+            '[AppProvider] progressDailyReadingQuest: book=$book, chapter=$chapter');
       }
     } catch (e) {
       debugPrint('progressDailyReadingQuest error: $e');
+      rethrow;
     }
   }
 
@@ -3117,11 +3266,20 @@ class AppProvider extends ChangeNotifier {
     // Fallback to persistent quest system
     try {
       // Guard: only allow manual increments for quests explicitly marked non-auto
-      final q = _quests.firstWhere((e) => e.id == questId, orElse: () =>
-          TaskModel(id: '', title: '', description: '', targetCount: 1, xpReward: 0, startDate: DateTime.now(), createdAt: DateTime.now(), updatedAt: DateTime.now()));
+      final q = _quests.firstWhere((e) => e.id == questId,
+          orElse: () => TaskModel(
+              id: '',
+              title: '',
+              description: '',
+              targetCount: 1,
+              xpReward: 0,
+              startDate: DateTime.now(),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now()));
       if (q.id.isEmpty) return;
       if (q.isAutoTracked) {
-        debugPrint('incrementQuestProgress ignored for auto-tracked quest: $questId');
+        debugPrint(
+            'incrementQuestProgress ignored for auto-tracked quest: $questId');
         return;
       }
       await _questService.updateQuestProgress(questId, amount);
@@ -3135,7 +3293,8 @@ class AppProvider extends ChangeNotifier {
   // EVENTS: Public entry points to be called from UI/Services
   Future<void> onVerseRead(String verseId) async {
     try {
-      await checkActiveQuests(event: 'onVerseRead', payload: {'verseId': verseId});
+      await checkActiveQuests(
+          event: 'onVerseRead', payload: {'verseId': verseId});
       // Quest Board auto: treat as a single unit for daily/weekly
       incrementQuestProgressForType('daily', amount: 1);
       incrementQuestProgressForType('weekly', amount: 1);
@@ -3157,7 +3316,8 @@ class AppProvider extends ChangeNotifier {
       });
       // Seed a gentle book quest based on the current reading context
       try {
-        await _questService.ensureBookQuestsForBook(bookDisplay, chapter: chapter);
+        await _questService.ensureBookQuestsForBook(bookDisplay,
+            chapter: chapter);
         _quests = await _questService.getAllQuests();
         notifyListeners();
       } catch (e) {
@@ -3176,7 +3336,8 @@ class AppProvider extends ChangeNotifier {
       } catch (e) {
         debugPrint('onBookComplete mastery hook error: $e');
       }
-      await checkActiveQuests(event: 'onBookComplete', payload: {'book': bookDisplay});
+      await checkActiveQuests(
+          event: 'onBookComplete', payload: {'book': bookDisplay});
       // A completed book likely implies weekly milestones; nudge the board subtly
       _nudgeQuestTab();
     } catch (e) {
@@ -3213,7 +3374,8 @@ class AppProvider extends ChangeNotifier {
   }
 
   // HANDLER: Central dispatcher for evaluating and applying progress
-  Future<void> checkActiveQuests({required String event, Map<String, dynamic>? payload}) async {
+  Future<void> checkActiveQuests(
+      {required String event, Map<String, dynamic>? payload}) async {
     try {
       final applied = await _questProgressService.handleEvent(
         event: event,
@@ -3251,7 +3413,8 @@ class AppProvider extends ChangeNotifier {
 
   void _emitQuestProgressToast({int amount = 1}) {
     try {
-      _questProgressMessage = amount > 1 ? '+$amount Quest Progress' : '+Quest Progress';
+      _questProgressMessage =
+          amount > 1 ? '+$amount Quest Progress' : '+Quest Progress';
       _questProgressEvent++;
       notifyListeners();
     } catch (e) {
@@ -3284,7 +3447,8 @@ class AppProvider extends ChangeNotifier {
   void emitAchievementUnlock(AchievementModel achievement, String? summary) {
     try {
       _latestAchievementUnlock = achievement;
-      _latestAchievementSummary = (summary == null || summary.trim().isEmpty) ? null : summary.trim();
+      _latestAchievementSummary =
+          (summary == null || summary.trim().isEmpty) ? null : summary.trim();
       _achievementUnlockEvent++;
       notifyListeners();
     } catch (e) {
@@ -3444,18 +3608,23 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> addItemToInventory(InventoryItem item, {bool autoEquip = false}) async {
+  Future<void> addItemToInventory(InventoryItem item,
+      {bool autoEquip = false}) async {
     try {
       final uid = _currentUser?.id ?? '';
       if (uid.isEmpty) return;
-      _playerInventory = await _inventoryService.addItemToInventory(uid, item.id, item, autoEquip: autoEquip);
+      _playerInventory = await _inventoryService
+          .addItemToInventory(uid, item.id, item, autoEquip: autoEquip);
       notifyListeners();
     } catch (e) {
       debugPrint('addItemToInventory error: $e');
     }
   }
 
-  Future<void> equipItem({required String slotType, required String slotKey, required String itemId}) async {
+  Future<void> equipItem(
+      {required String slotType,
+      required String slotKey,
+      required String itemId}) async {
     try {
       final uid = _currentUser?.id ?? '';
       if (uid.isEmpty) return;
@@ -3465,7 +3634,8 @@ class AppProvider extends ChangeNotifier {
           equipped: _playerInventory.equipped.copyWith(titleId: itemId),
         );
       } else {
-        _playerInventory = await _inventoryService.equipItem(uid, slotType, slotKey, itemId);
+        _playerInventory =
+            await _inventoryService.equipItem(uid, slotType, slotKey, itemId);
       }
       notifyListeners();
     } catch (e) {
@@ -3473,7 +3643,8 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> unequipItem({required String slotType, required String slotKey}) async {
+  Future<void> unequipItem(
+      {required String slotType, required String slotKey}) async {
     try {
       final uid = _currentUser?.id ?? '';
       if (uid.isEmpty) return;
@@ -3483,7 +3654,8 @@ class AppProvider extends ChangeNotifier {
           equipped: _playerInventory.equipped.copyWith(titleId: null),
         );
       } else {
-        _playerInventory = await _inventoryService.unequipItem(uid, slotType, slotKey);
+        _playerInventory =
+            await _inventoryService.unequipItem(uid, slotType, slotKey);
       }
       notifyListeners();
     } catch (e) {
@@ -3551,17 +3723,25 @@ class AppProvider extends ChangeNotifier {
 
   List<TaskModel> getQuestsByType(String type) {
     // Legacy support: active meant not completed/expired
-    return _quests.where((q) => q.type == type && (q.status == 'not_started' || q.status == 'in_progress')).toList();
+    return _quests
+        .where((q) =>
+            q.type == type &&
+            (q.status == 'not_started' || q.status == 'in_progress'))
+        .toList();
   }
 
-  List<TaskModel> getQuestsByCategory(String category, {bool includeCompleted = false}) {
+  List<TaskModel> getQuestsByCategory(String category,
+      {bool includeCompleted = false}) {
     return _quests.where((q) {
       try {
         // Defensive fallbacks in case of corrupted storage data
-        final cat = (q.category.isNotEmpty ? q.category : (q.type.isNotEmpty ? q.type : ''));
+        final cat = (q.category.isNotEmpty
+            ? q.category
+            : (q.type.isNotEmpty ? q.type : ''));
         final inCategory = (cat == category);
         if (includeCompleted) return inCategory;
-        return inCategory && (q.status == 'not_started' || q.status == 'in_progress');
+        return inCategory &&
+            (q.status == 'not_started' || q.status == 'in_progress');
       } catch (e) {
         debugPrint('getQuestsByCategory skipped a malformed quest: $e');
         return false;
@@ -3570,7 +3750,8 @@ class AppProvider extends ChangeNotifier {
   }
 
   // ================== Tasks v2.0 helpers ==================
-  bool _isSameYmd(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+  bool _isSameYmd(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   List<TaskModel> getDailyTasksForToday() {
     try {
@@ -3580,7 +3761,8 @@ class AppProvider extends ChangeNotifier {
           if (q.status == 'expired') return false;
           final cat = q.resolvedCategory;
           if (cat != TaskCategory.daily) return false;
-          if (!q.autoResetDaily) return true; // always show when not auto-resetting
+          if (!q.autoResetDaily)
+            return true; // always show when not auto-resetting
           final last = q.lastCompletedAt ?? q.completedAt;
           if (last == null) return true; // never completed
           return !_isSameYmd(today, last);
@@ -3603,7 +3785,8 @@ class AppProvider extends ChangeNotifier {
           if (q.status == 'expired') return false;
           final cat = q.resolvedCategory;
           if (cat != TaskCategory.nightly) return false;
-          if (!q.autoResetDaily) return true; // always show when not auto-resetting
+          if (!q.autoResetDaily)
+            return true; // always show when not auto-resetting
           final last = q.lastCompletedAt ?? q.completedAt;
           if (last == null) return true;
           return !_isSameYmd(today, last);
@@ -3723,7 +3906,10 @@ class AppProvider extends ChangeNotifier {
     final toRemove = <int>[];
     for (var i = 0; i < _activeQuests.length; i++) {
       final q = _activeQuests[i];
-      if (q.type == type && !q.isCompleted && !q.isExpired && q.progress >= q.goal) {
+      if (q.type == type &&
+          !q.isCompleted &&
+          !q.isExpired &&
+          q.progress >= q.goal) {
         // Award XP via existing flow (streak-aware) asynchronously
         () async {
           try {
@@ -3755,7 +3941,9 @@ class AppProvider extends ChangeNotifier {
           if (q.type == 'nightly') {
             () async {
               try {
-                final count = _completedBoardQuests.where((e) => e.type == 'nightly').length;
+                final count = _completedBoardQuests
+                    .where((e) => e.type == 'nightly')
+                    .length;
                 if (count >= 5) {
                   await unlockAchievementPublic('night_scholar_5');
                 }
@@ -3786,6 +3974,8 @@ class AppProvider extends ChangeNotifier {
   }
 
   // ================== Journal ==================
+  String? journalLoadError;
+
   Future<void> loadJournalEntries() async {
     try {
       if (_currentUser == null) {
@@ -3799,15 +3989,25 @@ class AppProvider extends ChangeNotifier {
         return;
       }
       _journalEntries = await _journalService.getEntriesForUser(uid);
+      journalLoadError = null;
       _journalEntries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading journal entries: $e');
+      journalLoadError =
+          'Your saved journal could not be loaded. Its original data has been preserved; new saves are blocked until it can be recovered.';
+      notifyListeners();
     }
   }
 
   /// Create a new manual journal entry (Journal v2.0 Phase 1)
-  Future<void> createJournalEntry({String? title, String? body, List<String> tags = const <String>[], bool isPinned = false, String? linkedRef, String? linkedRefRoute}) async {
+  Future<void> createJournalEntry(
+      {String? title,
+      String? body,
+      List<String> tags = const <String>[],
+      bool isPinned = false,
+      String? linkedRef,
+      String? linkedRefRoute}) async {
     try {
       final t = (title ?? '').trim();
       final b = (body ?? '').trim();
@@ -3820,7 +4020,7 @@ class AppProvider extends ChangeNotifier {
 
       final now = DateTime.now();
       final entry = JournalEntry(
-        id: '',
+        id: _uuid.v4(),
         userId: uid,
         questId: null,
         questTitle: null,
@@ -3831,8 +4031,11 @@ class AppProvider extends ChangeNotifier {
         isPinned: isPinned,
         spiritualFocus: null,
         questType: null,
-        linkedRef: (linkedRef?.trim().isNotEmpty ?? false) ? linkedRef!.trim() : null,
-        linkedRefRoute: (linkedRefRoute?.trim().isNotEmpty ?? false) ? linkedRefRoute!.trim() : null,
+        linkedRef:
+            (linkedRef?.trim().isNotEmpty ?? false) ? linkedRef!.trim() : null,
+        linkedRefRoute: (linkedRefRoute?.trim().isNotEmpty ?? false)
+            ? linkedRefRoute!.trim()
+            : null,
         createdAt: now,
         updatedAt: now,
       );
@@ -3860,13 +4063,14 @@ class AppProvider extends ChangeNotifier {
       // Unified Progress Engine: treat as a reflection task completion for stats/xp
       try {
         await ProgressEngine.instance.emit(
-          ProgressEvent.taskCompleted('reflection_generic', 'reflection'),
+          ProgressEvent.taskCompleted(entry.id, 'reflection'),
         );
       } catch (e) {
         debugPrint('emit reflection taskCompleted error: $e');
       }
     } catch (e) {
       debugPrint('createJournalEntry error: $e');
+      rethrow;
     }
   }
 
@@ -3909,13 +4113,15 @@ class AppProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('updateJournalEntry error: $e');
+      rethrow;
     }
   }
 
   /// Quick toggle to pin/unpin an entry
   Future<void> setJournalEntryPinned(JournalEntry entry, bool value) async {
     try {
-      final updated = entry.copyWith(isPinned: value, updatedAt: DateTime.now());
+      final updated =
+          entry.copyWith(isPinned: value, updatedAt: DateTime.now());
       await _journalService.updateEntry(updated);
       final idx = _journalEntries.indexWhere((e) => e.id == entry.id);
       if (idx != -1) {
@@ -3945,7 +4151,7 @@ class AppProvider extends ChangeNotifier {
 
       final now = DateTime.now();
       final entry = JournalEntry(
-        id: '',
+        id: 'task-reflection:${quest.id}',
         userId: uid,
         questId: quest.id,
         questTitle: quest.title,
@@ -3977,7 +4183,8 @@ class AppProvider extends ChangeNotifier {
         // Get full count to be accurate
         final list = await _journalService.getEntriesForUser(uid);
         // Reflection-only count (entries linked to a quest)
-        final reflectionOnly = list.where((e) => (e.questId ?? '').isNotEmpty).length;
+        final reflectionOnly =
+            list.where((e) => (e.questId ?? '').isNotEmpty).length;
         if (reflectionOnly >= 5) {
           await unlockAchievementPublic('quiet_reflections_5');
         }
@@ -3993,12 +4200,24 @@ class AppProvider extends ChangeNotifier {
       // Hook into streak recovery quest: when two reads are done (2/3), set final tick to complete (3/3)
       try {
         await _checkStreakRecoveryExpiry();
-        if (hasActiveStreakRecoveryQuest && _activeStreakRecoveryQuestId != null) {
+        if (hasActiveStreakRecoveryQuest &&
+            _activeStreakRecoveryQuestId != null) {
           final recoveryId = _activeStreakRecoveryQuestId!;
-          final q = _quests.firstWhere((e) => e.id == recoveryId, orElse: () =>
-              TaskModel(
-                id: '', title: '', description: '', targetCount: 3, xpReward: 0, startDate: DateTime.now(), createdAt: DateTime.now(), updatedAt: DateTime.now()));
-          if (q.id.isNotEmpty && q.status != 'completed' && q.status != 'expired' && q.currentProgress >= 2 && q.currentProgress < q.targetCount) {
+          final q = _quests.firstWhere((e) => e.id == recoveryId,
+              orElse: () => TaskModel(
+                  id: '',
+                  title: '',
+                  description: '',
+                  targetCount: 3,
+                  xpReward: 0,
+                  startDate: DateTime.now(),
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now()));
+          if (q.id.isNotEmpty &&
+              q.status != 'completed' &&
+              q.status != 'expired' &&
+              q.currentProgress >= 2 &&
+              q.currentProgress < q.targetCount) {
             await _questService.updateQuestProgress(recoveryId, 1);
             _quests = await _questService.getAllQuests();
             notifyListeners();
@@ -4010,7 +4229,7 @@ class AppProvider extends ChangeNotifier {
       return unlocked;
     } catch (e) {
       debugPrint('Error adding journal entry: $e');
-      return const [];
+      rethrow;
     }
   }
 
@@ -4030,7 +4249,9 @@ class AppProvider extends ChangeNotifier {
       final set = <String>{};
       if (raw != null) {
         try {
-          final arr = (jsonDecode(raw) as List<dynamic>).map((e) => e.toString()).toList();
+          final arr = (jsonDecode(raw) as List<dynamic>)
+              .map((e) => e.toString())
+              .toList();
           set.addAll(arr);
         } catch (e) {
           debugPrint('recordBibleOpen decode error, resetting set: $e');
@@ -4068,14 +4289,18 @@ class AppProvider extends ChangeNotifier {
       final todayDate = DateTime(now.year, now.month, now.day); // date-only
 
       // If we already have a verse for today, return it
-      if (_votdDate != null && _votdDate!.year == todayDate.year && _votdDate!.month == todayDate.month && _votdDate!.day == todayDate.day) {
+      if (_votdDate != null &&
+          _votdDate!.year == todayDate.year &&
+          _votdDate!.month == todayDate.month &&
+          _votdDate!.day == todayDate.day) {
         if (_votdVerseId != null && _votdVerseId!.isNotEmpty) {
           return _votdVerseId!;
         }
       }
 
       // Pick a new verse for today using deterministic rotation
-      final anchorDate = DateTime(2025, 1, 1); // stable anchor for consistent rotation
+      final anchorDate =
+          DateTime(2025, 1, 1); // stable anchor for consistent rotation
       final daysSinceAnchor = todayDate.difference(anchorDate).inDays;
       final poolIndex = daysSinceAnchor % _verseOfDayPool.length;
       final newVerseId = _verseOfDayPool[poolIndex];
@@ -4088,14 +4313,16 @@ class AppProvider extends ChangeNotifier {
       final uid = _currentUser?.id ?? '';
       if (uid.isNotEmpty) {
         try {
-          _storageService.save<String>(_votdDateKey(uid), _formatYmd(todayDate));
+          _storageService.save<String>(
+              _votdDateKey(uid), _formatYmd(todayDate));
           _storageService.save<String>(_votdVerseIdKey(uid), newVerseId);
         } catch (e) {
           debugPrint('getVerseOfTheDay persist error: $e');
         }
       }
 
-      debugPrint('VOTD rotated to: $newVerseId for date: ${_formatYmd(todayDate)}');
+      debugPrint(
+          'VOTD rotated to: $newVerseId for date: ${_formatYmd(todayDate)}');
       return newVerseId;
     } catch (e) {
       debugPrint('getVerseOfTheDay error: $e');
@@ -4105,7 +4332,34 @@ class AppProvider extends ChangeNotifier {
 
   // ================== Record chapter COMPLETED and unlock achievements ==================
   // NOTE: This is only called when user explicitly presses "Complete Chapter" button
-  Future<List<AchievementModel>> recordChapterRead(String book, int chapter, {bool hasMetReadingThreshold = false}) async {
+  final _readerCompletions = SerialQueue();
+
+  /// One chapter-completion award; qualified rereads can still progress current tasks/streak.
+  Future<bool> completeReaderChapter(String book, int chapter,
+          {required bool qualified}) =>
+      _readerCompletions.run(() async {
+        final user = await _userService.getCurrentUser();
+        final b = _normalizeDisplayBook(book);
+        if (chapter < 1 || chapter > bibleService.getChapterCount(b))
+          throw ArgumentError('Invalid chapter');
+        final alreadyRead =
+            _loadReadChapters(user.id)[b]?.contains(chapter) ?? false;
+        final receipt = 'chapter:$b:$chapter';
+        final alreadyAwarded = user.rewardReceipts.contains(receipt);
+        if (!alreadyRead) {
+          await ProgressEngine.instance
+              .emit(ProgressEvent.chapterCompleted(b, b, chapter));
+        }
+        await recordChapterRead(b, chapter, hasMetReadingThreshold: qualified);
+        if (qualified)
+          await progressDailyReadingQuest(book: b, chapter: chapter);
+        _currentUser = await _userService.getCurrentUser();
+        notifyListeners();
+        return !alreadyRead && !alreadyAwarded;
+      });
+
+  Future<List<AchievementModel>> recordChapterRead(String book, int chapter,
+      {bool hasMetReadingThreshold = false}) async {
     try {
       final b = _normalizeDisplayBook(book);
       if (b.isEmpty || chapter <= 0) return const [];
@@ -4122,12 +4376,13 @@ class AppProvider extends ChangeNotifier {
       set.add(chapter);
       await _persistReadChapters(uid, currentMap);
       _readChaptersPerBook = currentMap;
-      
+
       if (kDebugMode) {
         final count = _readChaptersPerBook[b]?.length ?? 0;
-        debugPrint('[CompletionState] completedChaptersCount=$count for book=$b (just added chapter=$chapter)');
+        debugPrint(
+            '[CompletionState] completedChaptersCount=$count for book=$b (just added chapter=$chapter)');
       }
-      
+
       notifyListeners();
 
       // Daily Activity: only log when this is a newly read chapter (affects totalChaptersRead)
@@ -4141,23 +4396,21 @@ class AppProvider extends ChangeNotifier {
 
       // Mastery: record chapter read
       try {
-        _bookMasteryService.recordChapterRead(b);
+        if (!hadBefore) _bookMasteryService.recordChapterRead(b);
       } catch (e) {
         debugPrint('mastery recordChapterRead hook error: $e');
       }
 
-      // Auto-progress Weekly Quest Board quest ONLY if reading time threshold was met
-      // (Both daily and weekly quests now require real reading time)
-      try {
-        if (!hadBefore && hasMetReadingThreshold) {
-          // Treat as 1 verse unit if exact verse count isn't available
-          incrementQuestProgressForType('weekly', amount: 1);
-          debugPrint('Weekly quest progressed: chapter read with sufficient time');
-        } else if (!hadBefore) {
-          debugPrint('Weekly quest NOT progressed: reading time threshold not met');
+      // An early chapter completion must not consume later qualified reading credit.
+      if (hasMetReadingThreshold) {
+        for (final q in List.of(_activeQuests).where(
+            (q) => q.type == 'weekly' && !q.isCompleted && !q.isExpired)) {
+          final key = 'qualified_chapter_${uid}_${q.id}_${b}_$chapter';
+          if (_storageService.getBool(key) != true) {
+            await incrementQuestProgress(q.id, amount: 1);
+            await _storageService.save(key, true);
+          }
         }
-      } catch (e) {
-        debugPrint('weekly quest auto-progress error: $e');
       }
 
       // Reading Plan hook: if active and this chapter fulfills the current step, mark it complete
@@ -4190,14 +4443,25 @@ class AppProvider extends ChangeNotifier {
 
       // If a streak recovery quest is active and not expired, increment for chapter reads (max 2)
       await _checkStreakRecoveryExpiry();
-      if (hasActiveStreakRecoveryQuest && _activeStreakRecoveryQuestId != null) {
+      if (hasActiveStreakRecoveryQuest &&
+          _activeStreakRecoveryQuestId != null) {
         try {
           // Prefer to count only unique reads to avoid abuse
           final recoveryId = _activeStreakRecoveryQuestId!;
-          final q = _quests.firstWhere((e) => e.id == recoveryId, orElse: () =>
-              TaskModel(
-                id: '', title: '', description: '', targetCount: 1, xpReward: 0, startDate: DateTime.now(), createdAt: DateTime.now(), updatedAt: DateTime.now()));
-          if (q.id.isNotEmpty && q.status != 'completed' && q.status != 'expired' && q.currentProgress < 2) {
+          final q = _quests.firstWhere((e) => e.id == recoveryId,
+              orElse: () => TaskModel(
+                  id: '',
+                  title: '',
+                  description: '',
+                  targetCount: 1,
+                  xpReward: 0,
+                  startDate: DateTime.now(),
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now()));
+          if (q.id.isNotEmpty &&
+              q.status != 'completed' &&
+              q.status != 'expired' &&
+              q.currentProgress < 2) {
             // Only increment on first-time chapter reads
             if (!hadBefore) {
               await _questService.updateQuestProgress(recoveryId, 1);
@@ -4331,7 +4595,8 @@ class AppProvider extends ChangeNotifier {
             final defs = await _questlineService.getAvailableQuestlines(uid);
             final hasPsalms = defs.any((d) => d.id == 'psalms_of_peace');
             if (hasPsalms) {
-              final p = await _questlineService.getQuestlineProgress(uid, 'psalms_of_peace');
+              final p = await _questlineService.getQuestlineProgress(
+                  uid, 'psalms_of_peace');
               final stepsDone = p?.completedStepIds.length ?? 0;
               if (stepsDone >= 1) {
                 await unlockAchievementPublic('joyful_reader');
@@ -4348,7 +4613,7 @@ class AppProvider extends ChangeNotifier {
       return unlocked;
     } catch (e) {
       debugPrint('recordChapterRead error: $e');
-      return const [];
+      rethrow;
     }
   }
 
@@ -4437,7 +4702,8 @@ class AppProvider extends ChangeNotifier {
   Future<void> _persistCompletedQuizzes(String uid) async {
     try {
       final key = _quizCompletedKey(uid);
-      await _storageService.save<String>(key, jsonEncode(_completedChapterQuizzes.toList()));
+      await _storageService.save<String>(
+          key, jsonEncode(_completedChapterQuizzes.toList()));
     } catch (e) {
       debugPrint('persist completed quizzes error: $e');
     }
@@ -4453,7 +4719,8 @@ class AppProvider extends ChangeNotifier {
   }
 
   // ================== Bible Streak ==================
-  Future<List<AchievementModel>> recordBibleStreakEvent(DateTime readDate) async {
+  Future<List<AchievementModel>> recordBibleStreakEvent(
+      DateTime readDate) async {
     try {
       if (_currentUser == null) {
         _currentUser = await _userService.getCurrentUser();
@@ -4464,7 +4731,8 @@ class AppProvider extends ChangeNotifier {
       final today = DateTime(readDate.year, readDate.month, readDate.day);
       final last = _lastBibleReadDate == null
           ? null
-          : DateTime(_lastBibleReadDate!.year, _lastBibleReadDate!.month, _lastBibleReadDate!.day);
+          : DateTime(_lastBibleReadDate!.year, _lastBibleReadDate!.month,
+              _lastBibleReadDate!.day);
 
       // Case 1: first time
       final previousStreak = _currentBibleStreak;
@@ -4491,7 +4759,8 @@ class AppProvider extends ChangeNotifier {
         } else if (diffDays > 1) {
           // missed a day; reset to 1
           try {
-            await ProgressEngine.instance.emit(ProgressEvent.streakBroken(previousStreak: previousStreak));
+            await ProgressEngine.instance.emit(
+                ProgressEvent.streakBroken(previousStreak: previousStreak));
           } catch (e) {
             debugPrint('emit streakBroken error: $e');
           }
@@ -4524,7 +4793,8 @@ class AppProvider extends ChangeNotifier {
         }
         // Unified Progress Engine: streak maintained
         try {
-          await ProgressEngine.instance.emit(ProgressEvent.streakDayKept(_currentBibleStreak));
+          await ProgressEngine.instance
+              .emit(ProgressEvent.streakDayKept(_currentBibleStreak));
         } catch (e) {
           debugPrint('emit streakDayKept error: $e');
         }
@@ -4533,7 +4803,9 @@ class AppProvider extends ChangeNotifier {
       // Detect streak break from 7+ to reset (newStreak == 1)
       try {
         final newStreak = _currentBibleStreak;
-        if (previousStreak >= 7 && newStreak == 1 && !hasActiveStreakRecoveryQuest) {
+        if (previousStreak >= 7 &&
+            newStreak == 1 &&
+            !hasActiveStreakRecoveryQuest) {
           await _createStreakRecoveryQuest(previousStreak);
         }
       } catch (e) {
@@ -4542,7 +4814,8 @@ class AppProvider extends ChangeNotifier {
 
       // Check streak achievements
       final unlocked = <AchievementModel>[];
-      Future<List<AchievementModel>> unlock(String id, String title, String desc, String tier, int xp) async {
+      Future<List<AchievementModel>> unlock(
+          String id, String title, String desc, String tier, int xp) async {
         return await _unlockDynamicAchievement(AchievementModel(
           id: id,
           name: title,
@@ -4618,7 +4891,8 @@ class AppProvider extends ChangeNotifier {
       await _storageService.save(_streakCurrentKey(uid), _currentBibleStreak);
       await _storageService.save(_streakLongestKey(uid), _longestBibleStreak);
       if (_lastBibleReadDate != null) {
-        await _storageService.save(_streakLastDateKey(uid), _formatYmd(_lastBibleReadDate!));
+        await _storageService.save(
+            _streakLastDateKey(uid), _formatYmd(_lastBibleReadDate!));
       }
     } catch (e) {
       debugPrint('_saveBibleStreakState error: $e');
@@ -4630,17 +4904,20 @@ class AppProvider extends ChangeNotifier {
       if (_currentUser == null) return;
       final uid = _currentUser!.id;
       if (_previousBibleStreakBeforeBreak != null) {
-        await _storageService.save(_streakRecoveryPrevKey(uid), _previousBibleStreakBeforeBreak!);
+        await _storageService.save(
+            _streakRecoveryPrevKey(uid), _previousBibleStreakBeforeBreak!);
       } else {
         await _storageService.delete(_streakRecoveryPrevKey(uid));
       }
       if (_activeStreakRecoveryQuestId != null) {
-        await _storageService.save(_streakRecoveryQuestIdKey(uid), _activeStreakRecoveryQuestId!);
+        await _storageService.save(
+            _streakRecoveryQuestIdKey(uid), _activeStreakRecoveryQuestId!);
       } else {
         await _storageService.delete(_streakRecoveryQuestIdKey(uid));
       }
       if (_streakRecoveryExpiresAt != null) {
-        await _storageService.save(_streakRecoveryExpiresKey(uid), _streakRecoveryExpiresAt!.toIso8601String());
+        await _storageService.save(_streakRecoveryExpiresKey(uid),
+            _streakRecoveryExpiresAt!.toIso8601String());
       } else {
         await _storageService.delete(_streakRecoveryExpiresKey(uid));
       }
@@ -4664,7 +4941,8 @@ class AppProvider extends ChangeNotifier {
       final quest = TaskModel(
         id: questId,
         title: 'Streak Recovery Quest',
-        description: 'You missed a day, but grace wins. Read 2 chapters in the FaithQuest Bible and write 1 reflection to repair your streak.',
+        description:
+            'You missed a day, but grace wins. Read 2 chapters in the FaithQuest Bible and write 1 reflection to repair your streak.',
         type: 'challenge',
         category: 'event',
         difficulty: 'Medium',
@@ -4681,7 +4959,8 @@ class AppProvider extends ChangeNotifier {
         endDate: expires,
         createdAt: now,
         updatedAt: now,
-        reflectionPrompt: 'What did you learn from coming back after missing a day?',
+        reflectionPrompt:
+            'What did you learn from coming back after missing a day?',
       );
 
       await _questService.addQuest(quest);
@@ -4699,7 +4978,8 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> _checkStreakRecoveryExpiry() async {
     try {
-      if (_activeStreakRecoveryQuestId == null || _streakRecoveryExpiresAt == null) return;
+      if (_activeStreakRecoveryQuestId == null ||
+          _streakRecoveryExpiresAt == null) return;
       final now = DateTime.now();
       if (now.isAfter(_streakRecoveryExpiresAt!)) {
         final id = _activeStreakRecoveryQuestId!;
@@ -4738,7 +5018,10 @@ class AppProvider extends ChangeNotifier {
       if (decoded is Map) {
         decoded.forEach((k, v) {
           final book = (k as String).trim();
-          final list = (v as List<dynamic>? ?? const []).map((e) => int.tryParse('$e') ?? 0).where((n) => n > 0).toSet();
+          final list = (v as List<dynamic>? ?? const [])
+              .map((e) => int.tryParse('$e') ?? 0)
+              .where((n) => n > 0)
+              .toSet();
           if (book.isNotEmpty && list.isNotEmpty) {
             map[book] = list;
           }
@@ -4746,11 +5029,13 @@ class AppProvider extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('readChapters decode error: $e');
+      rethrow;
     }
     return map;
   }
 
-  Future<void> _persistReadChapters(String uid, Map<String, Set<int>> map) async {
+  Future<void> _persistReadChapters(
+      String uid, Map<String, Set<int>> map) async {
     try {
       final key = _readChaptersKey(uid);
       final serializable = <String, List<int>>{};
@@ -4758,6 +5043,7 @@ class AppProvider extends ChangeNotifier {
       await _storageService.save(key, jsonEncode(serializable));
     } catch (e) {
       debugPrint('persist readChapters error: $e');
+      rethrow;
     }
   }
 
@@ -4800,7 +5086,8 @@ class AppProvider extends ChangeNotifier {
       if (uid.isEmpty) return;
       final now = DateTime.now();
       _lastOpenedAt = now;
-      await _storageService.save<String>(_lastOpenedAtKey(uid), now.toIso8601String());
+      await _storageService.save<String>(
+          _lastOpenedAtKey(uid), now.toIso8601String());
       // No notifyListeners(): purely metadata; avoids rebuild loops
     } catch (e) {
       debugPrint('updateLastOpenedNow error: $e');
@@ -4814,16 +5101,24 @@ class AppProvider extends ChangeNotifier {
       final t = DateTime(today.year, today.month, today.day);
       final last = _lastOpenedAt == null
           ? null
-          : DateTime(_lastOpenedAt!.year, _lastOpenedAt!.month, _lastOpenedAt!.day);
+          : DateTime(
+              _lastOpenedAt!.year, _lastOpenedAt!.month, _lastOpenedAt!.day);
       if (last == null) return false; // first run handled by Guided Start
-      if (last.year == t.year && last.month == t.month && last.day == t.day) return false; // same day
+      if (last.year == t.year && last.month == t.month && last.day == t.day)
+        return false; // same day
 
       final shown = _lastWelcomeShownForDay == null
           ? null
-          : DateTime(_lastWelcomeShownForDay!.year, _lastWelcomeShownForDay!.month, _lastWelcomeShownForDay!.day);
-      if (shown != null && shown.year == t.year && shown.month == t.month && shown.day == t.day) return false; // already shown today
+          : DateTime(_lastWelcomeShownForDay!.year,
+              _lastWelcomeShownForDay!.month, _lastWelcomeShownForDay!.day);
+      if (shown != null &&
+          shown.year == t.year &&
+          shown.month == t.month &&
+          shown.day == t.day) return false; // already shown today
 
-      final guidedStartCompleted = _hasCompletedFirstReading && _hasCompletedFirstJournal && _hasVisitedQuestlines;
+      final guidedStartCompleted = _hasCompletedFirstReading &&
+          _hasCompletedFirstJournal &&
+          _hasVisitedQuestlines;
       if (!guidedStartCompleted) return false;
       return true;
     } catch (e) {
@@ -4839,7 +5134,8 @@ class AppProvider extends ChangeNotifier {
       if (uid.isEmpty) return;
       final d = DateTime(today.year, today.month, today.day);
       _lastWelcomeShownForDay = d;
-      await _storageService.save<String>(_welcomeShownDayKey(uid), _formatYmd(d));
+      await _storageService.save<String>(
+          _welcomeShownDayKey(uid), _formatYmd(d));
       // No notifyListeners(): avoid banner flicker mid-frame
     } catch (e) {
       debugPrint('markWelcomeBackShown error: $e');
@@ -4847,13 +5143,16 @@ class AppProvider extends ChangeNotifier {
   }
 
   // ================== Reading Plan helpers ==================
-  bool _stepContainsChapter(ReadingPlanStep step, String displayBook, int chapter) {
+  bool _stepContainsChapter(
+      ReadingPlanStep step, String displayBook, int chapter) {
     try {
       for (final ref in step.referenceList) {
         final parsed = bibleService.parseReference(ref);
         final book = (parsed['bookDisplay'] as String? ?? '').trim();
         final ch = parsed['chapter'] as int?;
-        if (book.toLowerCase() == displayBook.toLowerCase() && ch != null && ch == chapter) {
+        if (book.toLowerCase() == displayBook.toLowerCase() &&
+            ch != null &&
+            ch == chapter) {
           return true;
         }
       }
@@ -4917,7 +5216,8 @@ class AppProvider extends ChangeNotifier {
   List<String> _allArtifactIdsForBook(String bookId) {
     try {
       final key = _normalizeDisplayBook(bookId);
-      final fromMap = List<String>.from(kBookRewardMap[key] ?? const <String>[]);
+      final fromMap =
+          List<String>.from(kBookRewardMap[key] ?? const <String>[]);
       final fromQuests = <String>{};
       for (final q in _quests) {
         try {
@@ -4960,7 +5260,9 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<AchievementModel>> _unlockDynamicAchievement(AchievementModel template, {int? xpRewardOverride}) async {
+  Future<List<AchievementModel>> _unlockDynamicAchievement(
+      AchievementModel template,
+      {int? xpRewardOverride}) async {
     try {
       if (_currentUser == null) return const [];
       final uid = _currentUser!.id;
@@ -4969,7 +5271,8 @@ class AppProvider extends ChangeNotifier {
       int idx = list.indexWhere((a) => a.id == template.id);
       if (idx == -1) {
         // Create entry from template (locked)
-        list.add(template.copyWith(isUnlocked: false, unlockedAt: null, progress: 0));
+        list.add(template.copyWith(
+            isUnlocked: false, unlockedAt: null, progress: 0));
         idx = list.length - 1;
       }
       final a = list[idx];
@@ -4990,13 +5293,19 @@ class AppProvider extends ChangeNotifier {
       try {
         final rewards = (unlocked.rewards.isNotEmpty)
             ? unlocked.rewards
-            : [Reward(type: RewardTypes.xp, amount: xpRewardOverride ?? unlocked.xpReward, label: '${xpRewardOverride ?? unlocked.xpReward} XP')];
+            : [
+                Reward(
+                    type: RewardTypes.xp,
+                    amount: xpRewardOverride ?? unlocked.xpReward,
+                    label: '${xpRewardOverride ?? unlocked.xpReward} XP')
+              ];
         final labels = <String>[];
         for (final r in rewards) {
           if (r.type == RewardTypes.xp) {
             final amt = _applyStreakBonusToXp(r.amount ?? 0);
             if (amt > 0) {
-              _currentUser = await _rewardService.applyReward(r, xpOverride: amt);
+              _currentUser =
+                  await _rewardService.applyReward(r, xpOverride: amt);
               _triggerXpBurst(amt);
               labels.add('$amt XP');
             }
@@ -5022,7 +5331,8 @@ class AppProvider extends ChangeNotifier {
   }
 
   // ================== Private unlock helper ==================
-  Future<List<AchievementModel>> _unlockAchievement(String id, {int? xpRewardOverride}) async {
+  Future<List<AchievementModel>> _unlockAchievement(String id,
+      {int? xpRewardOverride}) async {
     try {
       if (_currentUser == null) return const [];
       final uid = _currentUser!.id;
@@ -5036,13 +5346,19 @@ class AppProvider extends ChangeNotifier {
       try {
         final rewards = (ach.rewards.isNotEmpty)
             ? ach.rewards
-            : [Reward(type: RewardTypes.xp, amount: xpRewardOverride ?? ach.xpReward, label: '${xpRewardOverride ?? ach.xpReward} XP')];
+            : [
+                Reward(
+                    type: RewardTypes.xp,
+                    amount: xpRewardOverride ?? ach.xpReward,
+                    label: '${xpRewardOverride ?? ach.xpReward} XP')
+              ];
         final labels = <String>[];
         for (final r in rewards) {
           if (r.type == RewardTypes.xp) {
             final amt = _applyStreakBonusToXp(r.amount ?? 0);
             if (amt > 0) {
-              _currentUser = await _rewardService.applyReward(r, xpOverride: amt);
+              _currentUser =
+                  await _rewardService.applyReward(r, xpOverride: amt);
               _triggerXpBurst(amt);
               labels.add('$amt XP');
             }
@@ -5235,7 +5551,9 @@ class AppProvider extends ChangeNotifier {
   bool isReferenceBookmarked(String reference) {
     try {
       final key = _canonicalizeReference(reference);
-      return _bookmarks.any((b) => _canonicalizeReference(b.reference) == key && (b.translationCode.toUpperCase() == 'KJV'));
+      return _bookmarks.any((b) =>
+          _canonicalizeReference(b.reference) == key &&
+          (b.translationCode.toUpperCase() == 'KJV'));
     } catch (e) {
       debugPrint('isReferenceBookmarked error: $e');
       return false;
@@ -5260,7 +5578,8 @@ class AppProvider extends ChangeNotifier {
         String questlineId = 'foundations';
         final hasFoundations = defs.any((d) => d.id == questlineId);
         if (!hasFoundations) {
-          questlineId = defs.isNotEmpty ? defs.first.id : 'onboarding_getting_started';
+          questlineId =
+              defs.isNotEmpty ? defs.first.id : 'onboarding_getting_started';
         }
         await enrollInQuestline(questlineId);
       } catch (e) {
@@ -5273,7 +5592,8 @@ class AppProvider extends ChangeNotifier {
         final todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
         final all = await _questService.getAllQuests();
 
-        bool existsByTitle(String t) => all.any((q) => q.title.toLowerCase().trim() == t.toLowerCase().trim());
+        bool existsByTitle(String t) => all
+            .any((q) => q.title.toLowerCase().trim() == t.toLowerCase().trim());
 
         if (!existsByTitle('Read a chapter')) {
           final daily = TaskModel(
@@ -5289,7 +5609,9 @@ class AppProvider extends ChangeNotifier {
             isDaily: true,
             targetCount: 1,
             xpReward: 20,
-            rewards: const [Reward(type: RewardTypes.xp, amount: 20, label: '20 XP')],
+            rewards: const [
+              Reward(type: RewardTypes.xp, amount: 20, label: '20 XP')
+            ],
             startDate: now,
             endDate: todayEnd,
             createdAt: now,
@@ -5312,7 +5634,9 @@ class AppProvider extends ChangeNotifier {
             isAutoTracked: false,
             targetCount: 1,
             xpReward: 20,
-            rewards: const [Reward(type: RewardTypes.xp, amount: 20, label: '20 XP')],
+            rewards: const [
+              Reward(type: RewardTypes.xp, amount: 20, label: '20 XP')
+            ],
             startDate: now,
             endDate: null,
             createdAt: now,
@@ -5355,8 +5679,10 @@ class AppProvider extends ChangeNotifier {
       // Refresh questlines cache to ensure Tonight's Quest reflects enrollment
       try {
         final defs = await _questlineService.getAvailableQuestlines(uid);
-        _activeQuestlines = (await _questlineService.getActiveQuestlines(uid)).map((p) {
-          final def = defs.firstWhere((d) => d.id == p.questlineId, orElse: () => defs.first);
+        _activeQuestlines =
+            (await _questlineService.getActiveQuestlines(uid)).map((p) {
+          final def = defs.firstWhere((d) => d.id == p.questlineId,
+              orElse: () => defs.first);
           return QuestlineProgressView(questline: def, progress: p);
         }).toList();
       } catch (e) {
@@ -5381,7 +5707,9 @@ class AppProvider extends ChangeNotifier {
       }
       // Avoid duplicates by canonical reference + KJV
       final key = _canonicalizeReference(bookmark.reference);
-      final existsIndex = _bookmarks.indexWhere((b) => _canonicalizeReference(b.reference) == key && b.translationCode.toUpperCase() == 'KJV');
+      final existsIndex = _bookmarks.indexWhere((b) =>
+          _canonicalizeReference(b.reference) == key &&
+          b.translationCode.toUpperCase() == 'KJV');
       if (existsIndex != -1) {
         // Update note if provided
         final existing = _bookmarks[existsIndex];
@@ -5466,15 +5794,15 @@ class AppProvider extends ChangeNotifier {
     try {
       final uid = _currentUser?.id ?? '';
       if (uid.isEmpty) return false;
-      
+
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
-      
+
       if (_lastSeenVersion == null) {
         // Load from storage
         _lastSeenVersion = _storageService.getString(_lastSeenVersionKey(uid));
       }
-      
+
       // Show modal if version has changed
       if (_lastSeenVersion == null || _lastSeenVersion != currentVersion) {
         return true;
@@ -5491,12 +5819,13 @@ class AppProvider extends ChangeNotifier {
     try {
       final uid = _currentUser?.id ?? '';
       if (uid.isEmpty) return;
-      
+
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
-      
+
       _lastSeenVersion = currentVersion;
-      await _storageService.save<String>(_lastSeenVersionKey(uid), currentVersion);
+      await _storageService.save<String>(
+          _lastSeenVersionKey(uid), currentVersion);
     } catch (e) {
       debugPrint('markWhatsNewSeen error: $e');
     }
@@ -5519,11 +5848,11 @@ class AppProvider extends ChangeNotifier {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final deviceInfo = DeviceInfoPlugin();
-      
+
       String deviceModel = 'Unknown';
       String osVersion = 'Unknown';
       String platform = 'Unknown';
-      
+
       try {
         if (!kIsWeb) {
           if (Platform.isIOS) {
@@ -5534,7 +5863,9 @@ class AppProvider extends ChangeNotifier {
           } else if (Platform.isAndroid) {
             platform = 'Android';
             final androidInfo = await deviceInfo.androidInfo;
-            deviceModel = '${androidInfo.manufacturer ?? ''} ${androidInfo.model ?? ''}'.trim();
+            deviceModel =
+                '${androidInfo.manufacturer ?? ''} ${androidInfo.model ?? ''}'
+                    .trim();
             osVersion = 'Android ${androidInfo.version.release ?? 'Unknown'}';
           } else {
             platform = 'Desktop';
@@ -5548,13 +5879,13 @@ class AppProvider extends ChangeNotifier {
       } catch (e) {
         debugPrint('Platform detection error: $e');
       }
-      
+
       final summary = 'App Version: ${packageInfo.version}\n'
-                      'Build: ${packageInfo.buildNumber}\n'
-                      'Device: $deviceModel\n'
-                      'OS: $osVersion\n'
-                      'Platform: $platform';
-      
+          'Build: ${packageInfo.buildNumber}\n'
+          'Device: $deviceModel\n'
+          'OS: $osVersion\n'
+          'Platform: $platform';
+
       return {
         'version': packageInfo.version,
         'build': packageInfo.buildNumber,
@@ -5571,7 +5902,8 @@ class AppProvider extends ChangeNotifier {
         'device': 'Unknown',
         'os': 'Unknown',
         'platform': 'Unknown',
-        'summary': 'App Version: 1.0.0\nBuild: 1\nDevice: Unknown\nOS: Unknown\nPlatform: Unknown',
+        'summary':
+            'App Version: 1.0.0\nBuild: 1\nDevice: Unknown\nOS: Unknown\nPlatform: Unknown',
       };
     }
   }

@@ -15,7 +15,8 @@ class QuestProgressService {
   final TaskService questService;
   final VerseService verseService;
 
-  const QuestProgressService({required this.questService, required this.verseService});
+  const QuestProgressService(
+      {required this.questService, required this.verseService});
 
   // Nightly window helper: 20:00 → 02:59 local
   // Returns true if the provided local time is within the nightly quest window.
@@ -47,12 +48,12 @@ class QuestProgressService {
   }
 
   /// Checks if completed book+chapter matches quest target.
-  /// 
+  ///
   /// Priority for determining required book (v2.1 - robust detection):
   /// A) If quest has scriptureReference → use it as source of truth
   /// B) Else if quest has allowedBooks or targetBook metadata → use that
   /// C) Else fallback to title keyword detection (e.g., "Psalm")
-  /// 
+  ///
   /// Strict matching rules:
   /// 1. If no target can be determined -> any chapter counts
   /// 2. If quest specifies exact book+chapter -> must match exactly
@@ -72,50 +73,64 @@ class QuestProgressService {
     if (questRef.isNotEmpty) {
       final target = parseReference(questRef);
       final targetBookName = target.book;
-      
+
       if (targetBookName.isNotEmpty && !_booksMatch(normBook, targetBookName)) {
-        _debugLog('Book mismatch (from scriptureReference): expected "$targetBookName"', questTitle, completedBook, completedChapter, false);
+        _debugLog(
+            'Book mismatch (from scriptureReference): expected "$targetBookName"',
+            questTitle,
+            completedBook,
+            completedChapter,
+            false);
         return false;
       }
-      
+
       if (target.chapter != null && target.chapter != completedChapter) {
-        _debugLog('Chapter mismatch: expected ${target.chapter}', questTitle, completedBook, completedChapter, false);
+        _debugLog('Chapter mismatch: expected ${target.chapter}', questTitle,
+            completedBook, completedChapter, false);
         return false;
       }
-      
-      _debugLog('Match found (via scriptureReference)', questTitle, completedBook, completedChapter, true);
+
+      _debugLog('Match found (via scriptureReference)', questTitle,
+          completedBook, completedChapter, true);
       return true;
     }
 
     // Priority B: allowedBooks or targetBook metadata
     if (allowedBooks != null && allowedBooks.isNotEmpty) {
-      final matchesAllowed = allowedBooks.any((b) => _booksMatch(normBook, b.trim().toLowerCase()));
+      final matchesAllowed = allowedBooks
+          .any((b) => _booksMatch(normBook, b.trim().toLowerCase()));
       if (!matchesAllowed) {
-        _debugLog('Book not in allowedBooks: $allowedBooks', questTitle, completedBook, completedChapter, false);
+        _debugLog('Book not in allowedBooks: $allowedBooks', questTitle,
+            completedBook, completedChapter, false);
         return false;
       }
-      _debugLog('Match found (via allowedBooks)', questTitle, completedBook, completedChapter, true);
+      _debugLog('Match found (via allowedBooks)', questTitle, completedBook,
+          completedChapter, true);
       return true;
     }
-    
+
     if (targetBook != null && targetBook.trim().isNotEmpty) {
       if (!_booksMatch(normBook, targetBook.trim().toLowerCase())) {
-        _debugLog('Book mismatch (from targetBook): expected "$targetBook"', questTitle, completedBook, completedChapter, false);
+        _debugLog('Book mismatch (from targetBook): expected "$targetBook"',
+            questTitle, completedBook, completedChapter, false);
         return false;
       }
-      _debugLog('Match found (via targetBook)', questTitle, completedBook, completedChapter, true);
+      _debugLog('Match found (via targetBook)', questTitle, completedBook,
+          completedChapter, true);
       return true;
     }
 
     // Priority C: Fallback to title keyword detection (legacy behavior preserved)
     final titleLower = questTitle.toLowerCase();
     if (titleLower.contains('psalm') && !normBook.contains('psalm')) {
-      _debugLog('Psalm quest (title-based) requires Psalms book', questTitle, completedBook, completedChapter, false);
+      _debugLog('Psalm quest (title-based) requires Psalms book', questTitle,
+          completedBook, completedChapter, false);
       return false;
     }
 
     // No target specified -> generic quest, any chapter counts
-    _debugLog('Quest has no target, any chapter counts', questTitle, completedBook, completedChapter, true);
+    _debugLog('Quest has no target, any chapter counts', questTitle,
+        completedBook, completedChapter, true);
     return true;
   }
 
@@ -123,7 +138,8 @@ class QuestProgressService {
   /// Uses STRICT matching - no substring containment to prevent "John" matching "1 John"
   static bool _booksMatch(String completedBook, String targetBook) {
     // Normalize: remove spaces, lowercase
-    String norm(String s) => s.replaceAll(' ', '').replaceAll(RegExp(r'[^\w]'), '').toLowerCase();
+    String norm(String s) =>
+        s.replaceAll(' ', '').replaceAll(RegExp(r'[^\w]'), '').toLowerCase();
     final a = norm(completedBook);
     final b = norm(targetBook);
 
@@ -146,9 +162,11 @@ class QuestProgressService {
     return false;
   }
 
-  static void _debugLog(String message, String questTitle, String book, int chapter, bool matched) {
+  static void _debugLog(String message, String questTitle, String book,
+      int chapter, bool matched) {
     if (!_kQuestProgressDebug) return;
-    debugPrint('[QuestProgress] $message | Quest: "$questTitle" | Completed: $book $chapter | Matched: $matched');
+    debugPrint(
+        '[QuestProgress] $message | Quest: "$questTitle" | Completed: $book $chapter | Matched: $matched');
   }
 
   /// Handles a gameplay event and applies quest progress via callbacks.
@@ -187,24 +205,34 @@ class QuestProgressService {
         switch (event) {
           case 'onVerseRead':
             if (q.questType == 'scripture_reading') {
-              if ((q.scriptureReference == null) || q.scriptureReference!.isEmpty) {
+              if ((q.scriptureReference == null) ||
+                  q.scriptureReference!.isEmpty) {
                 shouldApply = true;
-              } else if (verseRef != null && norm(q.scriptureReference!) == norm(verseRef!)) {
+              } else if (verseRef != null &&
+                  norm(q.scriptureReference!) == norm(verseRef!)) {
                 shouldApply = true;
               }
             }
             break;
           case 'onQuizCompleted':
             // Treat a completed quiz as meaningful progress for scripture_reading or reflection tasks.
-            if (q.questType == 'scripture_reading' || q.questType == 'reflection') {
-              if ((q.scriptureReference == null) || q.scriptureReference!.isEmpty) {
+            if (q.questType == 'scripture_reading' ||
+                q.questType == 'reflection') {
+              if ((q.scriptureReference == null) ||
+                  q.scriptureReference!.isEmpty) {
                 shouldApply = true;
-              } else if (book.isNotEmpty && q.scriptureReference!.toLowerCase().contains(book.toLowerCase())) {
+              } else if (book.isNotEmpty &&
+                  q.scriptureReference!
+                      .toLowerCase()
+                      .contains(book.toLowerCase())) {
                 shouldApply = true;
               }
             }
             break;
           case 'onChapterComplete':
+            if (payload?['hasMetReadingThreshold'] != true ||
+                chapter <= 0 ||
+                book.isEmpty) continue;
             // STRICT MATCHING: Only credit if quest type is scripture_reading
             // Routine quests should NOT auto-progress from chapter completion
             // (use onBibleOpened for routine check-in instead)
@@ -215,9 +243,11 @@ class QuestProgressService {
             // - Future: reading timer threshold, specific routine events
             if (q.questType == 'scripture_reading') {
               // Special case: Nightly quest only progresses within the nightly window
-              if (q.type == 'nightly' && !QuestProgressService.isNightlyWindow(DateTime.now())) {
+              if (q.type == 'nightly' &&
+                  !QuestProgressService.isNightlyWindow(DateTime.now())) {
                 if (_kQuestProgressDebug) {
-                  debugPrint('[QuestProgress] Skipping nightly quest outside window: ${q.title}');
+                  debugPrint(
+                      '[QuestProgress] Skipping nightly quest outside window: ${q.title}');
                 }
                 continue;
               }
@@ -235,15 +265,20 @@ class QuestProgressService {
             } else {
               // Non-scripture quests (including routine) should NOT auto-progress from chapter completion
               if (_kQuestProgressDebug) {
-                debugPrint('[QuestProgress] Ignoring chapter complete for non-scripture quest: ${q.title} (type: ${q.questType})');
+                debugPrint(
+                    '[QuestProgress] Ignoring chapter complete for non-scripture quest: ${q.title} (type: ${q.questType})');
               }
             }
             break;
           case 'onBookComplete':
             if (q.questType == 'scripture_reading') {
-              if ((q.scriptureReference == null) || q.scriptureReference!.isEmpty) {
+              if ((q.scriptureReference == null) ||
+                  q.scriptureReference!.isEmpty) {
                 shouldApply = true;
-              } else if (book.isNotEmpty && q.scriptureReference!.toLowerCase().contains(book.toLowerCase())) {
+              } else if (book.isNotEmpty &&
+                  q.scriptureReference!
+                      .toLowerCase()
+                      .contains(book.toLowerCase())) {
                 shouldApply = true;
               }
             }
@@ -283,7 +318,12 @@ class QuestProgressService {
         }
 
         if (!shouldApply) continue;
-        await onApplyProgress(q.id, 1);
+        if (event == 'onChapterComplete') {
+          await questService.creditChapter(
+              q.id, '${book.toLowerCase()}:$chapter');
+        } else {
+          await onApplyProgress(q.id, 1);
+        }
         applied += 1;
 
         try {
@@ -291,7 +331,8 @@ class QuestProgressService {
             (e) => e.id == q.id,
             orElse: () => q,
           );
-          if (updated.currentProgress >= updated.targetCount && !updated.isCompleted) {
+          if (updated.currentProgress >= updated.targetCount &&
+              !updated.isCompleted) {
             await onMarkComplete(updated.id);
           }
         } catch (e) {
@@ -302,7 +343,7 @@ class QuestProgressService {
       return applied;
     } catch (e) {
       debugPrint('QuestProgressService.handleEvent error: $e');
-      return 0;
+      rethrow;
     }
   }
 }

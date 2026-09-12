@@ -1,3 +1,4 @@
+import '../../utils/integrity/serial_queue.dart';
 import 'package:flutter/foundation.dart';
 import 'package:level_up_your_faith/models/reward.dart';
 import 'package:level_up_your_faith/services/achievement_service.dart';
@@ -17,6 +18,8 @@ class ProgressEngine {
   ProgressEngine._();
   static final ProgressEngine instance = ProgressEngine._();
 
+  final _events = SerialQueue();
+
   // Lazy singletons
   StorageService? _storage;
   UserService? _userService;
@@ -33,13 +36,16 @@ class ProgressEngine {
     _userService ??= UserService(_storage!);
     _titlesService ??= TitlesService(_storage!);
     _inventoryService ??= InventoryService(_storage!);
-    _rewardService ??= RewardService(_userService!, _titlesService!, _inventoryService!);
+    _rewardService ??=
+        RewardService(_userService!, _titlesService!, _inventoryService!);
     _achievementService ??= AchievementService(_storage!);
     _statsService ??= UserStatsService(_storage!);
   }
 
   /// Public entrypoint.
-  Future<void> emit(ProgressEvent event) async {
+  Future<void> emit(ProgressEvent event) => _events.run(() => _emit(event));
+
+  Future<void> _emit(ProgressEvent event) async {
     await _ensureInit();
     try {
       switch (event.type) {
@@ -70,21 +76,21 @@ class ProgressEngine {
       }
     } catch (e) {
       debugPrint('ProgressEngine.emit error: $e');
+      rethrow;
     }
   }
 
   // =============== Handlers ===============
   Future<void> _handleChapterCompleted(ProgressEvent e) async {
-    try {
-      final uid = (await _userService!.getCurrentUser()).id;
-      await _statsService!.incChaptersCompleted(uid);
-      await _awardXp(10, reason: 'Chapter Completed', source: e.type.name);
-
-      // Achievement suggestions (no UI here). We only unlock known seeds if present later.
-      // The richer chapter/book achievements are handled elsewhere in the app currently.
-    } catch (err) {
-      debugPrint('_handleChapterCompleted error: $err');
-    }
+    final user = await _userService!.getCurrentUser();
+    final chapter = e.payload['chapter'];
+    final book = e.payload['bookName']?.toString() ?? '';
+    if (book.isEmpty || chapter is! int || chapter <= 0)
+      throw ArgumentError('Invalid chapter event');
+    final receipt = 'chapter:$book:$chapter';
+    await _userService!.addXP(10, receiptId: receipt);
+    await _statsService!
+        .incrementOnce(user.id, 'totalChaptersCompleted', receipt);
   }
 
   Future<void> _handleChapterQuizStarted(ProgressEvent e) async {
@@ -105,7 +111,8 @@ class ProgressEngine {
         await _statsService!.incQuizzesPassed(uid);
       }
 
-      final difficulty = (e.payload['difficulty']?.toString() ?? '').toLowerCase();
+      final difficulty =
+          (e.payload['difficulty']?.toString() ?? '').toLowerCase();
       int xp = 10; // Quick default
       if (difficulty == 'standard') xp = 15;
       if (difficulty == 'deep') xp = 20;
@@ -120,24 +127,40 @@ class ProgressEngine {
   }
 
   Future<void> _handleTaskCompleted(ProgressEvent e) async {
-    try {
-      final uid = (await _userService!.getCurrentUser()).id;
-      final t = e.type;
-      if (t == ProgressEventType.reflectionTaskCompleted) {
-        await _statsService!.incReflectionsCompleted(uid);
-        await _awardXp(8, reason: 'Reflection Task', source: t.name);
-        // Achievement seed available
-        await _unlockIfDefined(uid, 'quiet_reflections_5');
-      } else if (t == ProgressEventType.nightlyTaskCompleted) {
-        await _statsService!.incTasksCompleted(uid);
-        await _awardXp(5, reason: 'Nightly Task', source: t.name);
-        await _unlockIfDefined(uid, 'night_scholar_5');
-      } else {
-        await _statsService!.incTasksCompleted(uid);
-        await _awardXp(5, reason: 'Daily Task', source: t.name);
+    final id = e.payload['taskId']?.toString() ?? '';
+    if (id.isEmpty) throw ArgumentError('Task event requires a stable ID');
+    final receipt = '${e.type.name}:$id';
+    await _userService!.addXP(
+      e.type == ProgressEventType.reflectionTaskCompleted ? 8 : 5,
+      receiptId: receipt,
+    );
+    await _countTask(e);
+  }
+
+  /// Real task completion already receives its configured task reward. Count
+  /// achievements here without adding the event API's separate XP stipend.
+  Future<void> countCompletedTask(String id, String category) =>
+      _events.run(() async {
+        await _ensureInit();
+        await _countTask(ProgressEvent.taskCompleted(id, category));
+      });
+
+  Future<void> _countTask(ProgressEvent e) async {
+    final uid = (await _userService!.getCurrentUser()).id;
+    final id = e.payload['taskId']?.toString() ?? '';
+    if (id.isEmpty) throw ArgumentError('Task event requires a stable ID');
+    final receipt = '${e.type.name}:$id';
+    if (e.type == ProgressEventType.reflectionTaskCompleted) {
+      final count = await _statsService!
+          .incrementOnce(uid, 'reflectionsCompleted', receipt);
+      if (count >= 5) await _unlockIfDefined(uid, 'quiet_reflections_5');
+    } else {
+      await _statsService!.incrementOnce(uid, 'tasksCompleted', receipt);
+      if (e.type == ProgressEventType.nightlyTaskCompleted) {
+        final count = await _statsService!
+            .incrementOnce(uid, 'nightlyTasksCompleted', receipt);
+        if (count >= 5) await _unlockIfDefined(uid, 'night_scholar_5');
       }
-    } catch (err) {
-      debugPrint('_handleTaskCompleted error: $err');
     }
   }
 
@@ -178,10 +201,12 @@ class ProgressEngine {
   }
 
   // =============== Helpers ===============
-  Future<void> _awardXp(int amount, {required String reason, required String source}) async {
+  Future<void> _awardXp(int amount,
+      {required String reason, required String source}) async {
     try {
       if (amount <= 0) return;
-      final reward = Reward(type: RewardTypes.xp, amount: amount, label: '$amount XP');
+      final reward =
+          Reward(type: RewardTypes.xp, amount: amount, label: '$amount XP');
       await _rewardService!.applyReward(reward, xpOverride: amount);
       // UI toast/animations intentionally omitted here (foundation only).
       debugPrint('ProgressEngine: +$amount XP ($reason) [source=$source]');

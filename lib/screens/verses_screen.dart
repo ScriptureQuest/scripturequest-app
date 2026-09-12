@@ -38,7 +38,10 @@ class VersesScreen extends StatefulWidget {
   State<VersesScreen> createState() => _VersesScreenState();
 }
 
-class _VersesScreenState extends State<VersesScreen> {
+class _VersesScreenState extends State<VersesScreen>
+    with WidgetsBindingObserver {
+  final _readingClock = Stopwatch();
+  String? _timedChapter;
   String? _currentReference;
   String _selectedVersionCode = 'KJV';
   String _passageText = '';
@@ -360,6 +363,7 @@ class _VersesScreenState extends State<VersesScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentReference = (widget.selectedReference ?? '').trim().isNotEmpty
         ? widget.selectedReference!.trim()
         : null;
@@ -821,16 +825,32 @@ class _VersesScreenState extends State<VersesScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _readingClock.stop();
     _pageController?.dispose();
     super.dispose();
   }
 
   /// Start or restart the reading timer when a chapter is loaded
-  void _startReadingTimer() {
-    if (_readingStartTime == null) {
-      _readingStartTime = DateTime.now();
-      debugPrint('Reading timer started');
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_timedChapter != null) _readingClock.start();
+    } else {
+      _readingClock.stop();
     }
+  }
+
+  void _startReadingTimer() {
+    final key = '$_selectedBook:$_selectedChapter';
+    if (_timedChapter != key) {
+      _timedChapter = key;
+      _readingClock.reset();
+      _hasMetReadingThreshold = false;
+      _dailyQuestProgressedThisSession = false;
+      _readingStartTime = DateTime.now();
+    }
+    _readingClock.start();
   }
 
   /// Check if the user has met the reading time threshold for quest progression.
@@ -840,7 +860,7 @@ class _VersesScreenState extends State<VersesScreen> {
       if (_hasMetReadingThreshold) return; // Already met
       if (_readingStartTime == null) return;
 
-      final duration = DateTime.now().difference(_readingStartTime!);
+      final duration = _readingClock.elapsed;
       if (duration.inSeconds >= _minimumReadingSecondsForQuest) {
         _hasMetReadingThreshold = true;
         debugPrint('Reading time threshold met: ${duration.inSeconds}s');
@@ -1111,7 +1131,10 @@ class _VersesScreenState extends State<VersesScreen> {
                           // Progress daily quest if reading time threshold was met
                           _progressDailyQuestIfEligible(provider);
                         },
-                        hasMetReadingThreshold: () => _hasMetReadingThreshold,
+                        hasMetReadingThreshold: () {
+                          _updateReadingTimeThreshold();
+                          return _hasMetReadingThreshold;
+                        },
                       );
                     },
                   ),
@@ -2000,6 +2023,8 @@ class _ChapterPageState extends State<_ChapterPage> {
   bool _loading = true;
   bool _showEndPanel = false;
   bool _showCompletionBanner = false;
+  bool _savingCompletion = false;
+  bool _awardedChapterXp = false;
   final Map<int, GlobalKey> _verseKeys = {};
   int? _focusedVerse;
   bool _didInitialFocus = false;
@@ -2329,11 +2354,6 @@ class _ChapterPageState extends State<_ChapterPage> {
                   v.number,
                 );
                 final colorKey = app.getHighlightColorKey(verseKey);
-                final isJesus = BibleRedLetterHelper.isJesusSpeaking(
-                  bookName: widget.book,
-                  chapter: widget.chapter,
-                  verseNumber: v.number,
-                );
                 final bg = (colorKey == null)
                     ? null
                     : BibleReaderStyles.highlightColor(
@@ -2396,19 +2416,18 @@ class _ChapterPageState extends State<_ChapterPage> {
                               fontStyle: fontStyle,
                             ),
                           ),
-                          TextSpan(
+                          BibleRedLetterHelper.render(
+                            bookName: widget.book,
+                            chapter: widget.chapter,
+                            verseNumber: v.number,
                             text: v.text.trim(),
-                            style: (showRed && isJesus)
-                                ? BibleReaderStyles.jesusWords(
-                                    fontScale,
-                                    themeData,
-                                    fontStyle: fontStyle,
-                                  )
-                                : BibleReaderStyles.verseBody(
-                                    fontScale,
-                                    themeData,
-                                    fontStyle: fontStyle,
-                                  ),
+                            enabled: showRed,
+                            speechStyle: BibleReaderStyles.jesusWords(
+                                fontScale, themeData,
+                                fontStyle: fontStyle),
+                            bodyStyle: BibleReaderStyles.verseBody(
+                                fontScale, themeData,
+                                fontStyle: fontStyle),
                           ),
                         ],
                       ),
@@ -2425,7 +2444,8 @@ class _ChapterPageState extends State<_ChapterPage> {
             bottom: 16,
             child: IgnorePointer(
               ignoring: !_showCompletionBanner,
-              child: _CompletionBanner(visible: _showCompletionBanner),
+              child: _CompletionBanner(
+                  visible: _showCompletionBanner, awardedXp: _awardedChapterXp),
             ),
           ),
         ],
@@ -2493,7 +2513,7 @@ class _ChapterPageState extends State<_ChapterPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _isEligibleToComplete()
+                      onPressed: !_savingCompletion && _isEligibleToComplete()
                           ? () async {
                               if (kDebugMode) {
                                 debugPrint(
@@ -2502,32 +2522,26 @@ class _ChapterPageState extends State<_ChapterPage> {
                               }
                               HapticFeedback.lightImpact();
                               final app = context.read<AppProvider>();
-                              // Record chapter completion (updates stats, weekly quest only if time threshold met)
-                              final hasMetThreshold =
-                                  widget.hasMetReadingThreshold();
-                              await app.recordChapterRead(
-                                widget.book,
-                                widget.chapter,
-                                hasMetReadingThreshold: hasMetThreshold,
-                              );
-                              if (kDebugMode) {
-                                debugPrint('[CompleteChapter] persisted=true');
-                              }
-                              // Notify parent about chapter completion (for daily quest tracking)
-                              widget.onChapterCompleted?.call();
-                              if (!mounted) return;
+                              if (_savingCompletion) return;
+                              setState(() => _savingCompletion = true);
                               try {
-                                final bookRef = app.bibleService.displayToRef(
-                                  widget.book,
-                                );
-                                await ProgressEngine.instance.emit(
-                                  ProgressEvent.chapterCompleted(
-                                    bookRef,
-                                    widget.book,
-                                    widget.chapter,
-                                  ),
-                                );
-                              } catch (_) {}
+                                _awardedChapterXp =
+                                    await app.completeReaderChapter(
+                                        widget.book, widget.chapter,
+                                        qualified:
+                                            widget.hasMetReadingThreshold());
+                              } catch (_) {
+                                if (mounted)
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Could not save reading progress. Please try again.')));
+                                return;
+                              } finally {
+                                if (mounted)
+                                  setState(() => _savingCompletion = false);
+                              }
+                              if (!mounted) return;
                               // Show a subtle in-page completion banner (+10 XP)
                               if (mounted) {
                                 setState(() => _showCompletionBanner = true);
@@ -3064,7 +3078,8 @@ Widget _segButton({
 
 class _CompletionBanner extends StatelessWidget {
   final bool visible;
-  const _CompletionBanner({required this.visible});
+  final bool awardedXp;
+  const _CompletionBanner({required this.visible, required this.awardedXp});
 
   @override
   Widget build(BuildContext context) {
@@ -3122,7 +3137,9 @@ class _CompletionBanner extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Chapter complete! +10 XP',
+                      awardedXp
+                          ? 'Chapter complete! +10 XP'
+                          : 'Reading progress saved',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurface,
                         fontSize: 15,

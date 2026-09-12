@@ -6,6 +6,7 @@ class UserModel {
   final int currentLevel;
   final int currentXP;
   final int totalXP;
+  final List<String> rewardReceipts;
   final int streakDays;
   final int longestStreak;
   // Unified Reward System extensions
@@ -30,6 +31,7 @@ class UserModel {
     this.currentLevel = 1,
     this.currentXP = 0,
     this.totalXP = 0,
+    this.rewardReceipts = const [],
     this.streakDays = 0,
     this.longestStreak = 0,
     this.currency = 0,
@@ -49,56 +51,67 @@ class UserModel {
   double get xpProgress => currentXP / xpToNextLevel;
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'username': username,
-    'email': email,
-    'avatarUrl': avatarUrl,
-    'currentLevel': currentLevel,
-    'currentXP': currentXP,
-    'totalXP': totalXP,
-    'streakDays': streakDays,
-    'longestStreak': longestStreak,
-    'currency': currency,
-    'streakTokens': streakTokens,
-    'lastRewardSummary': lastRewardSummary,
-    'achievements': achievements,
-    'completedVerses': completedVerses,
-    'completedQuests': completedQuests,
-    'preferredBibleVersionCode': preferredBibleVersionCode,
-    'isProfilePublic': isProfilePublic,
-    'tagline': tagline,
-    'createdAt': createdAt.toIso8601String(),
-    'updatedAt': updatedAt.toIso8601String(),
-  };
+        'id': id,
+        'username': username,
+        'email': email,
+        'avatarUrl': avatarUrl,
+        'currentLevel': currentLevel,
+        'currentXP': currentXP,
+        'totalXP': totalXP,
+        'rewardReceipts': rewardReceipts,
+        'streakDays': streakDays,
+        'longestStreak': longestStreak,
+        'currency': currency,
+        'streakTokens': streakTokens,
+        'lastRewardSummary': lastRewardSummary,
+        'achievements': achievements,
+        'completedVerses': completedVerses,
+        'completedQuests': completedQuests,
+        'preferredBibleVersionCode': preferredBibleVersionCode,
+        'isProfilePublic': isProfilePublic,
+        'tagline': tagline,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+      };
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-    id: json['id'] ?? '',
-    username: json['username'] ?? '',
-    email: json['email'] ?? '',
-    avatarUrl: json['avatarUrl'] ?? '',
-    currentLevel: json['currentLevel'] ?? 1,
-    currentXP: json['currentXP'] ?? 0,
-    totalXP: json['totalXP'] ?? 0,
-    streakDays: json['streakDays'] ?? 0,
-    longestStreak: json['longestStreak'] ?? 0,
-    currency: json['currency'] ?? 0,
-    streakTokens: json['streakTokens'] ?? 0,
-    lastRewardSummary: (json['lastRewardSummary']?.toString().trim().isEmpty ?? true)
-        ? null
-        : json['lastRewardSummary'].toString(),
-    achievements: List<String>.from(json['achievements'] ?? []),
-    completedVerses: List<String>.from(json['completedVerses'] ?? []),
-    completedQuests: List<String>.from(json['completedQuests'] ?? []),
-    preferredBibleVersionCode: (json['preferredBibleVersionCode'] ?? 'KJV').toString(),
-    isProfilePublic: (json['isProfilePublic'] is bool)
-        ? json['isProfilePublic'] as bool
-        : (json['isProfilePublic'] == null ? true : (json['isProfilePublic'].toString() != 'false')),
-    tagline: json['tagline'] == null || (json['tagline'] as String?)?.trim().isEmpty == true
-        ? null
-        : json['tagline'] as String?,
-    createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
-    updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
-  );
+        id: json['id'] ?? '',
+        username: json['username'] ?? '',
+        email: json['email'] ?? '',
+        avatarUrl: json['avatarUrl'] ?? '',
+        currentLevel: json['currentLevel'] ?? 1,
+        currentXP: json['currentXP'] ?? 0,
+        totalXP: json['totalXP'] ?? 0,
+        rewardReceipts: List<String>.from(json['rewardReceipts'] ?? const []),
+        streakDays: json['streakDays'] ?? 0,
+        longestStreak: json['longestStreak'] ?? 0,
+        currency: json['currency'] ?? 0,
+        streakTokens: json['streakTokens'] ?? 0,
+        lastRewardSummary:
+            (json['lastRewardSummary']?.toString().trim().isEmpty ?? true)
+                ? null
+                : json['lastRewardSummary'].toString(),
+        achievements: List<String>.from(json['achievements'] ?? []),
+        completedVerses: List<String>.from(json['completedVerses'] ?? []),
+        completedQuests: List<String>.from(json['completedQuests'] ?? []),
+        preferredBibleVersionCode:
+            (json['preferredBibleVersionCode'] ?? 'KJV').toString(),
+        isProfilePublic: (json['isProfilePublic'] is bool)
+            ? json['isProfilePublic'] as bool
+            : (json['isProfilePublic'] == null
+                ? true
+                : (json['isProfilePublic'].toString() != 'false')),
+        tagline: json['tagline'] == null ||
+                (json['tagline'] as String?)?.trim().isEmpty == true
+            ? null
+            : json['tagline'] as String?,
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'])
+            : DateTime.now(),
+        updatedAt: json['updatedAt'] != null
+            ? DateTime.parse(json['updatedAt'])
+            : DateTime.now(),
+      );
 
   UserModel copyWith({
     String? id,
@@ -108,6 +121,7 @@ class UserModel {
     int? currentLevel,
     int? currentXP,
     int? totalXP,
+    List<String>? rewardReceipts,
     int? streakDays,
     int? longestStreak,
     int? currency,
@@ -121,26 +135,29 @@ class UserModel {
     String? tagline,
     DateTime? createdAt,
     DateTime? updatedAt,
-  }) => UserModel(
-    id: id ?? this.id,
-    username: username ?? this.username,
-    email: email ?? this.email,
-    avatarUrl: avatarUrl ?? this.avatarUrl,
-    currentLevel: currentLevel ?? this.currentLevel,
-    currentXP: currentXP ?? this.currentXP,
-    totalXP: totalXP ?? this.totalXP,
-    streakDays: streakDays ?? this.streakDays,
-    longestStreak: longestStreak ?? this.longestStreak,
-    currency: currency ?? this.currency,
-    streakTokens: streakTokens ?? this.streakTokens,
-    lastRewardSummary: lastRewardSummary ?? this.lastRewardSummary,
-    achievements: achievements ?? this.achievements,
-    completedVerses: completedVerses ?? this.completedVerses,
-    completedQuests: completedQuests ?? this.completedQuests,
-    preferredBibleVersionCode: preferredBibleVersionCode ?? this.preferredBibleVersionCode,
-    isProfilePublic: isProfilePublic ?? this.isProfilePublic,
-    tagline: tagline ?? this.tagline,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-  );
+  }) =>
+      UserModel(
+        id: id ?? this.id,
+        username: username ?? this.username,
+        email: email ?? this.email,
+        avatarUrl: avatarUrl ?? this.avatarUrl,
+        currentLevel: currentLevel ?? this.currentLevel,
+        currentXP: currentXP ?? this.currentXP,
+        totalXP: totalXP ?? this.totalXP,
+        rewardReceipts: rewardReceipts ?? this.rewardReceipts,
+        streakDays: streakDays ?? this.streakDays,
+        longestStreak: longestStreak ?? this.longestStreak,
+        currency: currency ?? this.currency,
+        streakTokens: streakTokens ?? this.streakTokens,
+        lastRewardSummary: lastRewardSummary ?? this.lastRewardSummary,
+        achievements: achievements ?? this.achievements,
+        completedVerses: completedVerses ?? this.completedVerses,
+        completedQuests: completedQuests ?? this.completedQuests,
+        preferredBibleVersionCode:
+            preferredBibleVersionCode ?? this.preferredBibleVersionCode,
+        isProfilePublic: isProfilePublic ?? this.isProfilePublic,
+        tagline: tagline ?? this.tagline,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
 }

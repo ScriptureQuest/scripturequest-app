@@ -20,7 +20,8 @@ class RewardService {
 
   /// Apply the reward to the given profile. Returns the updated UserModel.
   /// For XP rewards, you may pass an optional xpOverride to inject streak bonuses.
-  Future<UserModel> applyReward(Reward reward, {int? xpOverride}) async {
+  Future<UserModel> applyReward(Reward reward,
+      {int? xpOverride, String? receiptId}) async {
     try {
       final profile = await _userService.getCurrentUser();
 
@@ -28,8 +29,7 @@ class RewardService {
         case RewardTypes.xp:
           final amt = xpOverride ?? (reward.amount ?? 0);
           if (amt > 0) {
-            final updated = await _userService.addXP(amt);
-            await _userService.updateUser(updated.copyWith());
+            final updated = await _userService.addXP(amt, receiptId: receiptId);
             await _saveLastRewardSummary(reward.label);
             return updated;
           }
@@ -38,13 +38,15 @@ class RewardService {
 
         case RewardTypes.streak:
           final inc = reward.amount ?? 0;
-          final updated = await _userService.addStreakTokens(inc);
+          final updated =
+              await _userService.addStreakTokens(inc, receiptId: receiptId);
           await _saveLastRewardSummary(reward.label);
           return updated;
 
         case RewardTypes.token:
           final inc = reward.amount ?? 0;
-          final updated = await _userService.addCurrency(inc);
+          final updated =
+              await _userService.addCurrency(inc, receiptId: receiptId);
           await _saveLastRewardSummary(reward.label);
           return updated;
 
@@ -64,14 +66,17 @@ class RewardService {
             final item = InventoryItem(
               id: reward.id!,
               type: reward.type,
-              name: reward.label.isNotEmpty ? reward.label : (reward.id!.replaceAll('_', ' ')),
+              name: reward.label.isNotEmpty
+                  ? reward.label
+                  : (reward.id!.replaceAll('_', ' ')),
               description: reward.description ?? '',
               rarity: reward.rarity.isNotEmpty ? reward.rarity : 'common',
               iconKey: meta['iconKey']?.toString(),
               meta: meta,
             );
             final autoEquip = meta['autoEquip'] == true;
-            await _inventoryService.addItemToInventory(uid, reward.id!, item, autoEquip: autoEquip);
+            await _inventoryService.addItemToInventory(uid, reward.id!, item,
+                autoEquip: autoEquip);
           }
           await _saveLastRewardSummary(reward.label);
           return profile;
@@ -83,7 +88,7 @@ class RewardService {
       }
     } catch (e) {
       debugPrint('RewardService.applyReward error: $e');
-      return await _userService.getCurrentUser();
+      rethrow;
     }
   }
 
@@ -96,13 +101,16 @@ class RewardService {
       case RewardTypes.title:
         return 'Title${reward.id != null ? ': ${reward.id}' : ''}';
       case RewardTypes.streak:
-        return reward.amount != null ? '+${reward.amount} Streak Tokens' : 'Streak';
+        return reward.amount != null
+            ? '+${reward.amount} Streak Tokens'
+            : 'Streak';
       case RewardTypes.token:
         return reward.amount != null ? '+${reward.amount} Tokens' : 'Token';
       case RewardTypes.item:
       case RewardTypes.gear:
       case RewardTypes.cosmetic:
-        final rarity = reward.rarity.isNotEmpty ? '${_capitalize(reward.rarity)} ' : '';
+        final rarity =
+            reward.rarity.isNotEmpty ? '${_capitalize(reward.rarity)} ' : '';
         return '$rarity${_capitalize(rerewardLabel(reward))}';
       default:
         return reward.label.isNotEmpty ? reward.label : 'Reward';

@@ -15,9 +15,9 @@ class JournalEditorSheet extends StatefulWidget {
   // Verse link (create mode)
   final String? initialLinkedRef;
   final String? initialLinkedRefRoute;
-    // Questline context (optional): if provided in create mode, saving will auto-complete the step
-    final String? questlineId;
-    final String? stepId;
+  // Questline context (optional): if provided in create mode, saving will auto-complete the step
+  final String? questlineId;
+  final String? stepId;
 
   const JournalEditorSheet({
     super.key,
@@ -27,8 +27,8 @@ class JournalEditorSheet extends StatefulWidget {
     this.initialTags,
     this.initialLinkedRef,
     this.initialLinkedRefRoute,
-      this.questlineId,
-      this.stepId,
+    this.questlineId,
+    this.stepId,
   });
 
   @override
@@ -40,6 +40,7 @@ class _JournalEditorSheetState extends State<JournalEditorSheet> {
   final _bodyController = TextEditingController();
   final Set<String> _selectedTags = <String>{};
   bool _isPinned = false;
+  bool _saving = false;
   String? _linkedRef; // read-only display + save on create
   String? _linkedRefRoute;
 
@@ -121,7 +122,11 @@ class _JournalEditorSheetState extends State<JournalEditorSheet> {
               // Header
               Row(
                 children: [
-                  Icon(isEditing ? Icons.edit_note_rounded : Icons.note_add_rounded, color: cs.primary),
+                  Icon(
+                      isEditing
+                          ? Icons.edit_note_rounded
+                          : Icons.note_add_rounded,
+                      color: cs.primary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -132,7 +137,8 @@ class _JournalEditorSheetState extends State<JournalEditorSheet> {
                   IconButton(
                     tooltip: 'Cancel',
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.close_rounded, color: cs.onSurface.withValues(alpha: 0.7)),
+                    icon: Icon(Icons.close_rounded,
+                        color: cs.onSurface.withValues(alpha: 0.7)),
                   )
                 ],
               ),
@@ -148,17 +154,21 @@ class _JournalEditorSheetState extends State<JournalEditorSheet> {
                   fillColor: cs.surfaceContainerHighest,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.2)),
+                    borderSide:
+                        BorderSide(color: cs.outline.withValues(alpha: 0.2)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.2)),
+                    borderSide:
+                        BorderSide(color: cs.outline.withValues(alpha: 0.2)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: cs.primary.withValues(alpha: 0.6)),
+                    borderSide:
+                        BorderSide(color: cs.primary.withValues(alpha: 0.6)),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 ),
               ),
               if ((_linkedRef ?? '').isNotEmpty) ...[
@@ -169,7 +179,8 @@ class _JournalEditorSheetState extends State<JournalEditorSheet> {
               // Tags
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Tags (optional)', style: theme.textTheme.labelMedium),
+                child:
+                    Text('Tags (optional)', style: theme.textTheme.labelMedium),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -190,13 +201,20 @@ class _JournalEditorSheetState extends State<JournalEditorSheet> {
                       });
                     },
                     labelStyle: theme.textTheme.labelSmall?.copyWith(
-                      color: selected ? cs.onPrimary : theme.textTheme.labelSmall?.color,
+                      color: selected
+                          ? cs.onPrimary
+                          : theme.textTheme.labelSmall?.color,
                     ),
                     selectedColor: cs.primary,
                     backgroundColor: cs.surfaceContainerHighest,
-                    side: BorderSide(color: selected ? cs.primary : cs.outline.withValues(alpha: 0.25)),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                    side: BorderSide(
+                        color: selected
+                            ? cs.primary
+                            : cs.outline.withValues(alpha: 0.25)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999)),
                   );
                 }).toList(),
               ),
@@ -209,9 +227,12 @@ class _JournalEditorSheetState extends State<JournalEditorSheet> {
                   border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
                 ),
                 child: SwitchListTile.adaptive(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                  title: Text('Pin this entry', style: theme.textTheme.bodyMedium),
-                  subtitle: Text('Pinned entries stay at the top', style: theme.textTheme.labelSmall),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                  title:
+                      Text('Pin this entry', style: theme.textTheme.bodyMedium),
+                  subtitle: Text('Pinned entries stay at the top',
+                      style: theme.textTheme.labelSmall),
                   secondary: Icon(
                     _isPinned ? Icons.push_pin : Icons.push_pin_outlined,
                     color: cs.primary,
@@ -233,17 +254,21 @@ class _JournalEditorSheetState extends State<JournalEditorSheet> {
                   fillColor: cs.surfaceContainerHighest,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.2)),
+                    borderSide:
+                        BorderSide(color: cs.outline.withValues(alpha: 0.2)),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.2)),
+                    borderSide:
+                        BorderSide(color: cs.outline.withValues(alpha: 0.2)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: cs.primary.withValues(alpha: 0.6)),
+                    borderSide:
+                        BorderSide(color: cs.primary.withValues(alpha: 0.6)),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 ),
               ),
               const SizedBox(height: 16),
@@ -253,10 +278,12 @@ class _JournalEditorSheetState extends State<JournalEditorSheet> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: cs.outline.withValues(alpha: 0.4)),
+                        side: BorderSide(
+                            color: cs.outline.withValues(alpha: 0.4)),
                         foregroundColor: theme.colorScheme.onSurface,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       child: const Text('Cancel'),
                     ),
@@ -264,53 +291,73 @@ class _JournalEditorSheetState extends State<JournalEditorSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _canSave
+                      onPressed: _canSave && !_saving
                           ? () async {
-                              final provider = context.read<AppProvider>();
-                              if (widget.entry == null) {
-                                await provider.createJournalEntry(
-                                  title: _titleController.text,
-                                  body: _bodyController.text,
-                                  tags: _selectedTags.toList(),
-                                  isPinned: _isPinned,
-                                  linkedRef: _linkedRef,
-                                  linkedRefRoute: _linkedRefRoute,
-                                );
-                                 // If launched from a questline JOURNAL step, auto-complete the step
-                                 if ((widget.questlineId ?? '').isNotEmpty && (widget.stepId ?? '').isNotEmpty) {
-                                   try {
-                                     provider.recordQuestStepInteraction(widget.questlineId!, widget.stepId!, 'journalSaved');
-                                   } catch (e) {
-                                     // ignore
-                                   }
-                                   await provider.markQuestlineStepDone(widget.questlineId!, widget.stepId!, stepXp: 25);
-                                 }
-                              } else {
-                                await provider.updateJournalEntry(
-                                  original: widget.entry!,
-                                  title: _titleController.text,
-                                  body: _bodyController.text,
-                                  tags: _selectedTags.toList(),
-                                  isPinned: _isPinned,
-                                  // Preserve link (v1.0): do not change unless provided
-                                );
-                              }
-                              // Mark Guided Start journal milestone
+                              if (_saving) return;
+                              setState(() => _saving = true);
                               try {
-                                await provider.markFirstJournalDone();
-                              } catch (e) {
-                                // ignore
+                                final provider = context.read<AppProvider>();
+                                if (widget.entry == null) {
+                                  await provider.createJournalEntry(
+                                    title: _titleController.text,
+                                    body: _bodyController.text,
+                                    tags: _selectedTags.toList(),
+                                    isPinned: _isPinned,
+                                    linkedRef: _linkedRef,
+                                    linkedRefRoute: _linkedRefRoute,
+                                  );
+                                  // If launched from a questline JOURNAL step, auto-complete the step
+                                  if ((widget.questlineId ?? '').isNotEmpty &&
+                                      (widget.stepId ?? '').isNotEmpty) {
+                                    try {
+                                      provider.recordQuestStepInteraction(
+                                          widget.questlineId!,
+                                          widget.stepId!,
+                                          'journalSaved');
+                                    } catch (e) {
+                                      // ignore
+                                    }
+                                    await provider.markQuestlineStepDone(
+                                        widget.questlineId!, widget.stepId!,
+                                        stepXp: 25);
+                                  }
+                                } else {
+                                  await provider.updateJournalEntry(
+                                    original: widget.entry!,
+                                    title: _titleController.text,
+                                    body: _bodyController.text,
+                                    tags: _selectedTags.toList(),
+                                    isPinned: _isPinned,
+                                    // Preserve link (v1.0): do not change unless provided
+                                  );
+                                }
+                                // Mark Guided Start journal milestone
+                                try {
+                                  await provider.markFirstJournalDone();
+                                } catch (e) {
+                                  // ignore
+                                }
+                                // Toast confirmation (bottom-sheet-aware via external controller)
+                                RewardToast.showSuccess(context,
+                                    title: 'Saved to your journal.');
+                                if (mounted) Navigator.of(context).pop(true);
+                              } catch (_) {
+                                if (mounted)
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text(
+                                              'Could not save. Your text is still here. Please try again.')));
+                              } finally {
+                                if (mounted) setState(() => _saving = false);
                               }
-                              // Toast confirmation (bottom-sheet-aware via external controller)
-                              RewardToast.showSuccess(context, title: 'Saved to your journal.');
-                              if (mounted) Navigator.of(context).pop(true);
                             }
                           : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: cs.primary,
                         foregroundColor: cs.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
                       ),
                       child: const Text('Save'),
                     ),

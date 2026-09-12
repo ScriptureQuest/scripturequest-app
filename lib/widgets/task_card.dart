@@ -376,6 +376,12 @@ class TaskCard extends StatelessWidget {
                             ],
                           ),
                         ),
+                        if (!quest.isClaimed)
+                          TextButton.icon(
+                            onPressed: () => _claimCompleted(context),
+                            icon: const Icon(Icons.redeem),
+                            label: const Text('Claim reward'),
+                          ),
                         if (quest.completedAt != null) ...[
                           const SizedBox(height: 6),
                           Text(
@@ -1171,6 +1177,21 @@ class TaskCard extends StatelessWidget {
   }
 
   // ---------------------- Completion Flow ----------------------
+  Future<void> _claimCompleted(BuildContext context) async {
+    final provider = context.read<AppProvider>();
+    try {
+      await provider.completeQuest(quest.id, claimRewards: true);
+      if (context.mounted)
+        RewardToast.showClaimed(context, title: 'Reward claimed');
+    } catch (_) {
+      if (context.mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Could not save your reward. Please try again.')),
+        );
+    }
+  }
+
   Future<void> _handleComplete(BuildContext context) async {
     HapticFeedback.lightImpact();
     final provider = Provider.of<AppProvider>(context, listen: false);
@@ -1270,6 +1291,13 @@ class TaskCard extends StatelessWidget {
           }
         } catch (e) {
           debugPrint('Failed to add journal entry: $e');
+          if (context.mounted)
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text(
+                      'Your reflection could not be saved. The task has not been completed.')),
+            );
+          return;
         }
       }
     }
@@ -1288,7 +1316,7 @@ class TaskCard extends StatelessWidget {
               color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(width: 8),
-            Text('Task complete! +${quest.xpReward} XP'),
+            const Expanded(child: Text('Task complete! Your reward is ready to claim.')),
           ],
         ),
         backgroundColor: Theme.of(context).colorScheme.surface,

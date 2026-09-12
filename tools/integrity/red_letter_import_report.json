@@ -1,0 +1,85 @@
+{
+  "source": "https://ebible.org/Scriptures/eng-kjv_html.zip",
+  "sha256": "d08ea6360cb359b20fd13b0f17f71300c969c4e74a413836abbd189e005a88b7",
+  "mapped_verses": 2009,
+  "speech_parts_checked": 2038,
+  "unmatched": [
+    {
+      "reference": "Acts 1:8",
+      "speech": "But ye shall receive power, after that the Holy Ghost is come upon you: and ye shall be witnesses unto me both in Jerusalem, and in all Judæa, and in Samaria, and unto the uttermost part of the earth."
+    },
+    {
+      "reference": "John 7:8",
+      "speech": "Go ye up unto this feast: I go not up yet unto this feast; for my time is not yet full come."
+    },
+    {
+      "reference": "John 11:7",
+      "speech": "Let us go into Judæa again."
+    },
+    {
+      "reference": "John 15:22",
+      "speech": "If I had not come and spoken unto them, they had not had sin: but now they have no cloke for their sin."
+    },
+    {
+      "reference": "Luke 6:29",
+      "speech": "And unto him that smiteth thee on the one cheek offer also the other; and him that taketh away thy cloke forbid not to take thy coat also."
+    },
+    {
+      "reference": "Luke 13:2",
+      "speech": "Suppose ye that these Galilæans were sinners above all the Galilæans, because they suffered such things?"
+    },
+    {
+      "reference": "Luke 19:5",
+      "speech": "Zacchæus, make haste, and come down; for to day I must abide at thy house."
+    },
+    {
+      "reference": "Luke 20:25",
+      "speech": "Render therefore unto Cæsar the things which be Cæsar’s, and unto God the things which be God’s."
+    },
+    {
+      "reference": "Luke 21:21",
+      "speech": "Then let them which are in Judæa flee to the mountains; and let them which are in the midst of it depart out; and let not them that are in the countries enter thereinto."
+    },
+    {
+      "reference": "Matthew 5:40",
+      "speech": "And if any man will sue thee at the law, and take away thy coat, let him have thy cloke also."
+    },
+    {
+      "reference": "Matthew 13:15",
+      "speech": "For this people’s heart is waxed gross, and their ears are dull of hearing, and their eyes they have closed; lest at any time they should see with their eyes, and hear with their ears, and should understand with their heart, and should be converted, and I should heal them."
+    },
+    {
+      "reference": "Matthew 16:17",
+      "speech": "Blessed art thou, Simon Bar-jona: for flesh and blood hath not revealed it unto thee, but my Father which is in heaven."
+    },
+    {
+      "reference": "Matthew 22:21",
+      "speech": "Render therefore unto Cæsar the things which are Cæsar’s; and unto God the things that are God’s."
+    },
+    {
+      "reference": "Mark 12:7",
+      "speech": "But those husbandmen said among themselves, This is the heir; come, let us kill him, and the inheritance shall be ours."
+    },
+    {
+      "reference": "Mark 12:17",
+      "speech": "Render to Cæsar the things that are Cæsar’s, and to God the things that are God’s."
+    },
+    {
+      "reference": "Mark 12:35",
+      "speech": "How say the scribes that Christ is the Son of David?"
+    },
+    {
+      "reference": "Mark 13:14",
+      "speech": "But when ye shall see the abomination of desolation, spoken of by Daniel the prophet, standing where it ought not, (let him that readeth understand,) then let them that be in Judæa flee to the mountains:"
+    },
+    {
+      "reference": "Revelation 2:6",
+      "speech": "But this thou hast, that thou hatest the deeds of the Nicolaitans, which I also hate."
+    },
+    {
+      "reference": "Revelation 2:15",
+      "speech": "So hast thou also them that hold the doctrine of the Nicolaitans, which thing I hate."
+    }
+  ],
+  "rule": "Exact phrase match only; unmatched verses remain ordinary text pending review."
+}

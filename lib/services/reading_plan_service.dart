@@ -20,6 +20,7 @@ class ReadingPlanService {
 
   static ReadingPlan? getById(String id) {
     try {
+      if (id == 'plan_nt_90') return _newTestamentIn90Days(legacy: true);
       return getSeeds().firstWhere((p) => p.planId == id);
     } catch (_) {
       return null;
@@ -83,7 +84,7 @@ class ReadingPlanService {
     );
   }
 
-  static ReadingPlan _newTestamentIn90Days() {
+  static ReadingPlan _newTestamentIn90Days({bool legacy = false}) {
     // NT books (Matthew .. Revelation) using BibleService ordering
     final ntStartIndex = BibleService.instance.getAllBooks().indexOf('Matthew');
     final books = BibleService.instance.getAllBooks().sublist(ntStartIndex);
@@ -94,22 +95,26 @@ class ReadingPlanService {
         refs.add('$b $ch');
       }
     }
-    final total = refs.length; // 260
     const targetDays = 90;
-    final chunkSize = (total / targetDays).ceil(); // ~3
     final days = <ReadingPlanStep>[];
     int idx = 0;
     for (int day = 0; day < targetDays && idx < refs.length; day++) {
-      final end = (idx + chunkSize) > refs.length ? refs.length : (idx + chunkSize);
+      final portion = legacy
+          ? (refs.length - idx).clamp(0, 3)
+          : ((refs.length - idx) / (targetDays - day)).ceil();
+      final end = idx + portion;
       final slice = refs.sublist(idx, end);
       days.add(_stepFromSlice(day, slice, baseLabel: 'Day ${day + 1}'));
       idx = end;
     }
     return ReadingPlan(
-      planId: 'plan_nt_90',
-      title: 'New Testament in 90 Days',
+      planId: legacy ? 'plan_nt_90' : 'plan_nt_90_v2',
+      title: legacy
+          ? 'New Testament — Original Schedule'
+          : 'New Testament in 90 Days',
       subtitle: 'A steady walk through the New Testament',
-      description: 'Gentle, sequential readings across the New Testament. No pressure. Walk in peace.',
+      description:
+          'Gentle, sequential readings across the New Testament. No pressure. Walk in peace.',
       days: days,
     );
   }

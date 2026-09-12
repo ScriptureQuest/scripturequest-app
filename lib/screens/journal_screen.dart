@@ -63,7 +63,9 @@ class _JournalScreenState extends State<JournalScreen> {
               _buildTagChips(context),
               const SizedBox(height: 10),
               Expanded(
-                child: all.isEmpty
+                child: provider.journalLoadError != null
+                    ? EmptyState(message: provider.journalLoadError!)
+                    : all.isEmpty
                     ? const EmptyState(message: 'No entries yet. Begin your story with God.')
                     : filtered.isEmpty
                         ? _buildFilteredEmptyState(context)

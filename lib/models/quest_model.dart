@@ -60,6 +60,7 @@ class TaskModel {
   final String status;
   // v2.0: whether user has claimed the completion rewards
   final bool isClaimed;
+  final List<String> creditedChapters;
   final DateTime startDate;
   final DateTime? endDate;
   // When the quest was completed (if completed)
@@ -98,6 +99,7 @@ class TaskModel {
     this.guaranteedFirstClearGearId,
     this.status = 'not_started',
     this.isClaimed = false,
+    this.creditedChapters = const [],
     required this.startDate,
     this.endDate,
     this.completedAt,
@@ -127,99 +129,121 @@ class TaskModel {
 
     final cat = category.trim().toLowerCase();
     final freq = questFrequency.trim().toLowerCase();
-    if (cat == 'daily' || isDaily || freq == 'daily' || type.trim().toLowerCase() == 'daily') {
+    if (cat == 'daily' ||
+        isDaily ||
+        freq == 'daily' ||
+        type.trim().toLowerCase() == 'daily') {
       return TaskCategory.daily;
     }
     // Heuristic: reflection/prayer tasks are shown under Reflection if not daily
     final qtype = questType.trim().toLowerCase();
-    if (qtype == 'reflection' || qtype == 'prayer') return TaskCategory.reflection;
+    if (qtype == 'reflection' || qtype == 'prayer')
+      return TaskCategory.reflection;
     // Default to daily to keep visibility
     return TaskCategory.daily;
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'description': description,
-    'type': type,
-    'category': category,
-    // Persist v2.0 category as a string for forward-compat; optional
-    'taskCategory': taskCategory?.name,
-    'questFrequency': questFrequency,
-    'scriptureReference': scriptureReference,
-    'targetBook': targetBook,
-    'difficulty': difficulty,
-    'questType': questType,
-    'spiritualFocus': spiritualFocus,
-    'reflectionPrompt': reflectionPrompt,
-    'isSolo': isSolo,
-    'isWithOthers': isWithOthers,
-    'isDaily': isDaily,
-    'isWeekly': isWeekly,
-    'isAutoTracked': isAutoTracked,
-    'targetCount': targetCount,
-    'currentProgress': currentProgress,
-    'xpReward': xpReward,
-    'rewards': rewards.map((r) => r.toJson()).toList(),
-    'possibleRewardGearIds': possibleRewardGearIds,
-    'guaranteedFirstClearGearId': guaranteedFirstClearGearId,
-    'status': status,
-    'isClaimed': isClaimed,
-    'startDate': startDate.toIso8601String(),
-    'endDate': endDate?.toIso8601String(),
-    'completedAt': completedAt?.toIso8601String(),
-    'lastCompletedAt': lastCompletedAt?.toIso8601String(),
-    'createdAt': createdAt.toIso8601String(),
-    'updatedAt': updatedAt.toIso8601String(),
-    'autoResetDaily': autoResetDaily,
-  };
+        'id': id,
+        'title': title,
+        'description': description,
+        'type': type,
+        'category': category,
+        // Persist v2.0 category as a string for forward-compat; optional
+        'taskCategory': taskCategory?.name,
+        'questFrequency': questFrequency,
+        'scriptureReference': scriptureReference,
+        'targetBook': targetBook,
+        'difficulty': difficulty,
+        'questType': questType,
+        'spiritualFocus': spiritualFocus,
+        'reflectionPrompt': reflectionPrompt,
+        'isSolo': isSolo,
+        'isWithOthers': isWithOthers,
+        'isDaily': isDaily,
+        'isWeekly': isWeekly,
+        'isAutoTracked': isAutoTracked,
+        'targetCount': targetCount,
+        'currentProgress': currentProgress,
+        'xpReward': xpReward,
+        'rewards': rewards.map((r) => r.toJson()).toList(),
+        'possibleRewardGearIds': possibleRewardGearIds,
+        'guaranteedFirstClearGearId': guaranteedFirstClearGearId,
+        'status': status,
+        'isClaimed': isClaimed,
+        'creditedChapters': creditedChapters,
+        'startDate': startDate.toIso8601String(),
+        'endDate': endDate?.toIso8601String(),
+        'completedAt': completedAt?.toIso8601String(),
+        'lastCompletedAt': lastCompletedAt?.toIso8601String(),
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+        'autoResetDaily': autoResetDaily,
+      };
 
   factory TaskModel.fromJson(Map<String, dynamic> json) => TaskModel(
-    id: (json['id'] ?? '').toString(),
-    title: (json['title'] ?? '').toString(),
-    description: (json['description'] ?? '').toString(),
-    type: (json['type'] ?? 'daily').toString(),
-    category: (json['category'] ?? (json['type'] ?? 'daily')).toString(),
-    taskCategory: _parseTaskCategory(json['taskCategory']),
-    questFrequency: (json['questFrequency'] ?? 'once').toString(),
-    scriptureReference: json['scriptureReference'],
-    targetBook: json['targetBook'],
-    difficulty: (json['difficulty'] ?? 'Easy').toString(),
-    questType: (json['questType'] ?? 'scripture_reading').toString(),
-    spiritualFocus: json['spiritualFocus'],
-    reflectionPrompt: json['reflectionPrompt'],
-    isSolo: json['isSolo'] ?? true,
-    isWithOthers: json['isWithOthers'] ?? false,
-    isDaily: json['isDaily'] ?? (json['type'] == 'daily'),
-    isWeekly: json['isWeekly'] ?? (json['type'] == 'weekly'),
-    isAutoTracked: json['isAutoTracked'] == null ? true : (json['isAutoTracked'] == true),
-    targetCount: json['targetCount'] ?? 1,
-    currentProgress: json['currentProgress'] ?? 0,
-    xpReward: json['xpReward'] ?? 10,
-    rewards: (json['rewards'] is List)
-        ? List<Map<String, dynamic>>.from(json['rewards'] as List)
-            .map(Reward.fromJson)
-            .toList()
-        : const [],
-    possibleRewardGearIds: (json['possibleRewardGearIds'] is List)
-        ? (json['possibleRewardGearIds'] as List).map((e) => e.toString()).toList()
-        : const <String>[],
-    guaranteedFirstClearGearId: (json['guaranteedFirstClearGearId'] ?? '')
-            .toString()
-            .trim()
-            .isEmpty
-        ? null
-        : (json['guaranteedFirstClearGearId'] as String?)?.trim(),
-    status: _normalizeStatus(json['status']),
-    isClaimed: json['isClaimed'] == true,
-    startDate: json['startDate'] != null ? DateTime.parse(json['startDate']) : DateTime.now(),
-    endDate: json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
-    completedAt: json['completedAt'] != null ? DateTime.parse(json['completedAt']) : null,
-    lastCompletedAt: json['lastCompletedAt'] != null ? DateTime.parse(json['lastCompletedAt']) : null,
-    createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
-    updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
-    autoResetDaily: json['autoResetDaily'] == null ? true : (json['autoResetDaily'] == true),
-  );
+        id: (json['id'] ?? '').toString(),
+        title: (json['title'] ?? '').toString(),
+        description: (json['description'] ?? '').toString(),
+        type: (json['type'] ?? 'daily').toString(),
+        category: (json['category'] ?? (json['type'] ?? 'daily')).toString(),
+        taskCategory: _parseTaskCategory(json['taskCategory']),
+        questFrequency: (json['questFrequency'] ?? 'once').toString(),
+        scriptureReference: json['scriptureReference'],
+        targetBook: json['targetBook'],
+        difficulty: (json['difficulty'] ?? 'Easy').toString(),
+        questType: (json['questType'] ?? 'scripture_reading').toString(),
+        spiritualFocus: json['spiritualFocus'],
+        reflectionPrompt: json['reflectionPrompt'],
+        isSolo: json['isSolo'] ?? true,
+        isWithOthers: json['isWithOthers'] ?? false,
+        isDaily: json['isDaily'] ?? (json['type'] == 'daily'),
+        isWeekly: json['isWeekly'] ?? (json['type'] == 'weekly'),
+        isAutoTracked: json['isAutoTracked'] == null
+            ? true
+            : (json['isAutoTracked'] == true),
+        targetCount: json['targetCount'] ?? 1,
+        currentProgress: json['currentProgress'] ?? 0,
+        xpReward: json['xpReward'] ?? 10,
+        rewards: (json['rewards'] is List)
+            ? List<Map<String, dynamic>>.from(json['rewards'] as List)
+                .map(Reward.fromJson)
+                .toList()
+            : const [],
+        possibleRewardGearIds: (json['possibleRewardGearIds'] is List)
+            ? (json['possibleRewardGearIds'] as List)
+                .map((e) => e.toString())
+                .toList()
+            : const <String>[],
+        guaranteedFirstClearGearId:
+            (json['guaranteedFirstClearGearId'] ?? '').toString().trim().isEmpty
+                ? null
+                : (json['guaranteedFirstClearGearId'] as String?)?.trim(),
+        status: _normalizeStatus(json['status']),
+        isClaimed: json['isClaimed'] == true,
+        creditedChapters:
+            List<String>.from(json['creditedChapters'] ?? const []),
+        startDate: json['startDate'] != null
+            ? DateTime.parse(json['startDate'])
+            : DateTime.now(),
+        endDate:
+            json['endDate'] != null ? DateTime.parse(json['endDate']) : null,
+        completedAt: json['completedAt'] != null
+            ? DateTime.parse(json['completedAt'])
+            : null,
+        lastCompletedAt: json['lastCompletedAt'] != null
+            ? DateTime.parse(json['lastCompletedAt'])
+            : null,
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'])
+            : DateTime.now(),
+        updatedAt: json['updatedAt'] != null
+            ? DateTime.parse(json['updatedAt'])
+            : DateTime.now(),
+        autoResetDaily: json['autoResetDaily'] == null
+            ? true
+            : (json['autoResetDaily'] == true),
+      );
 
   static String _normalizeStatus(dynamic raw) {
     final value = (raw ?? '').toString();
@@ -274,6 +298,7 @@ class TaskModel {
     String? guaranteedFirstClearGearId,
     String? status,
     bool? isClaimed,
+    List<String>? creditedChapters,
     DateTime? startDate,
     DateTime? endDate,
     DateTime? completedAt,
@@ -281,39 +306,43 @@ class TaskModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? autoResetDaily,
-  }) => TaskModel(
-    id: id ?? this.id,
-    title: title ?? this.title,
-    description: description ?? this.description,
-    type: type ?? this.type,
-    category: category ?? this.category,
-    taskCategory: taskCategory ?? this.taskCategory,
-    questFrequency: questFrequency ?? this.questFrequency,
-    scriptureReference: scriptureReference ?? this.scriptureReference,
-    targetBook: targetBook ?? this.targetBook,
-    difficulty: difficulty ?? this.difficulty,
-    questType: questType ?? this.questType,
-    spiritualFocus: spiritualFocus ?? this.spiritualFocus,
-    reflectionPrompt: reflectionPrompt ?? this.reflectionPrompt,
-    isSolo: isSolo ?? this.isSolo,
-    isWithOthers: isWithOthers ?? this.isWithOthers,
-    isDaily: isDaily ?? this.isDaily,
-    isWeekly: isWeekly ?? this.isWeekly,
-    isAutoTracked: isAutoTracked ?? this.isAutoTracked,
-    targetCount: targetCount ?? this.targetCount,
-    currentProgress: currentProgress ?? this.currentProgress,
-    xpReward: xpReward ?? this.xpReward,
-    rewards: rewards ?? this.rewards,
-    possibleRewardGearIds: possibleRewardGearIds ?? this.possibleRewardGearIds,
-    guaranteedFirstClearGearId: guaranteedFirstClearGearId ?? this.guaranteedFirstClearGearId,
-    status: status ?? this.status,
-    isClaimed: isClaimed ?? this.isClaimed,
-    startDate: startDate ?? this.startDate,
-    endDate: endDate ?? this.endDate,
-    completedAt: completedAt ?? this.completedAt,
-    lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-    autoResetDaily: autoResetDaily ?? this.autoResetDaily,
-  );
+  }) =>
+      TaskModel(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        description: description ?? this.description,
+        type: type ?? this.type,
+        category: category ?? this.category,
+        taskCategory: taskCategory ?? this.taskCategory,
+        questFrequency: questFrequency ?? this.questFrequency,
+        scriptureReference: scriptureReference ?? this.scriptureReference,
+        targetBook: targetBook ?? this.targetBook,
+        difficulty: difficulty ?? this.difficulty,
+        questType: questType ?? this.questType,
+        spiritualFocus: spiritualFocus ?? this.spiritualFocus,
+        reflectionPrompt: reflectionPrompt ?? this.reflectionPrompt,
+        isSolo: isSolo ?? this.isSolo,
+        isWithOthers: isWithOthers ?? this.isWithOthers,
+        isDaily: isDaily ?? this.isDaily,
+        isWeekly: isWeekly ?? this.isWeekly,
+        isAutoTracked: isAutoTracked ?? this.isAutoTracked,
+        targetCount: targetCount ?? this.targetCount,
+        currentProgress: currentProgress ?? this.currentProgress,
+        xpReward: xpReward ?? this.xpReward,
+        rewards: rewards ?? this.rewards,
+        possibleRewardGearIds:
+            possibleRewardGearIds ?? this.possibleRewardGearIds,
+        guaranteedFirstClearGearId:
+            guaranteedFirstClearGearId ?? this.guaranteedFirstClearGearId,
+        status: status ?? this.status,
+        isClaimed: isClaimed ?? this.isClaimed,
+        creditedChapters: creditedChapters ?? this.creditedChapters,
+        startDate: startDate ?? this.startDate,
+        endDate: endDate ?? this.endDate,
+        completedAt: completedAt ?? this.completedAt,
+        lastCompletedAt: lastCompletedAt ?? this.lastCompletedAt,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+        autoResetDaily: autoResetDaily ?? this.autoResetDaily,
+      );
 }

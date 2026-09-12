@@ -16,27 +16,31 @@ class StorageService {
     return _instance!;
   }
 
+  /// Critical callers can detect failed writes; never silently claim success.
   Future<void> save<T>(String key, T value) async {
+    final prefs = _prefs;
+    if (prefs == null) throw StateError('Storage not initialized');
     try {
-      if (_prefs == null) {
-        debugPrint('StorageService.save called before init; skipping key="$key"');
-        return;
-      }
+      final bool saved;
       if (value is String) {
-        await _prefs!.setString(key, value);
+        saved = await prefs.setString(key, value);
       } else if (value is int) {
-        await _prefs!.setInt(key, value);
+        saved = await prefs.setInt(key, value);
       } else if (value is double) {
-        await _prefs!.setDouble(key, value);
+        saved = await prefs.setDouble(key, value);
       } else if (value is bool) {
-        await _prefs!.setBool(key, value);
+        saved = await prefs.setBool(key, value);
       } else if (value is List<String>) {
-        await _prefs!.setStringList(key, value);
+        saved = await prefs.setStringList(key, value);
       } else {
-        await _prefs!.setString(key, jsonEncode(value));
+        saved = await prefs.setString(key, jsonEncode(value));
       }
-    } catch (e) {
-      debugPrint('Error saving to storage: $e');
+      if (!saved) throw StateError('Could not save $key');
+    } catch (_) {
+      // SharedPreferences mutates its memory cache before awaiting disk.
+      // Reload so a failed write cannot masquerade as a saved receipt.
+      await prefs.reload();
+      rethrow;
     }
   }
 
