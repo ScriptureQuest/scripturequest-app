@@ -93,7 +93,9 @@ class BibleService {
   }
 
   String refToDisplay(String refBook) {
-    final m = _books.firstWhere((e) => (e['ref'] as String).toLowerCase() == refBook.toLowerCase(), orElse: () => const {'display': ''});
+    final matches = _books.where((e) => (e['ref'] as String).toLowerCase() == refBook.toLowerCase() || (e['display'] as String).toLowerCase() == refBook.toLowerCase());
+    if (matches.isEmpty) return refBook;
+    final m = matches.first;
     final disp = (m['display'] as String?) ?? refBook;
     return disp;
   }

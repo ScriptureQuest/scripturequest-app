@@ -167,11 +167,13 @@ class ProgressEngine {
   Future<void> _handleQuestStepCompleted(ProgressEvent e) async {
     try {
       final uid = (await _userService!.getCurrentUser()).id;
-      await _statsService!.incQuestStepsCompleted(uid);
-      await _awardXp(10, reason: 'Quest Step', source: e.type.name);
+      final receipt = 'journey:${e.payload['questlineId']}:step:${e.payload['stepIndex']}';
+      await _userService!.addXP(10, receiptId: receipt);
+      await _statsService!.incrementOnce(uid, 'questStepsCompleted', receipt);
       await _unlockIfDefined(uid, 'questline_step_1');
     } catch (err) {
       debugPrint('_handleQuestStepCompleted error: $err');
+      rethrow;
     }
   }
 

@@ -109,6 +109,7 @@ class QuestlineProgress {
   final String questlineId;
   final List<String> activeStepIds;
   final List<String> completedStepIds;
+  final List<String> skippedStepIds;
   final Map<String, String> stepQuestIds; // stepId -> concrete questId
   final DateTime dateStarted;
   final DateTime? dateCompleted;
@@ -117,6 +118,7 @@ class QuestlineProgress {
     required this.questlineId,
     required this.activeStepIds,
     required this.completedStepIds,
+    this.skippedStepIds = const [],
     required this.stepQuestIds,
     required this.dateStarted,
     this.dateCompleted,
@@ -128,6 +130,7 @@ class QuestlineProgress {
         'questlineId': questlineId,
         'activeStepIds': activeStepIds,
         'completedStepIds': completedStepIds,
+        'skippedStepIds': skippedStepIds,
         'stepQuestIds': stepQuestIds,
         'dateStarted': dateStarted.toIso8601String(),
         'dateCompleted': dateCompleted?.toIso8601String(),
@@ -141,6 +144,7 @@ class QuestlineProgress {
         completedStepIds: (json['completedStepIds'] is List)
             ? List<String>.from((json['completedStepIds'] as List).map((e) => e.toString()))
             : const <String>[],
+        skippedStepIds: List<String>.from(json['skippedStepIds'] ?? const []),
         stepQuestIds: (json['stepQuestIds'] is Map)
             ? (json['stepQuestIds'] as Map).map((k, v) => MapEntry(k.toString(), v.toString()))
             : const <String, String>{},
@@ -151,6 +155,7 @@ class QuestlineProgress {
   QuestlineProgress copyWith({
     List<String>? activeStepIds,
     List<String>? completedStepIds,
+    List<String>? skippedStepIds,
     Map<String, String>? stepQuestIds,
     DateTime? dateStarted,
     DateTime? dateCompleted,
@@ -158,6 +163,7 @@ class QuestlineProgress {
         questlineId: questlineId,
         activeStepIds: activeStepIds ?? this.activeStepIds,
         completedStepIds: completedStepIds ?? this.completedStepIds,
+        skippedStepIds: skippedStepIds ?? this.skippedStepIds,
         stepQuestIds: stepQuestIds ?? this.stepQuestIds,
         dateStarted: dateStarted ?? this.dateStarted,
         dateCompleted: dateCompleted ?? this.dateCompleted,

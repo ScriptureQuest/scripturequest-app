@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:level_up_your_faith/widgets/connected/reading_result_sheet.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
@@ -2542,19 +2543,8 @@ class _ChapterPageState extends State<_ChapterPage> {
                                   setState(() => _savingCompletion = false);
                               }
                               if (!mounted) return;
-                              // Show a subtle in-page completion banner (+10 XP)
-                              if (mounted) {
-                                setState(() => _showCompletionBanner = true);
-                                Future.delayed(
-                                  const Duration(milliseconds: 2600),
-                                  () {
-                                    if (mounted) {
-                                      setState(
-                                          () => _showCompletionBanner = false);
-                                    }
-                                  },
-                                );
-                              }
+                              final result = app.lastReadingCompletion;
+                              if (result != null) await showReadingResult(context, result);
                             }
                           : null, // Disabled when not eligible
                       child: Text(_getButtonLabel()),

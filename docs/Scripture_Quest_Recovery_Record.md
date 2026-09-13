@@ -453,3 +453,24 @@ IN PROGRESS: Pass 1 delivery and owner review.
 BLOCKED: direct Git push may still require bundle handoff; delivery result recorded below.
 NEEDS FROM ME: test/review Pass 1 before any Pass 2 authorization.
 NEXT ENGINEERING ACTION: address review findings only; stop after Pass 1 handoff.
+
+
+## Latest approved execution — Pass 2 (2026-09-13)
+
+**Implementation complete; awaiting Zeb’s Codespaces product review. Pass 3 has not begun.** See `PASS2_CONNECTED_EXPERIENCE.md` for behavior, safeguards, limitations, and the acceptance walkthrough.
+
+VERIFIED: Today exposes XP/level and Daily/Weekly summaries/cards; five navigation destinations connect existing features. Three original guided Journeys retain identifiers/history with authored context and optional, explicitly skipped reflection steps. Reading advances matching persistent quests and active Journey steps through existing claim machinery. One completion result reports actual persisted deltas. Journey Board preserves completed history; the first Codex discovery follows qualified Psalm 23 reading and survives reload. Plans, saved verses and journal remain separate existing systems with clearer access.
+
+VERIFIED validation: 39 tests passed, including all original 28 Pass 1/reader tests. Static analysis: zero errors, 98 warnings and 26 informational diagnostics, identical diagnostic set to the Pass 1 baseline. Actual VersesScreen rendering tests confirm John 3:4 and 3:9 use ordinary text, with Jesus’ speech in 3:3, 3:5 and 3:10 red. No additional red-letter data change was necessary. Phone (320/390 pixels), desktop (1280 pixels), and large-text widget checks passed. Final Web release build result is recorded in the handoff.
+
+LIMITS: Cloud browser access to the local preview was blocked; no claim of a browser end-to-end click-through or access to Zeb’s Codespace. Native iPhone/VoiceOver and hands-on UX remain for review. Existing targeted tasks keep their terms; flexible daily/weekly reading slots appear at normal generation, not by silently rewriting saved tasks. Broad historical quest-template semantics remain future work. The 19 unmatched red-letter verses still need trusted-content review and remain non-red.
+
+Roadmap classification: KEEP visible gamification, Journey Board, Codex, existing plans/games/journal. UPGRADE the connected reading/result/navigation experience. ADD one persistent passage-linked discovery proof. DEFER final art/themes/full Codex and learning expansion to approved Pass 3. REDESIGN repeated Journey enrollment as history-preserving revisits with no repeat completion payout; a future separately versioned repeat-play model needs review. No older approved idea is silently retired.
+
+CURRENT STATE (supersedes earlier historical state blocks)
+WORKING: Pass 2 connected implementation and 39 automated tests; Pass 1 integrity baseline retained.
+BROKEN: No known failing scoped regression test; wider legacy content/quest semantics are not certified by this pass.
+IN PROGRESS: Final transfer/handoff and Zeb’s product validation.
+BLOCKED: Cloud-browser connection to local preview; native validation unavailable here.
+NEEDS FROM ME: Test the connected loop in the existing Codespace and review the direction.
+NEXT ENGINEERING ACTION: Address Pass 2 review findings only; wait for approval before Pass 3.

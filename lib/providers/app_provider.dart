@@ -1,6 +1,7 @@
 import '../utils/integrity/serial_queue.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'package:level_up_your_faith/models/reading_completion.dart';
 import 'dart:math';
 import 'dart:io' show Platform;
 import 'package:package_info_plus/package_info_plus.dart';
@@ -2710,6 +2711,8 @@ class AppProvider extends ChangeNotifier {
       await ProgressEngine.instance
           .countCompletedTask(questId, candidates.first.resolvedCategory.name);
       if (claimRewards) await claimQuestRewards(questId);
+      final mapping = await _questlineService.questlineStepForQuestId(before.id, questId);
+      if (mapping != null) await markQuestlineStepDone(mapping['questlineId']!, mapping['stepId']!, stepXp: 0);
       return const [];
     }
     await _questService.completeQuest(questId);
@@ -2813,76 +2816,11 @@ class AppProvider extends ChangeNotifier {
       debugPrint('completeQuest loot hooks error: $e');
     }
 
-    // ===== Questline integration: if this quest belongs to an active questline step, mark it complete and possibly advance/completion =====
-    try {
-      final uid = _currentUser?.id ?? '';
-      if (uid.isNotEmpty) {
-        final mapping =
-            await _questlineService.questlineStepForQuestId(uid, questId);
-        if (mapping != null) {
-          final qlId = mapping['questlineId']!;
-          final stepId = mapping['stepId']!;
-          final updated =
-              await _questlineService.markStepComplete(uid, qlId, stepId);
-          if (updated != null) {
-            // Refresh local questlines cache
-            try {
-              final defs = await _questlineService.getAvailableQuestlines(uid);
-              _activeQuestlines =
-                  (await _questlineService.getActiveQuestlines(uid)).map((p) {
-                final def = defs.firstWhere((d) => d.id == p.questlineId,
-                    orElse: () => defs.first);
-                return QuestlineProgressView(questline: def, progress: p);
-              }).toList();
-            } catch (e) {
-              debugPrint('refresh questlines after step complete error: $e');
-            }
-
-            // Any step completed → gentle achievement (idempotent)
-            try {
-              await unlockAchievementPublic('questline_step_1');
-            } catch (e) {
-              debugPrint('questline step unlock error: $e');
-            }
-
-            // If questline completed now, award final rewards and emit overlay
-            if (updated.isCompleted) {
-              try {
-                final defs =
-                    await _questlineService.getAvailableQuestlines(uid);
-                final def = defs.firstWhere((d) => d.id == updated.questlineId);
-                final labels = <String>[];
-                if (def.rewards.isNotEmpty) {
-                  for (final r in def.rewards) {
-                    if (r.type == RewardTypes.xp) {
-                      final amt = _applyStreakBonusToXp(r.amount ?? 0);
-                      if (amt > 0) {
-                        _currentUser = await _rewardService.applyReward(r,
-                            xpOverride: amt);
-                        _triggerXpBurst(amt);
-                        labels.add('$amt XP');
-                      }
-                    } else {
-                      _currentUser = await _rewardService.applyReward(r);
-                      labels.add(RewardService.formatRewardLabel(r));
-                    }
-                  }
-                }
-                final summary =
-                    labels.where((e) => e.trim().isNotEmpty).join(' • ');
-                emitQuestlineCompletion(
-                    def.title, summary.isEmpty ? null : summary);
-                // Titles & Achievements v1.0 hooks on questline completion
-                await _onQuestlineCompleted(def.id);
-              } catch (e) {
-                debugPrint('questline completion reward error: $e');
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('questline step completion hook error: $e');
+    // All journey completion paths share the same serialized, receipt-protected transition.
+    final mapping = await _questlineService.questlineStepForQuestId(
+        _currentUser!.id, questId);
+    if (mapping != null) {
+      await markQuestlineStepDone(mapping['questlineId']!, mapping['stepId']!, stepXp: 0);
     }
 
     // If this completed quest is the active streak recovery quest, restore streak (previous - 3, min 7)
@@ -2959,7 +2897,9 @@ class AppProvider extends ChangeNotifier {
       // Update cache
       final idx =
           _activeQuestlines.indexWhere((v) => v.questline.id == questlineId);
-      if (idx == -1) {
+      if (progress.isCompleted) {
+        _activeQuestlines = _activeQuestlines.where((v) => v.questline.id != questlineId).toList();
+      } else if (idx == -1) {
         _activeQuestlines = [..._activeQuestlines, view];
       } else {
         _activeQuestlines[idx] = view;
@@ -3071,83 +3011,104 @@ class AppProvider extends ChangeNotifier {
 
   /// Manually complete a questline step and grant a small XP reward.
   /// Also checks for questline completion and applies final rewards if defined.
+  final _journeyTransitions = SerialQueue();
   Future<void> markQuestlineStepDone(String questlineId, String stepId,
-      {int stepXp = 25}) async {
-    try {
-      final uid = _currentUser?.id ?? '';
-      if (uid.isEmpty) return;
-
-      final updated =
-          await _questlineService.markStepComplete(uid, questlineId, stepId);
-      if (updated == null) return;
-
-      // Refresh active questlines cache
-      try {
-        final defs = await _questlineService.getAvailableQuestlines(uid);
-        _activeQuestlines =
-            (await _questlineService.getActiveQuestlines(uid)).map((p) {
-          final def = defs.firstWhere((d) => d.id == p.questlineId,
-              orElse: () => defs.first);
-          return QuestlineProgressView(questline: def, progress: p);
-        }).toList();
-      } catch (e) {
-        debugPrint('refresh questlines after manual step complete error: $e');
+      {int stepXp = 25, bool skipReflection = false}) => _journeyTransitions.run(() async {
+    final uid = (await _userService.getCurrentUser()).id;
+    final before = await _questlineService.getQuestlineProgress(uid, questlineId);
+    if (before == null) return;
+    final pendingKey = 'journey_pending_${uid}_${questlineId}_$stepId';
+    final pendingRaw = _storageService.getString(pendingKey);
+    final pending = pendingRaw == null || pendingRaw.isEmpty ? null : jsonDecode(pendingRaw) as Map;
+    if ((before.isCompleted || before.completedStepIds.contains(stepId)) && pending == null) return;
+    if (pending != null) {
+      stepXp = pending['stepXp'] as int;
+      skipReflection = pending['skipReflection'] == true;
+    }
+    final defs = await _questlineService.getAvailableQuestlines(uid);
+    final def = defs.firstWhere((d) => d.id == questlineId);
+    final step = def.steps.firstWhere((s) => s.id == stepId);
+    if (skipReflection && (!connectedJourneyIds.contains(questlineId) || !step.questId.startsWith('tpl:reflection:'))) {
+      throw StateError('Only an optional response may be skipped');
+    }
+    if (!before.activeStepIds.contains(stepId) && pending == null) return;
+    await _storageService.save(pendingKey, jsonEncode({'stepXp': stepXp, 'skipReflection': skipReflection}));
+    final updated = await _questlineService.markStepComplete(uid, questlineId, stepId, awardStep: !skipReflection);
+    if (updated == null) return;
+    if (!skipReflection) {
+      // Safe to replay after an interrupted transition: both XP and counters have receipts.
+      await ProgressEngine.instance.emit(ProgressEvent.questStepCompleted(questlineId,
+        ([...def.steps]..sort((a,b) => a.order.compareTo(b.order))).indexWhere((s) => s.id == stepId)));
+      await unlockAchievementPublic('questline_step_1');
+      final award = _applyStreakBonusToXp(stepXp);
+      if (award > 0) _currentUser = await _rewardService.applyReward(
+        Reward(type: RewardTypes.xp, amount: award, label: '$award XP'),
+        receiptId: 'journey:$questlineId:manual:$stepId', xpOverride: award);
+    }
+    if (updated.isCompleted) {
+      for (var i = 0; i < def.rewards.length; i++) {
+        final r = def.rewards[i];
+        _currentUser = await _rewardService.applyReward(r,
+          xpOverride: r.type == RewardTypes.xp ? _applyStreakBonusToXp(r.amount ?? 0) : null,
+          receiptId: 'journey:$questlineId:final:$i');
       }
-      // Any step completed → gentle achievement (idempotent)
-      try {
-        await unlockAchievementPublic('questline_step_1');
-      } catch (e) {
-        debugPrint('questline step unlock (manual) error: $e');
-      }
-      notifyListeners();
+      await _onQuestlineCompleted(def.id);
+      emitQuestlineCompletion(def.title, 'Journey complete');
+    }
+    await _storageService.save(pendingKey, '');
+    _activeQuestlines = (await _questlineService.getActiveQuestlines(uid)).map((p) =>
+      QuestlineProgressView(questline: defs.firstWhere((d) => d.id == p.questlineId), progress: p)).toList();
+    _currentUser = await _userService.getCurrentUser();
+    notifyListeners();
+  });
 
-      // Award small XP for step completion (streak-aware)
-      try {
-        final award = _applyStreakBonusToXp(stepXp);
-        if (award > 0) {
-          _currentUser = await _rewardService.applyReward(
-              Reward(type: RewardTypes.xp, amount: award, label: '$award XP'),
-              xpOverride: award);
-          _triggerXpBurst(award);
-        }
-      } catch (e) {
-        debugPrint('questline step xp award error: $e');
-      }
-
-      // If the questline just completed, apply final rewards and emit overlay signal
-      if (updated.isCompleted) {
-        try {
-          final defs = await _questlineService.getAvailableQuestlines(uid);
-          final def = defs.firstWhere((d) => d.id == updated.questlineId);
-          final labels = <String>[];
-          if (def.rewards.isNotEmpty) {
-            for (final r in def.rewards) {
-              if (r.type == RewardTypes.xp) {
-                final amt = _applyStreakBonusToXp(r.amount ?? 0);
-                if (amt > 0) {
-                  _currentUser =
-                      await _rewardService.applyReward(r, xpOverride: amt);
-                  _triggerXpBurst(amt);
-                  labels.add('$amt XP');
-                }
-              } else {
-                _currentUser = await _rewardService.applyReward(r);
-                labels.add(RewardService.formatRewardLabel(r));
-              }
-            }
-          }
-          final summary = labels.where((e) => e.trim().isNotEmpty).join(' • ');
-          emitQuestlineCompletion(def.title, summary.isEmpty ? null : summary);
-          // Titles & Achievements v1.0 hooks on questline completion
-          await _onQuestlineCompleted(def.id);
-        } catch (e) {
-          debugPrint('questline completion (manual) reward error: $e');
+  Future<void> _resumePendingJourneyTransitions() async {
+    final uid = (await _userService.getCurrentUser()).id;
+    final definitions = await _questlineService.getAvailableQuestlines(uid);
+    for (final journey in definitions) {
+      for (final step in journey.steps) {
+        final pending = _storageService.getString('journey_pending_${uid}_${journey.id}_${step.id}');
+        if (pending != null && pending.isNotEmpty) {
+          await markQuestlineStepDone(journey.id, step.id);
         }
       }
-    } catch (e) {
-      debugPrint('markQuestlineStepDone error: $e');
     }
   }
+
+  static const connectedJourneyIds = {'onboarding_getting_started', 'knowing_jesus', 'psalms_of_peace'};
+  Future<List<QuestlineProgressView>> journeyHistory() async {
+    final uid = (await _userService.getCurrentUser()).id;
+    final defs = await _questlineService.getAvailableQuestlines(uid);
+    final history = await _questlineService.getHistory(uid);
+    return [for (final p in history) for (final d in defs) if (p.questlineId == d.id)
+      QuestlineProgressView(questline: d, progress: p)];
+  }
+
+  QuestlineProgressView? get focusedJourney {
+    final id = _storageService.getString('focused_journey_${_currentUser?.id}');
+    final matches = _activeQuestlines.where((v) => v.questline.id == id);
+    if (matches.isNotEmpty) return matches.first;
+    final curated = _activeQuestlines.where((v) => connectedJourneyIds.contains(v.questline.id));
+    return curated.isEmpty ? getActiveQuestline() : curated.first;
+  }
+
+  Future<void> focusJourney(String id) async {
+    await _resumePendingJourneyTransitions();
+    final progress = await enrollInQuestline(id);
+    if (progress == null) throw StateError('Could not open journey');
+    await _storageService.save('focused_journey_${_currentUser!.id}', id);
+    notifyListeners();
+  }
+
+  Map<String, dynamic>? get shepherdDiscovery {
+    final raw = _storageService.getString('codex_shepherd_${_currentUser?.id}');
+    if (raw == null) return null;
+    return Map<String, dynamic>.from(jsonDecode(raw) as Map);
+  }
+
+  ReadingCompletion? lastReadingCompletion;
+  bool _combiningReadingCompletion = false;
+  bool get combiningReadingCompletion => _combiningReadingCompletion;
 
   Future<void> markQuestStepDone(String questId, String stepId,
       {int stepXp = 25}) async {
@@ -4340,22 +4301,75 @@ class AppProvider extends ChangeNotifier {
       _readerCompletions.run(() async {
         final user = await _userService.getCurrentUser();
         final b = _normalizeDisplayBook(book);
-        if (chapter < 1 || chapter > bibleService.getChapterCount(b))
-          throw ArgumentError('Invalid chapter');
-        final alreadyRead =
-            _loadReadChapters(user.id)[b]?.contains(chapter) ?? false;
-        final receipt = 'chapter:$b:$chapter';
-        final alreadyAwarded = user.rewardReceipts.contains(receipt);
-        if (!alreadyRead) {
-          await ProgressEngine.instance
-              .emit(ProgressEvent.chapterCompleted(b, b, chapter));
+        if (chapter < 1 || chapter > bibleService.getChapterCount(b)) throw ArgumentError('Invalid chapter');
+        final beforeTasks = {for (final q in await _questService.getAllQuests()) q.id: q};
+        final beforeJourneys = await journeyHistory();
+        final planBefore = getPlanProgressPercent();
+        final queuedBefore = _bookRewardQueue.toSet();
+        final artifactBefore = _newArtifactEvent;
+        final alreadyRead = _loadReadChapters(user.id)[b]?.contains(chapter) ?? false;
+        final alreadyAwarded = user.rewardReceipts.contains('chapter:$b:$chapter');
+        final changes = <String>[];
+        var discovered = false;
+        lastReadingCompletion = null;
+        _combiningReadingCompletion = true;
+        try {
+          await _resumePendingJourneyTransitions();
+          if (!alreadyRead) await ProgressEngine.instance.emit(ProgressEvent.chapterCompleted(b, b, chapter));
+          await recordChapterRead(b, chapter, hasMetReadingThreshold: qualified);
+          if (qualified) {
+            await progressDailyReadingQuest(book: b, chapter: chapter);
+            // Complete only tasks credited for this chapter, including the currently active journey step.
+            // Sequential calls retain the existing task claim, achievement, and journey hooks.
+            for (final q in await _questService.getAllQuests()) {
+              if (q.isCompleted && !q.isClaimed && q.creditedChapters.contains('${b.toLowerCase()}:$chapter')) {
+                await completeQuest(q.id, claimRewards: true);
+              }
+            }
+            if ((b == 'Psalms' || b == 'Psalm') && chapter == 23 && shepherdDiscovery == null) {
+              await _storageService.save('codex_shepherd_${user.id}', jsonEncode({
+                'discoveredAt': DateTime.now().toIso8601String(), 'reference': 'Psalms 23',
+                'source': beforeJourneys.any((v) => v.questline.id == 'psalms_of_peace' && !v.progress.isCompleted)
+                  ? 'Reading Psalm 23 while exploring Psalms of Peace' : 'Reading Psalm 23 in the Bible',
+              }));
+              discovered = true;
+            }
+          }
+          final afterTasks = await _questService.getAllQuests();
+          for (final q in afterTasks) {
+            final old = beforeTasks[q.id];
+            if (old != null && q.currentProgress > old.currentProgress && (q.type == 'daily' || q.type == 'weekly' || q.type == 'nightly')) {
+              changes.add('${q.type == 'weekly' ? 'Weekly Quest' : 'Daily Quest'}: ${q.title} · ${q.currentProgress}/${q.targetCount}${q.isCompleted ? ' complete' : ''}');
+            }
+          }
+          for (final v in await journeyHistory()) {
+            final old = beforeJourneys.where((x) => x.questline.id == v.questline.id);
+            if (old.isNotEmpty && v.completedSteps > old.first.completedSteps) {
+              changes.add('${v.questline.title}: ${v.progress.isCompleted ? 'Journey complete' : '${v.completedSteps}/${v.totalSteps} steps'}');
+            }
+          }
+          if (getPlanProgressPercent() > planBefore) changes.add('Reading plan: another step complete');
+          _currentUser = await _userService.getCurrentUser();
+          final earned = _currentUser!.achievements.where((id) => !user.achievements.contains(id)).toList();
+          lastReadingCompletion = ReadingCompletion(reference: '$b $chapter', qualified: qualified,
+            xp: _currentUser!.totalXP - user.totalXP, levelBefore: user.currentLevel, levelAfter: _currentUser!.currentLevel,
+            changes: changes, achievementIds: earned, discovered: discovered,
+            nextJourneyId: focusedJourney?.questline.id,
+            keepsakes: <String>{
+              if (_newArtifactEvent != artifactBefore && _latestNewArtifact != null) _latestNewArtifact!.name.toString(),
+              for (final event in _bookRewardQueue.where((e) => !queuedBefore.contains(e))) event.gearId.replaceAll('_', ' '),
+            }.toList());
+          return !alreadyRead && !alreadyAwarded;
+        } finally {
+          // Rewards are already persisted; consolidate their presentation into the reader result.
+          ackQuestProgressSignal();
+          ackAchievementUnlockSignal();
+          ackNewArtifactSignal();
+          ackQuestlineCompletionSignal();
+          if (lastReadingCompletion != null) _bookRewardQueue.removeWhere((e) => !queuedBefore.contains(e));
+          _combiningReadingCompletion = false;
+          notifyListeners();
         }
-        await recordChapterRead(b, chapter, hasMetReadingThreshold: qualified);
-        if (qualified)
-          await progressDailyReadingQuest(book: b, chapter: chapter);
-        _currentUser = await _userService.getCurrentUser();
-        notifyListeners();
-        return !alreadyRead && !alreadyAwarded;
       });
 
   Future<List<AchievementModel>> recordChapterRead(String book, int chapter,

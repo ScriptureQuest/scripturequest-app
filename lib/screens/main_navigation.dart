@@ -41,7 +41,7 @@ class _MainNavigationState extends State<MainNavigation> {
     final app = context.watch<AppProvider>();
 
     // If a new quest progress event arrived, show a small floating snackbar
-    if (app.questProgressEvent != 0 &&
+    if (!app.combiningReadingCompletion && app.questProgressEvent != 0 &&
         app.questProgressEvent != _lastQuestProgressEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _lastQuestProgressEvent = app.questProgressEvent;
@@ -89,7 +89,7 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     // Achievement unlock overlay trigger
-    if (app.achievementUnlockEvent != 0 &&
+    if (!app.combiningReadingCompletion && app.achievementUnlockEvent != 0 &&
         app.achievementUnlockEvent != _lastAchievementEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _lastAchievementEvent = app.achievementUnlockEvent;
@@ -105,7 +105,7 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     // New Artifact acquired: use high-contrast RewardToast
-    if (app.newArtifactEvent != 0 &&
+    if (!app.combiningReadingCompletion && app.newArtifactEvent != 0 &&
         app.newArtifactEvent != _lastNewArtifactEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _lastNewArtifactEvent = app.newArtifactEvent;
@@ -129,7 +129,7 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     // Book-specific reward reveals: open full-screen modal(s) in sequence
-    if (app.bookRewardQueueEvent != 0 &&
+    if (!app.combiningReadingCompletion && app.bookRewardQueueEvent != 0 &&
         app.bookRewardQueueEvent != _lastBookRewardEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _lastBookRewardEvent = app.bookRewardQueueEvent;
@@ -138,7 +138,7 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     // Questline completion overlay trigger
-    if (app.questlineCompletionEvent != 0 &&
+    if (!app.combiningReadingCompletion && app.questlineCompletionEvent != 0 &&
         app.questlineCompletionEvent != _lastQuestlineEvent) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         _lastQuestlineEvent = app.questlineCompletionEvent;
@@ -300,27 +300,11 @@ class _BottomNavBarState extends State<_BottomNavBar> {
     final app = context.watch<AppProvider>();
     final location = GoRouterState.of(context).uri.toString();
     int currentIndex = -1;
-    // Map current route to 3-tab layout (beta simplicity):
-    // 0: Quest Hub, 1: Bible, 2: Profile
-    if (location == '/' || location.startsWith('/tasks')) {
-      currentIndex = 0;
-    } else if (location.startsWith('/bible') ||
-        location.startsWith('/verses') ||
-        location.startsWith('/scripture') ||
-        location.startsWith('/favorites')) {
-      currentIndex = 1;
-    } else if (location.startsWith('/profile') ||
-        location.startsWith('/player') ||
-        location.startsWith('/avatar') ||
-        location.startsWith('/equip') ||
-        location.startsWith('/inventory') ||
-        location.startsWith('/community') ||
-        location.startsWith('/friends') ||
-        location.startsWith('/leaderboards')) {
-      currentIndex = 2;
-    }
-    // For home and root, don't highlight any tab (user may be on detail screens, quests, etc.)
-    // This prevents incorrect highlighting when on non-tab screens
+    if (location == '/' || location.startsWith('/tasks')) currentIndex = 0;
+    else if (location.startsWith('/journeys') || location.startsWith('/quests') || location.startsWith('/questline') || location.startsWith('/reading-plans')) currentIndex = 1;
+    else if (location.startsWith('/bible') || location.startsWith('/verses') || location.startsWith('/scripture')) currentIndex = 2;
+    else if (location.startsWith('/play-learn') || location.contains('game') || location.contains('quiz') || location.contains('memorization') || location.contains('scramble') || location.contains('parables')) currentIndex = 3;
+    else currentIndex = 4;
 
     // Nudge when a new event arrives
     if (app.questTabNudgeEvent != 0 &&
@@ -356,22 +340,24 @@ class _BottomNavBarState extends State<_BottomNavBar> {
                 onTap: () => context.go('/'),
                 scale: _nudgeActive ? 1.12 : 1.0,
               ),
+              _NavItem(icon: Icons.route_outlined, label: 'Journeys', isSelected: currentIndex == 1, onTap: () => context.go('/journeys')),
               KeyedSubtree(
                 key: QuickTourAnchors.bibleNavKey,
                 child: _NavItem(
                   icon: Icons.menu_book_outlined,
                   label: 'Bible',
-                  isSelected: currentIndex == 1,
+                  isSelected: currentIndex == 2,
                   onTap: () => context.go('/bible'),
                 ),
               ),
+              _NavItem(icon: Icons.lightbulb_outline, label: 'Learn', isSelected: currentIndex == 3, onTap: () => context.go('/play-learn')),
               KeyedSubtree(
                 key: QuickTourAnchors.profileNavKey,
                 child: _NavItem(
                   icon: Icons.person_outline,
-                  label: 'Profile',
-                  isSelected: currentIndex == 2,
-                  onTap: () => context.go('/profile'),
+                  label: 'You',
+                  isSelected: currentIndex == 4,
+                  onTap: () => context.go('/you'),
                 ),
               ),
             ].map((item) => Expanded(child: item)).toList(),
@@ -409,7 +395,7 @@ class _NavItem extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
                 ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
@@ -473,8 +459,10 @@ class _NavItem extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 4),
-              Text(
+              FittedBox(fit: BoxFit.scaleDown, child: Text(
                 label,
+                maxLines: 1,
+                softWrap: false,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isSelected
@@ -483,7 +471,7 @@ class _NavItem extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
-              ),
+              )),
             ],
           ),
         ),

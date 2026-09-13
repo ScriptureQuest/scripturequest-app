@@ -1,5 +1,7 @@
 import 'package:level_up_your_faith/widgets/reading_v2/reading_design.dart';
 import 'package:flutter/material.dart';
+import 'package:level_up_your_faith/screens/connected/journeys_screen.dart';
+import 'package:level_up_your_faith/screens/connected/discovery_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:go_router/go_router.dart';
@@ -19,7 +21,6 @@ import 'package:level_up_your_faith/screens/scripture_screen.dart';
 import 'package:level_up_your_faith/screens/favorites_screen.dart';
 import 'package:level_up_your_faith/screens/public_profile_screen.dart';
 // Journey Board replaces the old Leaderboards screen (private, offline)
-import 'package:level_up_your_faith/screens/journey_board_screen.dart';
 import 'package:level_up_your_faith/screens/friends_screen.dart';
 import 'package:level_up_your_faith/screens/community_screen.dart';
 import 'package:level_up_your_faith/screens/settings_screen.dart';
@@ -158,11 +159,15 @@ final _router = GoRouter(
       builder: (context, state, child) {
         final path = state.uri.path;
         final shell = MainNavigation(child: child);
-        return path == '/' || path == '/bible' || path == '/verses'
+        return path == '/' || path == '/bible' || path == '/verses' || path.startsWith('/journeys') || path == '/journey-board' || path == '/you' || path == '/discoveries'
             ? ReadingDesign(child: shell)
             : shell;
       },
       routes: [
+        GoRoute(path: '/journeys', builder: (context, state) => const JourneysScreen()),
+        GoRoute(path: '/journeys/:id', builder: (context, state) => GuidedJourneyScreen(id: state.pathParameters['id']!)),
+        GoRoute(path: '/you', builder: (context, state) => const YouScreen()),
+        GoRoute(path: '/discoveries', builder: (context, state) => const DiscoveryScreen()),
         GoRoute(path: '/', builder: (context, state) => const QuestHubScreen()),
         // Convenience alias to always navigate Home via /home
         GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
@@ -213,12 +218,12 @@ final _router = GoRouter(
         // Journey Board (personal stats)
         GoRoute(
           path: '/journey-board',
-          builder: (context, state) => const JourneyBoardScreen(),
+          builder: (context, state) => const JourneysScreen(board: true),
         ),
         // Backward-compat alias
         GoRoute(
           path: '/leaderboards',
-          builder: (context, state) => const JourneyBoardScreen(),
+          builder: (context, state) => const JourneysScreen(board: true),
         ),
         // Community tab entry point (offline Community v1.0)
         GoRoute(

@@ -1574,7 +1574,7 @@ extension _TaskGenerationHelpers on TaskService {
           '[TaskService] Recent daily titles (7 days): ${recentTitles.length}');
     }
 
-    return picked;
+    return _connectedReadingSlot(picked, pool);
   }
 
   /// Generate nightly quests with history filtering to prevent repetition
@@ -1654,7 +1654,26 @@ extension _TaskGenerationHelpers on TaskService {
           '[TaskService] Recent weekly titles (1 week): ${recentTitles.length}');
     }
 
-    return picked;
+    return _connectedReadingSlot(picked, pool);
+  }
+
+  // Reuses a generated reading slot and its reward; does not add a parallel XP system.
+  static List<TaskModel> _connectedReadingSlot(List<TaskModel> picked, List<TaskModel> pool) {
+    final result = [...picked];
+    var index = result.indexWhere((q) => q.questType == 'scripture_reading');
+    if (index < 0) {
+      final readers = pool.where((q) => q.questType == 'scripture_reading');
+      if (readers.isEmpty) return result;
+      index = 0;
+      result[index] = readers.first;
+    }
+    final q = result[index];
+    result[index] = q.copyWith(
+      title: q.type == 'weekly' ? 'Continue your Scripture exploration' : 'Read your next chapter',
+      description: 'Complete ${q.targetCount} different chapter${q.targetCount == 1 ? '' : 's'} from your Journey, reading plan, or anywhere in the Bible. Reading time requirements still apply.',
+      scriptureReference: '', targetBook: '',
+    );
+    return result;
   }
 
   /// Pool of weekly quest templates for varied selection

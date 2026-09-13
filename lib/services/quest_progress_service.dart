@@ -215,19 +215,7 @@ class QuestProgressService {
             }
             break;
           case 'onQuizCompleted':
-            // Treat a completed quiz as meaningful progress for scripture_reading or reflection tasks.
-            if (q.questType == 'scripture_reading' ||
-                q.questType == 'reflection') {
-              if ((q.scriptureReference == null) ||
-                  q.scriptureReference!.isEmpty) {
-                shouldApply = true;
-              } else if (book.isNotEmpty &&
-                  q.scriptureReference!
-                      .toLowerCase()
-                      .contains(book.toLowerCase())) {
-                shouldApply = true;
-              }
-            }
+            shouldApply = q.questType == 'quiz' || q.questType == 'learning';
             break;
           case 'onChapterComplete':
             if (payload?['hasMetReadingThreshold'] != true ||

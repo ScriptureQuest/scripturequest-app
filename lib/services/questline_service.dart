@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:level_up_your_faith/utils/integrity/serial_queue.dart';
 import 'package:flutter/foundation.dart';
 import 'package:level_up_your_faith/models/quest_model.dart';
 import 'package:level_up_your_faith/models/questline.dart';
@@ -13,6 +14,9 @@ class QuestlineService {
   final StorageService _storage;
   final TaskService _questService;
   final _uuid = const Uuid();
+  static final _transitions = SerialQueue();
+
+  Future<List<QuestlineProgress>> getHistory(String userId) => _loadAllProgress(userId);
 
   QuestlineService(this._storage, this._questService);
 
@@ -38,11 +42,11 @@ class QuestlineService {
     }
   }
 
-  Future<QuestlineProgress> enrollInQuestline(String userId, String questlineId) async {
+  Future<QuestlineProgress> enrollInQuestline(String userId, String questlineId) => _transitions.run(() async {
     final defs = await getAvailableQuestlines(userId);
     final def = defs.firstWhere((d) => d.id == questlineId);
     var all = await _loadAllProgress(userId);
-    final existing = all.where((p) => p.questlineId == questlineId && !p.isCompleted).toList();
+    final existing = all.where((p) => p.questlineId == questlineId).toList();
     if (existing.isNotEmpty) {
       return existing.first;
     }
@@ -66,9 +70,9 @@ class QuestlineService {
     all.add(progress);
     await _saveAllProgress(userId, all);
     return progress;
-  }
+  });
 
-  Future<QuestlineProgress?> markStepComplete(String userId, String questlineId, String stepId) async {
+  Future<QuestlineProgress?> markStepComplete(String userId, String questlineId, String stepId, {bool awardStep = true}) => _transitions.run(() async {
     var all = await _loadAllProgress(userId);
     final idx = all.indexWhere((p) => p.questlineId == questlineId);
     if (idx == -1) return null;
@@ -80,6 +84,7 @@ class QuestlineService {
     final ordered = [...def.steps]..sort((a, b) => a.order.compareTo(b.order));
     final stepIndex = ordered.indexWhere((s) => s.id == stepId);
 
+    if (stepIndex < 0 || !progress.activeStepIds.contains(stepId)) return null;
     final completed = [...progress.completedStepIds, stepId];
     final active = [...progress.activeStepIds];
     active.remove(stepId);
@@ -96,13 +101,14 @@ class QuestlineService {
       final updated = progress.copyWith(
         activeStepIds: active,
         completedStepIds: completed,
+        skippedStepIds: awardStep ? progress.skippedStepIds : [...progress.skippedStepIds, stepId],
         stepQuestIds: map,
       );
       all[idx] = updated;
       await _saveAllProgress(userId, all);
       // Emit step completion event with the resolved step index (0-based)
       try {
-        await ProgressEngine.instance.emit(
+        if (awardStep) await ProgressEngine.instance.emit(
           ProgressEvent.questStepCompleted(questlineId, stepIndex == -1 ? 0 : stepIndex),
         );
       } catch (e) {
@@ -115,13 +121,14 @@ class QuestlineService {
       final updated = progress.copyWith(
         activeStepIds: <String>[],
         completedStepIds: completed,
+        skippedStepIds: awardStep ? progress.skippedStepIds : [...progress.skippedStepIds, stepId],
         dateCompleted: dateCompleted,
       );
       all[idx] = updated;
       await _saveAllProgress(userId, all);
       // Emit step completion event (final step index)
       try {
-        await ProgressEngine.instance.emit(
+        if (awardStep) await ProgressEngine.instance.emit(
           ProgressEvent.questStepCompleted(questlineId, stepIndex == -1 ? 0 : stepIndex),
         );
       } catch (e) {
@@ -129,13 +136,12 @@ class QuestlineService {
       }
       return updated;
     }
-  }
+  });
 
   /// Returns (questlineId, stepId) for a given questId, if it belongs to any active questline step.
   Future<Map<String, String>?> questlineStepForQuestId(String userId, String questId) async {
     final all = await _loadAllProgress(userId);
     for (final p in all) {
-      if (p.isCompleted) continue;
       for (final entry in p.stepQuestIds.entries) {
         if (entry.value == questId) {
           return {'questlineId': p.questlineId, 'stepId': entry.key};
@@ -147,41 +153,22 @@ class QuestlineService {
 
   // ====== Storage helpers ======
   Future<List<QuestlineProgress>> _loadAllProgress(String userId) async {
-    try {
-      if (userId.isEmpty) return <QuestlineProgress>[];
-      final raw = _storage.getString(_progressKey(userId));
-      if (raw == null || raw.trim().isEmpty) return <QuestlineProgress>[];
-      final arr = jsonDecode(raw);
-      if (arr is! List) return <QuestlineProgress>[];
-      final result = <QuestlineProgress>[];
-      for (final item in arr) {
-        try {
-          if (item is Map<String, dynamic>) {
-            result.add(QuestlineProgress.fromJson(item));
-          } else if (item is Map) {
-            result.add(QuestlineProgress.fromJson(item.cast<String, dynamic>()));
-          }
-        } catch (e) {
-          debugPrint('Skipping malformed questline progress: $e');
-        }
+    if (userId.isEmpty) return [];
+    final raw = _storage.getString(_progressKey(userId));
+    if (raw == null || raw.trim().isEmpty) return [];
+    final data = jsonDecode(raw);
+    if (data is! List) throw const FormatException('Journey history is not a list');
+    return data.map((row) {
+      if (row is! Map<String, dynamic> || (row['questlineId'] ?? '').toString().isEmpty) {
+        throw const FormatException('Journey history contains an unreadable entry');
       }
-      // sanitize write-back
-      await _saveAllProgress(userId, result);
-      return result;
-    } catch (e) {
-      debugPrint('_loadAllProgress error: $e');
-      return <QuestlineProgress>[];
-    }
+      return QuestlineProgress.fromJson(row);
+    }).toList();
   }
 
   Future<void> _saveAllProgress(String userId, List<QuestlineProgress> list) async {
-    try {
-      if (userId.isEmpty) return;
-      final enc = jsonEncode(list.map((e) => e.toJson()).toList());
-      await _storage.save(_progressKey(userId), enc);
-    } catch (e) {
-      debugPrint('_saveAllProgress error: $e');
-    }
+    if (userId.isEmpty) throw StateError('No journey profile');
+    await _storage.save(_progressKey(userId), jsonEncode(list.map((e) => e.toJson()).toList()));
   }
 
   // ====== Step quest generation ======
