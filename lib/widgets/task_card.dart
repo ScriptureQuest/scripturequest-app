@@ -889,6 +889,10 @@ class TaskCard extends StatelessWidget {
     bool usedFallback = false;
 
     switch (qt) {
+      case 'learning':
+      case 'quiz':
+        context.push('/learn');
+        break;
       case 'scripture_reading':
         if (ref.isNotEmpty) {
           // Exact scripture reference specified -> open that reference
@@ -942,7 +946,7 @@ class TaskCard extends StatelessWidget {
         break;
       case 'memorization':
       case 'memorize':
-        context.push('/favorites');
+        context.push('/remembered');
         break;
       case 'service':
       case 'community':

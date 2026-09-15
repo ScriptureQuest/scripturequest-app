@@ -474,3 +474,14 @@ IN PROGRESS: Final transfer/handoff and Zeb’s product validation.
 BLOCKED: Cloud-browser connection to local preview; native validation unavailable here.
 NEEDS FROM ME: Test the connected loop in the existing Codespace and review the direction.
 NEXT ENGINEERING ACTION: Address Pass 2 review findings only; wait for approval before Pass 3.
+
+
+## Pass 3 handoff — 2026-09-14
+
+VERIFIED baseline: approved Pass 2 `f6c9a57561ba54ae6c7ae9d40ba5e23dbdab1fec`, same `v2/reading-design` branch and Flutter 3.32.8. Pass 3 adds passage-linked Codex/learning/recall records in `exploration_v1_<user id>` using existing local storage. It does not migrate Journey, journal, Bible, saved-plan, legacy-memory, or user reward data. Quiz completion uses additive pending-result keys and existing reward/stat receipts. The older Shepherd proof is retained with its earning context.
+
+Four discoveries, four bounded Connections, three vector landscape variants, honest remembering outcomes, and new Learn/You/Board links are implemented. New-period learning quests reuse an existing slot; saved quests and their rewards remain unchanged. No backend, deployment, package, SDK, or Apple configuration changes.
+
+Validation: 54 tests including all Pass 1/2 tests; zero analyzer errors/no new diagnostic identities; release Flutter Web build; actual Flutter widget navigation, phone/desktop renderings, large text/night setting, persistence and reward replay checks. Details and exact acceptance steps: `docs/PASS3_EXPLORATION_AND_MEMORY.md`. Browser/Codespaces and native-device acceptance are not claimed from this workspace.
+
+The 19 unmatched red-letter verses still await trusted-content review. No Scripture data guesses were made. Future themes, larger content/art libraries, universal old-game audit and fuller personal history remain deferred in the Master Roadmap. Preserve unrelated preexisting preview/configuration files outside the Pass 3 commit. Stop for Zeb’s Pass 3 review before any later phase.

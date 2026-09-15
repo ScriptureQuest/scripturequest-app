@@ -303,7 +303,7 @@ class _BottomNavBarState extends State<_BottomNavBar> {
     if (location == '/' || location.startsWith('/tasks')) currentIndex = 0;
     else if (location.startsWith('/journeys') || location.startsWith('/quests') || location.startsWith('/questline') || location.startsWith('/reading-plans')) currentIndex = 1;
     else if (location.startsWith('/bible') || location.startsWith('/verses') || location.startsWith('/scripture')) currentIndex = 2;
-    else if (location.startsWith('/play-learn') || location.contains('game') || location.contains('quiz') || location.contains('memorization') || location.contains('scramble') || location.contains('parables')) currentIndex = 3;
+    else if (location == '/learn' || location.startsWith('/find-passage') || location == '/remembered' || location.startsWith('/play-learn') || location.contains('game') || location.contains('quiz') || location.contains('memorization') || location.contains('scramble') || location.contains('parables')) currentIndex = 3;
     else currentIndex = 4;
 
     // Nudge when a new event arrives
@@ -350,7 +350,7 @@ class _BottomNavBarState extends State<_BottomNavBar> {
                   onTap: () => context.go('/bible'),
                 ),
               ),
-              _NavItem(icon: Icons.lightbulb_outline, label: 'Learn', isSelected: currentIndex == 3, onTap: () => context.go('/play-learn')),
+              _NavItem(icon: Icons.lightbulb_outline, label: 'Learn', isSelected: currentIndex == 3, onTap: () => context.go('/learn')),
               KeyedSubtree(
                 key: QuickTourAnchors.profileNavKey,
                 child: _NavItem(

@@ -7,8 +7,6 @@ import 'package:level_up_your_faith/services/chapter_quiz_service.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
 import 'package:level_up_your_faith/providers/settings_provider.dart';
 import 'package:level_up_your_faith/models/quiz_difficulty.dart';
-import 'package:level_up_your_faith/services/progress/progress_engine.dart';
-import 'package:level_up_your_faith/services/progress/progress_event.dart';
 
 class ChapterQuizScreen extends StatefulWidget {
   final String bookId; // display name
@@ -68,7 +66,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chapter Reflection'),
+        title: const Text('Chapter Learning'),
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: GamerColors.accent),
@@ -130,9 +128,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
                   Text('You answered ${result.correct} out of ${result.totalFactual} correctly.', style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 8),
                   Text(
-                    passed
-                        ? 'You’re hiding this chapter in your heart.'
-                        : 'Every time you try, you remember a little more.',
+                    'Factual answers are checked; private reflections are not graded. Return to Scripture to explore what you noticed.',
                     style: theme.textTheme.bodySmall?.copyWith(color: GamerColors.textSecondary),
                   ),
                 ],
@@ -143,8 +139,8 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('Back to chapter'),
+                    onPressed: () => context.push(Uri(path: '/verses', queryParameters: {'ref': '${widget.bookId} ${widget.chapter}'}).toString()),
+                    child: const Text('Read the chapter'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -174,6 +170,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _chapterTag(),
+          TextButton(onPressed: () => context.push(Uri(path: '/verses', queryParameters: {'ref': '${widget.bookId} ${widget.chapter}'}).toString()), child: const Text('Read the passage in context')),
           const SizedBox(height: 12),
           _difficultySelector(theme),
           const SizedBox(height: 12),
@@ -188,7 +185,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _onFinish,
+              onPressed: _saving ? null : _onFinish,
               icon: const Icon(Icons.check, color: GamerColors.darkBackground),
               label: const Text('Finish'),
             ),
@@ -312,44 +309,22 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
     );
   }
 
+  bool _saving = false;
   void _onFinish() async {
+    if (_saving || _finished) return;
+    setState(() => _saving = true);
     try {
-      // Award only on first completion
       final provider = context.read<AppProvider>();
       final result = _computeResult();
-      final total = result.totalFactual;
-      final correct = result.correct;
-      final passed = total == 0 ? true : (correct / total) >= 0.6;
-      if (!provider.hasCompletedQuiz(widget.bookId, widget.chapter)) {
-        // Defer XP to ProgressEngine
-        await provider.markQuizCompleted(widget.bookId, widget.chapter, awardXp: false);
+      final passed = result.totalFactual == 0 || result.correct / result.totalFactual >= .6;
+      final saved = await provider.completeConnectedQuiz(widget.bookId, widget.chapter, passed, result.correct, result.totalFactual, _selectedDifficulty.code);
+      if (mounted) {
+        setState(() => _finished = true);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Quiz saved · ${saved.xp > 0 ? '+${saved.xp} XP' : 'Earlier reward kept'}${saved.changes.isEmpty ? '' : '\n${saved.changes.join('\n')}'}')));
       }
-      // Notify quest system (daily tasks etc.) that a quiz was completed
-      try {
-        await provider.checkActiveQuests(event: 'onQuizCompleted', payload: {
-          'book': widget.bookId,
-          'chapter': widget.chapter,
-          'passed': passed,
-        });
-      } catch (_) {}
-      // Emit unified progress event (XP, stats, achievements)
-      try {
-        final bookRef = provider.bibleService.displayToRef(widget.bookId);
-        await ProgressEngine.instance.emit(
-          ProgressEvent.chapterQuizCompleted(
-            bookRef,
-            widget.chapter,
-            passed,
-            correct,
-            total,
-            _selectedDifficulty.code,
-          ),
-        );
-      } catch (_) {}
-      setState(() => _finished = true);
-    } catch (e) {
-      // Gracefully continue
-    }
+    } catch (_) {
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not save this quiz. Please try again.')));
+    } finally { if(mounted) setState(() => _saving = false); }
   }
 
   _QuizResult _computeResult() {

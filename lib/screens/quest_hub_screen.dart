@@ -82,6 +82,8 @@ class _QuestHubScreenState extends State<QuestHubScreen> {
     final qt = q.questType.trim().toLowerCase();
     const actionTypes = {
       'scripture_reading',
+      'learning',
+      'quiz',
       'routine',
       'service',
       'community',

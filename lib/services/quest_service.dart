@@ -1673,6 +1673,13 @@ extension _TaskGenerationHelpers on TaskService {
       description: 'Complete ${q.targetCount} different chapter${q.targetCount == 1 ? '' : 's'} from your Journey, reading plan, or anywhere in the Bible. Reading time requirements still apply.',
       scriptureReference: '', targetBook: '',
     );
+    if (result.length > 1) {
+      final learningIndex = index == result.length - 1 ? 0 : result.length - 1;
+      final old = result[learningIndex];
+      result[learningIndex] = old.copyWith(title: 'Explore and remember', questType: 'learning', isAutoTracked: true,
+        description: 'Complete ${old.targetCount} different passage challenges or chosen-verse practices. Each activity counts once toward this quest.',
+        scriptureReference: '', targetBook: '');
+    }
     return result;
   }
 

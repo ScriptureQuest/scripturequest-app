@@ -1,6 +1,8 @@
 import '../utils/integrity/serial_queue.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'package:level_up_your_faith/data/exploration/catalog.dart';
+import 'package:level_up_your_faith/services/exploration/exploration_service.dart';
 import 'package:level_up_your_faith/models/reading_completion.dart';
 import 'dart:math';
 import 'dart:io' show Platform;
@@ -3106,6 +3108,127 @@ class AppProvider extends ChangeNotifier {
     return Map<String, dynamic>.from(jsonDecode(raw) as Map);
   }
 
+  ExplorationService get exploration => ExplorationService(_storageService);
+  Map<String,dynamic> get explorationState => exploration.read(_currentUser!.id);
+  Map<String,dynamic> get discoveryRecords {
+    final records = Map<String,dynamic>.from(explorationState['discoveries'] as Map);
+    final legacy = shepherdDiscovery;
+    if (legacy != null) records['shepherd'] = legacy;
+    return records;
+  }
+  bool get illustratedExploration {
+    try { return explorationState['illustrated'] != false; }
+    catch (_) { return false; } // A damaged art preference must not hide existing personal destinations.
+  }
+  Future<void> setIllustratedExploration(bool value) async {
+    await exploration.setIllustrated(_currentUser!.id, value); notifyListeners();
+  }
+  int _learningStartLevel = 1;
+  List<String> _learningStartAchievements = [];
+  Future<T> _runExploration<T>(Future<T> Function() action) => _readerCompletions.run(() async {
+    final user = await _userService.getCurrentUser();
+    _learningStartLevel = user.currentLevel;
+    _learningStartAchievements = [...user.achievements];
+    final previousQueue = [..._bookRewardQueue];
+    _combiningReadingCompletion = true;
+    try { return await action(); }
+    finally {
+      ackQuestProgressSignal(); ackAchievementUnlockSignal(); ackNewArtifactSignal(); ackQuestlineCompletionSignal();
+      _bookRewardQueue.removeWhere((e) => !previousQueue.contains(e));
+      _combiningReadingCompletion = false; notifyListeners();
+    }
+  });
+
+  Future<List<String>> _creditExplorationGoals(String activity, String reference, {bool memory = false}) async {
+    final changes = <String>[];
+    final ref = bibleService.parseReference(reference);
+    final book = ref['bookDisplay'] as String? ?? '';
+    final chapter = ref['chapter'] as int? ?? 0;
+    for (final q in await _questService.getAllQuests()) {
+      if (q.isExpired || q.isClaimed || q.startDate.isAfter(DateTime.now()) || (q.endDate != null && !q.endDate!.isAfter(DateTime.now()))) continue;
+      final eligible = q.questType == 'learning' || (activity.startsWith('quiz:') && q.questType == 'quiz') || (memory && (q.questType == 'memorize' || q.questType == 'memorization'));
+      if (!eligible) continue;
+      if (!QuestProgressService.matchesQuestTarget(completedBook: book, completedChapter: chapter,
+        questScriptureReference: q.scriptureReference, questTitle: q.title, targetBook: q.targetBook)) continue;
+      final target = (q.scriptureReference ?? '').trim();
+      if (memory && target.contains(':') && target.toLowerCase() != reference.toLowerCase()) continue;
+      await _questService.creditChapter(q.id, 'exploration:$activity');
+      final updated = (await _questService.getAllQuests()).firstWhere((t) => t.id == q.id);
+      if (updated.currentProgress > q.currentProgress) changes.add('${q.type == 'weekly' ? 'Weekly' : 'Daily'} Quest: ${q.title} · ${updated.currentProgress}/${updated.targetCount}');
+      if (updated.isCompleted) await completeQuest(q.id, claimRewards: true);
+    }
+    final after = await _userService.getCurrentUser();
+    if (after.currentLevel > _learningStartLevel) changes.add('Level ${after.currentLevel} reached');
+    for(final id in after.achievements.where((id) => !_learningStartAchievements.contains(id))) {
+      final matches = achievements.where((a) => a.id == id);
+      changes.add('Achievement: ${matches.isEmpty ? id.replaceAll('_', ' ') : matches.first.title}');
+    }
+    return changes;
+  }
+
+  Future<({bool correct, int xp, List<String> changes})> recordPassageFinding(String id, int verse) => _runExploration(() async {
+    final d = discoveryById(id);
+    final user = await _userService.getCurrentUser();
+    final correct = await exploration.recordFinding(user.id, id, verse);
+    if (!correct) return (correct: false, xp: 0, changes: <String>[]);
+    // Existing quick-quiz scale, paid once for this authored challenge.
+    await _userService.addXP(_applyStreakBonusToXp(10), receiptId: 'finding:$id');
+    final changes = await _creditExplorationGoals('finding:$id', d.reference);
+    _currentUser = await _userService.getCurrentUser(); _quests = await _questService.getAllQuests(); notifyListeners();
+    return (correct: true, xp: _currentUser!.totalXP - user.totalXP, changes: changes);
+  });
+
+  Future<({int xp, List<String> changes})> completeConnectedQuiz(String book, int chapter, bool passed, int correct, int total, String difficulty) => _runExploration(() async {
+    final b = _normalizeDisplayBook(book);
+    if (!isQuizAvailable(b, chapter) || !['quick','standard','deep'].contains(difficulty) || correct < 0 || total < correct || total < 0) throw ArgumentError('Invalid chapter quiz');
+    final user = await _userService.getCurrentUser();
+    final pending = 'connected_quiz_pending_${user.id}_$b:$chapter';
+    if (!hasCompletedQuiz(b, chapter) || _storageService.getString(pending) != null) {
+      final raw = _storageService.getString(pending);
+      final payload = raw == null ? {'passed': passed, 'correct': correct, 'total': total, 'difficulty': difficulty} : Map<String,dynamic>.from(jsonDecode(raw) as Map);
+      if (raw == null) await _storageService.save(pending, jsonEncode(payload));
+      await ProgressEngine.instance.emit(ProgressEvent.chapterQuizCompleted(bibleService.displayToRef(b), chapter, payload['passed'] == true, payload['correct'] as int, payload['total'] as int, payload['difficulty'] as String));
+      await markQuizCompleted(b, chapter, awardXp: false);
+      // Retry the marker write even if the in-memory set was updated before a failed save.
+      await _storageService.save(_quizCompletedKey(user.id), jsonEncode(_completedChapterQuizzes.toList()));
+      final stored = _storageService.getString(_quizCompletedKey(user.id));
+      if (stored == null || !(jsonDecode(stored) as List).contains('$b:$chapter')) throw StateError('Quiz could not be saved');
+      await _storageService.delete(pending);
+    }
+    final changes = await _creditExplorationGoals('quiz:$b:$chapter', '$b $chapter');
+    _currentUser = await _userService.getCurrentUser(); _quests = await _questService.getAllQuests(); notifyListeners();
+    return (xp: _currentUser!.totalXP - user.totalXP, changes: changes);
+  });
+
+  Future<String> loadMemoryVerse(String key) async {
+    final parts = key.split(':');
+    if (parts.length != 3 || (int.tryParse(parts[1]) ?? 0) <= 0 || (int.tryParse(parts[2]) ?? 0) <= 0) throw ArgumentError('Invalid verse');
+    final text = await _kjvBibleService.getChapterText(book: parts[0], chapter: int.parse(parts[1]));
+    final lines = text.split('\n').where((l) => l.trim().startsWith('${int.parse(parts[2])} ')).toList();
+    if (lines.length != 1) throw StateError('Verse text unavailable');
+    return lines.single.trim().replaceFirst(RegExp(r'^\d+\s+'), '');
+  }
+
+  Future<({int xp, List<String> changes})> recordRecallEvidence(String key, RecallOutcome outcome, String sessionId) => _runExploration(() async {
+    final parts = key.split(':');
+    if (parts.length != 3) throw ArgumentError('Invalid verse');
+    key = '${_normalizeDisplayBook(parts[0])}:${int.tryParse(parts[1]) ?? 0}:${int.tryParse(parts[2]) ?? 0}';
+    final canonical = key.split(':');
+    final reference = '${canonical[0]} ${canonical[1]}:${canonical[2]}';
+    await loadMemoryVerse(key);
+    final user = await _userService.getCurrentUser();
+    await exploration.recordRecall(user.id, key, outcome, sessionId);
+    final record = (explorationState['memory'] as Map)[key] as Map;
+    final saved = (record['sessions'] as Map)[sessionId] as Map;
+    final day = _formatYmd(DateTime.parse(saved['at'] as String));
+    if (saved['outcome'] == RecallOutcome.independent.name && _memorizationLastSuccessDay[key] != day) {
+      await _userService.addXP(_applyStreakBonusToXp(10), receiptId: 'memory:$key:$day');
+    }
+    final changes = await _creditExplorationGoals('memory:$key', reference, memory: true);
+    _currentUser = await _userService.getCurrentUser(); _quests = await _questService.getAllQuests(); notifyListeners();
+    return (xp: _currentUser!.totalXP - user.totalXP, changes: changes);
+  });
+
   ReadingCompletion? lastReadingCompletion;
   bool _combiningReadingCompletion = false;
   bool get combiningReadingCompletion => _combiningReadingCompletion;
@@ -4311,6 +4434,8 @@ class AppProvider extends ChangeNotifier {
         final alreadyAwarded = user.rewardReceipts.contains('chapter:$b:$chapter');
         final changes = <String>[];
         var discovered = false;
+        final newDiscoveries = <String>[];
+        final hadShepherdDiscovery = shepherdDiscovery != null;
         lastReadingCompletion = null;
         _combiningReadingCompletion = true;
         try {
@@ -4319,6 +4444,7 @@ class AppProvider extends ChangeNotifier {
           await recordChapterRead(b, chapter, hasMetReadingThreshold: qualified);
           if (qualified) {
             await progressDailyReadingQuest(book: b, chapter: chapter);
+            newDiscoveries.addAll((await exploration.recordReading(user.id, b, chapter, qualified: true)).where((id) => id != 'shepherd' || !hadShepherdDiscovery));
             // Complete only tasks credited for this chapter, including the currently active journey step.
             // Sequential calls retain the existing task claim, achievement, and journey hooks.
             for (final q in await _questService.getAllQuests()) {
@@ -4353,7 +4479,7 @@ class AppProvider extends ChangeNotifier {
           final earned = _currentUser!.achievements.where((id) => !user.achievements.contains(id)).toList();
           lastReadingCompletion = ReadingCompletion(reference: '$b $chapter', qualified: qualified,
             xp: _currentUser!.totalXP - user.totalXP, levelBefore: user.currentLevel, levelAfter: _currentUser!.currentLevel,
-            changes: changes, achievementIds: earned, discovered: discovered,
+            changes: changes, achievementIds: earned, discovered: discovered, discoveryIds: newDiscoveries,
             nextJourneyId: focusedJourney?.questline.id,
             keepsakes: <String>{
               if (_newArtifactEvent != artifactBefore && _latestNewArtifact != null) _latestNewArtifact!.name.toString(),

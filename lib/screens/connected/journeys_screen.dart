@@ -1,3 +1,5 @@
+import '../../widgets/exploration/exploration_art.dart';
+import '../../data/exploration/catalog.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +13,8 @@ import 'package:level_up_your_faith/widgets/journal/journal_editor_sheet.dart';
 class ConnectedPage extends StatelessWidget {
   final String title;
   final List<Widget> children;
-  const ConnectedPage({super.key, required this.title, required this.children});
+  final ScrollController? controller;
+  const ConnectedPage({super.key, required this.title, required this.children, this.controller});
   @override
   Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(title: Text(title)),
@@ -20,6 +23,7 @@ class ConnectedPage extends StatelessWidget {
           child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 680),
               child: ListView(
+                  controller: controller,
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
                   children: children))));
 }
@@ -41,8 +45,10 @@ class _JourneysScreenState extends State<JourneysScreen> {
 
   void _load() {
     final app = context.read<AppProvider>();
-    _data = (() async =>
-        (await app.getAvailableQuestlines(), await app.journeyHistory()))();
+    _data = (() async {
+      if (widget.board) app.discoveryRecords; // Surface read failure in the existing error state.
+      return (await app.getAvailableQuestlines(), await app.journeyHistory());
+    })();
   }
 
   @override
@@ -104,6 +110,8 @@ class _JourneysScreenState extends State<JourneysScreen> {
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                            ExplorationArt(scene: d.id == 'knowing_jesus' ? 'light' : d.id == 'psalms_of_peace' ? 'peace' : 'night', illustrated: context.watch<AppProvider>().illustratedExploration),
+                            const SizedBox(height: 14),
                             Row(children: [
                               Icon(v?.progress.isCompleted == true
                                   ? Icons.check_circle_outline
@@ -127,6 +135,10 @@ class _JourneysScreenState extends State<JourneysScreen> {
                                   : '${v.completedSteps}/${v.totalSteps} steps · Begun ${_date(v.progress.dateStarted)}')
                             ] else
                               Text('${d.steps.length} steps · At your pace'),
+                            if (widget.board)
+                              for (final discovery in discoveries.where((entry) => d.steps.any((step) => (JourneyContent.reference(step) == entry.reference || (JourneyContent.reference(step) ?? '').startsWith('${entry.reference}:'))) && context.read<AppProvider>().discoveryRecords.containsKey(entry.id)))
+                                _link(context, Icons.auto_stories_outlined, discovery.title,
+                                  (context.read<AppProvider>().explorationState['learning'] as Map).containsKey(discovery.id) ? 'Discovery kept · passage evidence found' : 'Discovery kept · look closer in the passage', '/discoveries/${discovery.id}'),
                             TextButton(
                                 onPressed: () async {
                                   await context.push(AppProvider
@@ -353,13 +365,13 @@ class _GuidedJourneyScreenState extends State<GuidedJourneyScreen> {
                               style: TextStyle(fontSize: 13)),
                       ]));
                 })),
-          if (d.id == 'psalms_of_peace')
+          for (final discovery in discoveries.where((e) => e.journey == d.id))
             _link(
                 context,
                 Icons.auto_stories_outlined,
                 'A discovery along the way',
-                'Explore the shepherd imagery in Psalm 23.',
-                '/discoveries'),
+                '${discovery.title} · ${discovery.reference}',
+                '/discoveries/${discovery.id}'),
           if (complete)
             FilledButton.icon(
                 onPressed: () => context.go('/journeys'),
@@ -392,6 +404,7 @@ class YouScreen extends StatelessWidget {
             '/journey-board'),
         _link(context, Icons.auto_stories_outlined, 'Codex',
             'What you have discovered and what it means', '/discoveries'),
+        _link(context, Icons.psychology_outlined, 'Remembered Scripture', 'Chosen verses, practice and recall history', '/remembered'),
         _link(context, Icons.workspace_premium_outlined, 'Achievements',
             'Milestones of engagement and learning', '/achievements'),
         _link(context, Icons.edit_note, 'Journal',
@@ -404,6 +417,7 @@ class YouScreen extends StatelessWidget {
             '/reading-stats'),
         _link(context, Icons.person_outline, 'Profile',
             'Your existing profile and preferences', '/profile'),
+        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Illustrated exploration'), subtitle: const Text('Gentle Journey and Codex landscapes. Scripture stays on a plain reading surface.'), value: context.watch<AppProvider>().illustratedExploration, onChanged: (value) async { try { await context.read<AppProvider>().setIllustratedExploration(value); } catch (_) { if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preference could not be saved.'))); } }),
         _link(context, Icons.settings_outlined, 'Settings',
             'Reading comfort and app preferences', '/settings'),
       ]);

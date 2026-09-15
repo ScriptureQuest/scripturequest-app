@@ -265,3 +265,26 @@ IN PROGRESS: Final transfer/handoff and Zeb’s product validation.
 BLOCKED: Cloud-browser connection to local preview; native validation unavailable here.
 NEEDS FROM ME: Test the connected loop in the existing Codespace and review the direction.
 NEXT ENGINEERING ACTION: Address Pass 2 review findings only; wait for approval before Pass 3.
+
+
+## Latest approved execution — Pass 3 (2026-09-14)
+
+Pass 2 baseline `f6c9a57561ba54ae6c7ae9d40ba5e23dbdab1fec` was approved by Zeb. Pass 3 implements the bounded discovery → learning → remembering → further Scripture loop; see `PASS3_EXPLORATION_AND_MEMORY.md` for the detailed behavior, reward policy, validation, and acceptance walkthrough.
+
+**KEEP:** Scripture-first reading, visible Daily/Weekly quests and XP/levels, three existing Journeys and their history, reading plans, original games, achievements, journal, saved Scripture, all Pass 1/2 protections.
+
+**UPGRADE:** one Codex proof becomes four permanent passage-linked discoveries; Learn connects authored passage evidence, chapter quizzes, chosen-verse practice, and further Scripture. Chapter-quiz replay rewards are protected. Journey Board carries discovered/found evidence beside existing history. You gains remembered Scripture.
+
+**ADD:** three honest recall evidence states, four explicitly categorized Scripture Connections, three code-native landscape covers, one related accomplishment-mark family, reduced-motion-compatible entrance, and a persisted plain/illustrated preference. Findings earn one 10-base-XP reward using existing streak adjustment; independent recall retains the existing daily verse reward scale. Daily/Weekly learning slots reuse existing target/reward values and preserve already-generated quests.
+
+**REDESIGN:** automatic mastery claims become evidence of practiced/helped/independent sessions in the new experience. Existing legacy memory labels/data remain available rather than being silently migrated or discarded. Quizzes explicitly separate factual answers from ungraded reflection.
+
+**DEFER:** expanded/externally reviewed content, final art library, atmosphere/theme packs, scheduled memory review, new games, universal legacy-game reward audit, and complete personal-history migration. These are retained future ideas, not removed from the original vision. No new currencies, fantasy mechanics, competition, or spiritual ranking.
+
+CURRENT STATE — this entry supersedes older execution summaries:
+WORKING: Pass 3 connected implementation; 54 regression/widget tests; release Web build; earlier integrity and progression behavior.
+BROKEN: No known failing Pass 3 acceptance case in automated validation. Broader legacy issues remain classified in earlier audit sections.
+IN PROGRESS: Zeb’s Codespaces acceptance/product review.
+BLOCKED: Real-iPhone/VoiceOver validation and independent trusted-content review remain unverified here.
+NEEDS FROM ME: Test the Pass 3 handoff in the existing Codespace and give product feedback.
+NEXT ENGINEERING ACTION: Respond to Pass 3 review findings only. Do not begin the next phase without approval.

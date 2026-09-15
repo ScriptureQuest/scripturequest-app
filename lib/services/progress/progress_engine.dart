@@ -103,27 +103,19 @@ class ProgressEngine {
   }
 
   Future<void> _handleChapterQuizCompleted(ProgressEvent e) async {
-    try {
-      final uid = (await _userService!.getCurrentUser()).id;
-      await _statsService!.incQuizzesCompleted(uid);
-      final passed = (e.payload['passed'] == true);
-      if (passed) {
-        await _statsService!.incQuizzesPassed(uid);
-      }
-
-      final difficulty =
-          (e.payload['difficulty']?.toString() ?? '').toLowerCase();
-      int xp = 10; // Quick default
-      if (difficulty == 'standard') xp = 15;
-      if (difficulty == 'deep') xp = 20;
-      await _awardXp(xp, reason: 'Chapter Quiz', source: e.type.name);
-
-      // Example unlock hooks (only if such ids exist in seeds; safe if not present)
-      await _unlockIfDefined(uid, 'first_quiz_completed');
-      if (passed) await _unlockIfDefined(uid, 'quiz_passed_1');
-    } catch (err) {
-      debugPrint('_handleChapterQuizCompleted error: $err');
-    }
+    final uid = (await _userService!.getCurrentUser()).id;
+    final book = e.payload['bookId']?.toString() ?? '';
+    final chapter = e.payload['chapter'];
+    if (book.isEmpty || chapter is! int || chapter <= 0) throw ArgumentError('Invalid quiz event');
+    final receipt = 'chapterQuiz:$book:$chapter';
+    await _statsService!.incrementOnce(uid, 'totalQuizzesCompleted', receipt);
+    final passed = e.payload['passed'] == true;
+    if (passed) await _statsService!.incrementOnce(uid, 'totalQuizzesPassed', receipt);
+    final difficulty = e.payload['difficulty']?.toString() ?? '';
+    final xp = difficulty == 'deep' ? 20 : difficulty == 'standard' ? 15 : 10;
+    await _userService!.addXP(xp, receiptId: receipt);
+    await _unlockIfDefined(uid, 'first_quiz_completed');
+    if (passed) await _unlockIfDefined(uid, 'quiz_passed_1');
   }
 
   Future<void> _handleTaskCompleted(ProgressEvent e) async {

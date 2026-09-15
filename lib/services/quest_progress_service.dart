@@ -215,7 +215,7 @@ class QuestProgressService {
             }
             break;
           case 'onQuizCompleted':
-            shouldApply = q.questType == 'quiz' || q.questType == 'learning';
+            shouldApply = q.questType == 'quiz'; // Connected learning requires a stable activity receipt.
             break;
           case 'onChapterComplete':
             if (payload?['hasMetReadingThreshold'] != true ||

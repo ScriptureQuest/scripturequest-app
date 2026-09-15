@@ -8,6 +8,7 @@ class ReadingCompletion {
   final List<String> changes;
   final List<String> achievementIds;
   final bool discovered;
+  final List<String> discoveryIds;
   final List<String> keepsakes;
   final String? nextJourneyId;
   const ReadingCompletion(
@@ -20,5 +21,6 @@ class ReadingCompletion {
       required this.achievementIds,
       required this.discovered,
       this.nextJourneyId,
+      this.discoveryIds = const [],
       this.keepsakes = const []});
 }

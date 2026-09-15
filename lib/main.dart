@@ -1,3 +1,4 @@
+import 'screens/connected/exploration_screen.dart';
 import 'package:level_up_your_faith/widgets/reading_v2/reading_design.dart';
 import 'package:flutter/material.dart';
 import 'package:level_up_your_faith/screens/connected/journeys_screen.dart';
@@ -159,7 +160,7 @@ final _router = GoRouter(
       builder: (context, state, child) {
         final path = state.uri.path;
         final shell = MainNavigation(child: child);
-        return path == '/' || path == '/bible' || path == '/verses' || path.startsWith('/journeys') || path == '/journey-board' || path == '/you' || path == '/discoveries'
+        return path == '/' || path == '/bible' || path == '/verses' || path.startsWith('/journeys') || path == '/journey-board' || path == '/you' || path.startsWith('/discoveries') || path == '/learn' || path.startsWith('/find-passage') || path == '/remembered' || path == '/memorization-practice'
             ? ReadingDesign(child: shell)
             : shell;
       },
@@ -168,6 +169,10 @@ final _router = GoRouter(
         GoRoute(path: '/journeys/:id', builder: (context, state) => GuidedJourneyScreen(id: state.pathParameters['id']!)),
         GoRoute(path: '/you', builder: (context, state) => const YouScreen()),
         GoRoute(path: '/discoveries', builder: (context, state) => const DiscoveryScreen()),
+        GoRoute(path: '/discoveries/:id', builder: (context, state) => CodexScreen(id: state.pathParameters['id']!)),
+        GoRoute(path: '/learn', builder: (context, state) => const LearnScreen()),
+        GoRoute(path: '/find-passage/:id', builder: (context, state) => FindPassageScreen(id: state.pathParameters['id']!)),
+        GoRoute(path: '/remembered', builder: (context, state) => const RememberedScreen()),
         GoRoute(path: '/', builder: (context, state) => const QuestHubScreen()),
         // Convenience alias to always navigate Home via /home
         GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),

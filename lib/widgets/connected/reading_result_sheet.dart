@@ -1,3 +1,5 @@
+import '../../data/exploration/catalog.dart';
+import '../exploration/exploration_art.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -96,17 +98,13 @@ class ReadingResultSheet extends StatelessWidget {
                         onPressed: () => Navigator.pop(context, '/collection'),
                         child: const Text('View my collection')),
                   ],
-                  if (result.discovered) ...[
+                  for (final id in {...result.discoveryIds, if(result.discovered) 'shepherd'}) ...[
                     const Divider(height: 32),
-                    const Text('DISCOVERY ADDED'),
-                    const SizedBox(height: 8),
-                    Text('The Shepherd’s Care',
-                        style: theme.textTheme.titleLarge),
-                    const Text(
-                        'Psalm 23 now has a permanent place in your Codex.'),
-                    TextButton(
-                        onPressed: () => Navigator.pop(context, '/discoveries'),
-                        child: const Text('Open my discovery'))
+                    const AccomplishmentMark(icon: Icons.auto_stories_outlined),
+                    const SizedBox(height: 8), const Text('DISCOVERY ADDED'),
+                    Text(discoveryById(id).title, style: theme.textTheme.titleLarge),
+                    Text('${discoveryById(id).reference} now has a permanent place in your Codex.'),
+                    TextButton(onPressed: () => Navigator.pop(context, '/discoveries/$id'), child: const Text('Open my discovery')),
                   ],
                   const SizedBox(height: 24),
                   FilledButton(
