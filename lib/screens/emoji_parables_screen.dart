@@ -1,3 +1,4 @@
+import '../theme/scripture_theme.dart';
 import 'dart:convert';
 import 'dart:math';
 
@@ -9,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
 import 'package:level_up_your_faith/widgets/reward_toast.dart';
 import 'package:level_up_your_faith/widgets/sacred/sacred_ui.dart';
-import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/widgets/common/game_end_panel.dart';
 
 class EmojiParablesScreen extends StatefulWidget {
@@ -101,9 +101,9 @@ class _EmojiParablesScreenState extends State<EmojiParablesScreen> {
 
   List<_EmojiRound> _fallbackRounds() {
     return [
-      _EmojiRound(emojis: '🐑✨', correctTitle: 'The Lost Sheep', options: const ['The Lost Sheep', 'The Good Samaritan', 'The Mustard Seed']),
-      _EmojiRound(emojis: '🪙🔦', correctTitle: 'The Lost Coin', options: const ['The Lost Coin', 'The Sower', 'The Prodigal Son']),
-      _EmojiRound(emojis: '👦🏡🐖', correctTitle: 'The Prodigal Son', options: const ['The Prodigal Son', 'The Two Sons', 'The Good Shepherd']),
+      _EmojiRound(emojis: '🐑✨', correctTitle: 'The Lost Sheep', options: ['The Lost Sheep', 'The Good Samaritan', 'The Mustard Seed']),
+      _EmojiRound(emojis: '🪙🔦', correctTitle: 'The Lost Coin', options: ['The Lost Coin', 'The Sower', 'The Prodigal Son']),
+      _EmojiRound(emojis: '👦🏡🐖', correctTitle: 'The Prodigal Son', options: ['The Prodigal Son', 'The Two Sons', 'The Good Shepherd']),
     ];
   }
 
@@ -167,19 +167,19 @@ class _EmojiParablesScreenState extends State<EmojiParablesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Emoji Parables'),
+        title: Text('Emoji Parables'),
         centerTitle: true,
       ),
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator())
             : Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SectionHeader('Guess the story by emojis.', icon: Icons.extension),
-                    const SizedBox(height: 8),
+                    SectionHeader('Guess the story by emojis.', icon: Icons.extension),
+                    SizedBox(height: 8),
                     if (!_sessionComplete && r != null) ...[
                       FadeSlideIn(
                         child: SacredCard(
@@ -191,7 +191,7 @@ class _EmojiParablesScreenState extends State<EmojiParablesScreen> {
                                 textAlign: TextAlign.center,
                                 style: theme.textTheme.displaySmall?.copyWith(fontSize: 40, height: 1.2),
                               ),
-                              const SizedBox(height: 10),
+                              SizedBox(height: 10),
                               Text(
                                 'Which story is this?',
                                 style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant),
@@ -200,7 +200,7 @@ class _EmojiParablesScreenState extends State<EmojiParablesScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       _AnswerButtons(
                         options: r.options,
                         disabled: _disabledChoices,
@@ -208,12 +208,12 @@ class _EmojiParablesScreenState extends State<EmojiParablesScreen> {
                         correct: r.answeredCorrectly ? r.correctTitle : null,
                       ),
                       if (_lastWrong != null && !r.answeredCorrectly) ...[
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         SacredCard(
                           child: Row(
                             children: [
-                              const Icon(Icons.info_outline, color: Colors.amber),
-                              const SizedBox(width: 10),
+                              Icon(Icons.info_outline, color: Colors.amber),
+                              SizedBox(width: 10),
                               Expanded(
                                 child: Text('Not quite. Try another one.', style: theme.textTheme.labelMedium?.copyWith(color: Colors.amber)),
                               ),
@@ -222,16 +222,16 @@ class _EmojiParablesScreenState extends State<EmojiParablesScreen> {
                         ),
                       ],
                       if (r.answeredCorrectly) ...[
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         SacredCard(
                           child: Row(
                             children: [
-                              const Icon(Icons.celebration, color: GamerColors.success),
-                              const SizedBox(width: 10),
+                              Icon(Icons.celebration, color: QuestPalette.of(context).success),
+                              SizedBox(width: 10),
                               Expanded(child: Text("That's right!", style: theme.textTheme.bodyMedium)),
                               ElevatedButton.icon(
                                 onPressed: _goNext,
-                                icon: const Icon(Icons.arrow_forward, color: GamerColors.darkBackground),
+                                icon: Icon(Icons.arrow_forward, color: QuestPalette.of(context).darkBackground),
                                 label: Text(_currentIndex + 1 < _rounds.length ? 'Next' : 'Finish'),
                               )
                             ],
@@ -244,7 +244,7 @@ class _EmojiParablesScreenState extends State<EmojiParablesScreen> {
                         summary: "You completed the challenge.",
                         xp: _awardedXp,
                         onPlayAgain: _startNewSession,
-                        onBackToHub: () => context.go('/community'),
+                        onBackToHub: () => context.go('/play-learn'),
                       ),
                     ],
                   ],
@@ -269,7 +269,7 @@ class _AnswerButtons extends StatelessWidget {
   final Set<String> disabled;
   final void Function(String title) onTap;
   final String? correct;
-  const _AnswerButtons({required this.options, required this.disabled, required this.onTap, this.correct});
+  _AnswerButtons({required this.options, required this.disabled, required this.onTap, this.correct});
 
   @override
   Widget build(BuildContext context) {
@@ -279,13 +279,13 @@ class _AnswerButtons extends StatelessWidget {
       children: [
         for (final title in options)
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: EdgeInsets.only(bottom: 8),
             child: InkWell(
               onTap: (disabled.contains(title) || correct != null) ? null : () => onTap(title),
               borderRadius: BorderRadius.circular(24),
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: _backgroundFor(title, cs, correct, disabled.contains(title)),
                   borderRadius: BorderRadius.circular(24),
@@ -298,7 +298,7 @@ class _AnswerButtons extends StatelessWidget {
                       size: 20,
                       color: _iconColorFor(title, cs, correct, disabled.contains(title)),
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         title,
@@ -337,6 +337,6 @@ class _AnswerButtons extends StatelessWidget {
   Color _iconColorFor(String title, ColorScheme cs, String? correct, bool isDisabled) {
     if (correct == title) return Colors.greenAccent;
     if (isDisabled) return Colors.amber;
-    return GamerColors.textSecondary;
+    return cs.onSurfaceVariant;
   }
 }

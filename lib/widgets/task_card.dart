@@ -1,3 +1,4 @@
+import '../theme/scripture_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -37,19 +38,19 @@ class TaskCard extends StatelessWidget {
     }
   }
 
-  Color _getQuestColor() {
+  Color _getQuestColor(BuildContext context) {
     final cat = quest.category.isNotEmpty ? quest.category : quest.type;
     switch (cat) {
       case 'daily':
-        return GamerColors.neonCyan;
+        return QuestPalette.of(context).neonCyan;
       case 'weekly':
-        return GamerColors.neonPurple;
+        return QuestPalette.of(context).neonPurple;
       case 'beginner':
-        return GamerColors.success;
+        return QuestPalette.of(context).success;
       case 'event':
-        return GamerColors.accentSecondary;
+        return QuestPalette.of(context).accentSecondary;
       default:
-        return GamerColors.accent;
+        return QuestPalette.of(context).accent;
     }
   }
 
@@ -69,7 +70,7 @@ class TaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (readingV2) return _buildReadingCard(context);
-    final questColor = _getQuestColor();
+    final questColor = _getQuestColor(context);
     final progress = quest.progress;
     final isManual = !quest.isAutoTracked;
     // Theme references available via Theme.of(context)
@@ -994,7 +995,7 @@ class TaskCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(_getQuestIcon(), color: _getQuestColor(), size: 22),
+                  Icon(_getQuestIcon(), color: _getQuestColor(context), size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(

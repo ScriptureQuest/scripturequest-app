@@ -1,3 +1,4 @@
+import '../theme/scripture_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -17,7 +18,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppProvider>(builder: (context, provider, _) {
       final user = provider.currentUser;
-      if (user == null) return const Scaffold(body: Center(child: Text('Error loading user')));
+      if (user == null) return Scaffold(body: Center(child: Text('Error loading user')));
 
       // Scripture stats
       final totalChaptersRead = provider.totalChaptersRead;
@@ -46,20 +47,20 @@ class ProfileScreen extends StatelessWidget {
         appBar: AppBar(
           title: Text('Profile', style: Theme.of(context).textTheme.titleLarge),
           centerTitle: true,
-          actions: const [HomeActionButton()],
+          actions: [HomeActionButton()],
         ),
         body: RefreshIndicator(
           onRefresh: () async {
             // Re-bind profile stats from provider (no logic changes)
-            await Future.delayed(const Duration(milliseconds: 350));
+            await Future.delayed(Duration(milliseconds: 350));
           },
           color: cs.primary,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+            padding: EdgeInsets.fromLTRB(16, 16, 16, 20),
             children: [
             // Header — avatar + equipped title badge (compact, reduced padding)
             SacredCard(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -72,18 +73,18 @@ class ProfileScreen extends StatelessWidget {
                     hasAura: (provider.equippedCosmetics['aura'] ?? '').toString().isNotEmpty,
                     hasFrame: (provider.equippedCosmetics['frame'] ?? '').toString().isNotEmpty,
                   ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   _EquippedTitlePill(title: (equippedTitleName == null || equippedTitleName.trim().isEmpty) ? provider.faithTitle : equippedTitleName),
                 ],
               ),
             ),
 
-            const SizedBox(height: 16),
-            const SectionHeader('Your Journey so far', icon: Icons.insights_rounded),
+            SizedBox(height: 16),
+            SectionHeader('Your Journey so far', icon: Icons.insights_rounded),
             FutureBuilder<Map<String, int>>(
               future: provider.getUserStats(),
               builder: (context, snap) {
-                final stats = snap.data ?? const <String, int>{};
+                final stats = snap.data ?? <String, int>{};
                 final chapters = stats['totalChaptersCompleted'] ?? 0;
                 final quizzesDone = stats['totalQuizzesCompleted'] ?? 0;
                 final reflections = stats['reflectionsCompleted'] ?? 0;
@@ -92,7 +93,7 @@ class ProfileScreen extends StatelessWidget {
                 final currentStreak = provider.currentBibleStreak;
                 final longestStreak = provider.longestBibleStreak;
                 if (snap.connectionState != ConnectionState.done) {
-                  return const Padding(
+                  return Padding(
                     padding: EdgeInsets.symmetric(vertical: 8.0),
                     child: Center(child: CircularProgressIndicator()),
                   );
@@ -111,28 +112,28 @@ class ProfileScreen extends StatelessWidget {
               },
             ),
 
-            const SizedBox(height: 16),
-            const SectionHeader('Tools', icon: Icons.apps_rounded),
-            const SizedBox(height: 8),
+            SizedBox(height: 16),
+            SectionHeader('Tools', icon: Icons.apps_rounded),
+            SizedBox(height: 8),
             // Simplified tools list (beta focus)
             FadeSlideIn(
               child: _SimpleToolsList(),
             ),
 
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             // Collapsible Explore section
             FadeSlideIn(
               child: _CollapsibleExploreSection(),
             ),
 
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             // Secondary sections with reduced emphasis
             FadeSlideIn(child: _TitlesCard()),
 
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             FadeSlideIn(child: _AchievementsPreviewCard()),
 
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
           ],
           ),
         ),
@@ -143,13 +144,13 @@ class ProfileScreen extends StatelessWidget {
 
 /// Simplified tools list for beta focus - compact utility style
 class _SimpleToolsList extends StatelessWidget {
-  const _SimpleToolsList();
+  _SimpleToolsList();
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return SacredCard(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Column(
         children: [
           _ToolRow(
@@ -187,7 +188,7 @@ class _ToolRow extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ToolRow({
+  _ToolRow({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -200,11 +201,11 @@ class _ToolRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
         child: Row(
           children: [
             Icon(icon, color: cs.primary, size: 18),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
@@ -223,7 +224,7 @@ class _ToolRow extends StatelessWidget {
 
 /// Collapsible Explore section - collapsed by default with subtitle
 class _CollapsibleExploreSection extends StatefulWidget {
-  const _CollapsibleExploreSection();
+  _CollapsibleExploreSection();
 
   @override
   State<_CollapsibleExploreSection> createState() => _CollapsibleExploreSectionState();
@@ -246,11 +247,11 @@ class _CollapsibleExploreSectionState extends State<_CollapsibleExploreSection> 
             },
             borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               child: Row(
                 children: [
                   Icon(Icons.explore_rounded, color: cs.primary.withValues(alpha: 0.7), size: 20),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,7 +263,7 @@ class _CollapsibleExploreSectionState extends State<_CollapsibleExploreSection> 
                                 fontWeight: FontWeight.w600,
                               ),
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text(
                           'Features expanding over time',
                           style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -282,9 +283,9 @@ class _CollapsibleExploreSectionState extends State<_CollapsibleExploreSection> 
             ),
           ),
           AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
+            firstChild: SizedBox.shrink(),
             secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+              padding: EdgeInsets.fromLTRB(10, 0, 10, 6),
               child: Column(
                 children: [
                   Divider(height: 1, color: cs.outline.withValues(alpha: 0.12)),
@@ -315,7 +316,7 @@ class _CollapsibleExploreSectionState extends State<_CollapsibleExploreSection> 
               ),
             ),
             crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 200),
+            duration: Duration(milliseconds: 200),
           ),
         ],
       ),
@@ -329,7 +330,7 @@ class _ExploreRowDimmed extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ExploreRowDimmed({
+  _ExploreRowDimmed({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -342,11 +343,11 @@ class _ExploreRowDimmed extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
         child: Row(
           children: [
             Icon(icon, color: cs.primary.withValues(alpha: 0.5), size: 18),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
@@ -364,13 +365,13 @@ class _ExploreRowDimmed extends StatelessWidget {
 }
 
 class _ExploreSection extends StatelessWidget {
-  const _ExploreSection();
+  _ExploreSection();
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return SacredCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Column(
         children: [
           _ExploreRow(
@@ -407,7 +408,7 @@ class _ExploreRow extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ExploreRow({
+  _ExploreRow({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -420,11 +421,11 @@ class _ExploreRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 14),
         child: Row(
           children: [
             Icon(icon, color: cs.primary, size: 22),
-            const SizedBox(width: 14),
+            SizedBox(width: 14),
             Expanded(
               child: Text(
                 label,
@@ -446,8 +447,8 @@ void _openChangeTitleSheet(BuildContext context) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    backgroundColor: GamerColors.darkCard,
-    shape: const RoundedRectangleBorder(
+    backgroundColor: QuestPalette.of(context).darkCard,
+    shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
     builder: (ctx) {
@@ -462,23 +463,23 @@ void _openChangeTitleSheet(BuildContext context) {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.stars_rounded, color: GamerColors.accent),
-                    const SizedBox(width: 8),
+                    Icon(Icons.stars_rounded, color: QuestPalette.of(context).accent),
+                    SizedBox(width: 8),
                     Text('Choose Your Title', style: Theme.of(ctx).textTheme.titleLarge),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Expanded(
                   child: FutureBuilder<List<String>>(
                     future: app.getUnlockedTitleIds(),
                     builder: (context, snap) {
-                      final unlocked = snap.data ?? const <String>[];
+                      final unlocked = snap.data ?? <String>[];
                       final equippedId = app.equippedTitleId;
                       if (snap.connectionState != ConnectionState.done) {
-                        return const Center(child: CircularProgressIndicator());
+                        return Center(child: CircularProgressIndicator());
                       }
                       return ListView.separated(
-                        padding: const EdgeInsets.only(bottom: 16),
+                        padding: EdgeInsets.only(bottom: 16),
                         itemBuilder: (context, index) {
                           final t = seeds[index];
                           final isUnlocked = unlocked.contains(t.id);
@@ -491,7 +492,7 @@ void _openChangeTitleSheet(BuildContext context) {
                                     if (context.mounted) Navigator.of(context).pop();
                                   }
                                 : null,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             borderSide: isEquipped
                                 ? BorderSide(color: cs.primary.withValues(alpha: 0.4), width: 1.2)
                                 : BorderSide(color: cs.outline.withValues(alpha: 0.18)),
@@ -501,7 +502,7 @@ void _openChangeTitleSheet(BuildContext context) {
                                   isUnlocked ? Icons.stars_rounded : Icons.lock_rounded,
                                   color: isUnlocked ? cs.primary : cs.onSurfaceVariant,
                                 ),
-                                const SizedBox(width: 10),
+                                SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -513,7 +514,7 @@ void _openChangeTitleSheet(BuildContext context) {
                                               fontWeight: FontWeight.w600,
                                             ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      SizedBox(height: 2),
                                       Text(
                                         isUnlocked ? t.description : 'Locked • ${t.description}',
                                         style: Theme.of(context).textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant),
@@ -523,13 +524,13 @@ void _openChangeTitleSheet(BuildContext context) {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 10),
+                                SizedBox(width: 10),
                                 _TitleStatusChip(isUnlocked: isUnlocked, isEquipped: isEquipped),
                               ],
                             ),
                           );
                         },
-                        separatorBuilder: (context, _) => const SizedBox(height: 10),
+                        separatorBuilder: (context, _) => SizedBox(height: 10),
                         itemCount: seeds.length,
                       );
                     },
@@ -555,7 +556,7 @@ class _TopIdentity extends StatelessWidget {
   final bool hasAura;
   final bool hasFrame;
 
-  const _TopIdentity({
+  _TopIdentity({
     required this.username,
     required this.level,
     required this.faithTitle,
@@ -565,23 +566,23 @@ class _TopIdentity extends StatelessWidget {
     required this.hasFrame,
   });
 
-  Color _rarityColor(String? rarity) {
+  Color _rarityColor(BuildContext context, String? rarity) {
     switch ((rarity ?? 'common').toLowerCase()) {
       case 'legendary':
-        return GamerColors.neonPink;
+        return QuestPalette.of(context).neonPink;
       case 'epic':
-        return GamerColors.neonPurple;
+        return QuestPalette.of(context).neonPurple;
       case 'rare':
-        return GamerColors.neonCyan;
+        return QuestPalette.of(context).neonCyan;
       default:
-        return GamerColors.textSecondary;
+        return QuestPalette.of(context).textSecondary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final titleToShow = (equippedTitle == null || equippedTitle!.trim().isEmpty) ? faithTitle : equippedTitle!;
-    final rarityColor = _rarityColor(equippedRarity);
+    final rarityColor = _rarityColor(context, equippedRarity);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -598,11 +599,11 @@ class _TopIdentity extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      GamerColors.neonCyan.withValues(alpha: 0.12),
-                      GamerColors.neonPurple.withValues(alpha: 0.06),
+                      QuestPalette.of(context).neonCyan.withValues(alpha: 0.12),
+                      QuestPalette.of(context).neonPurple.withValues(alpha: 0.06),
                       Colors.transparent,
                     ],
-                    stops: const [0.25, 0.6, 1.0],
+                    stops: [0.25, 0.6, 1.0],
                   ),
                 ),
               ),
@@ -620,9 +621,9 @@ class _TopIdentity extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         Text(username, style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         // Calm stats line under username per spec
         Builder(builder: (context) {
           final app = context.watch<AppProvider>();
@@ -650,7 +651,7 @@ class _ToolLargeItem {
   final IconData icon;
   final String? route;
   final bool enabled;
-  const _ToolLargeItem({
+  _ToolLargeItem({
     required this.label,
     required this.icon,
     this.route,
@@ -660,7 +661,7 @@ class _ToolLargeItem {
 
 class _ToolsLargeGrid extends StatelessWidget {
   final List<_ToolLargeItem> items;
-  const _ToolsLargeGrid({required this.items});
+  _ToolsLargeGrid({required this.items});
 
   @override
   Widget build(BuildContext context) {
@@ -688,7 +689,7 @@ class _ToolsLargeGrid extends StatelessWidget {
 
 class _LargeToolTile extends StatelessWidget {
   final _ToolLargeItem item;
-  const _LargeToolTile({required this.item});
+  _LargeToolTile({required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -708,7 +709,7 @@ class _LargeToolTile extends StatelessWidget {
               top: 8,
               right: 8,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(999),
@@ -732,7 +733,7 @@ class _LargeToolTile extends StatelessWidget {
                 ),
                 child: Center(child: Icon(item.icon, color: (purple?.accent ?? cs.primary), size: 22)),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 isCosmetics ? 'Cosmetics' : item.label,
                 style: Theme.of(context).textTheme.bodyMedium,
@@ -753,7 +754,7 @@ class _LargeToolTile extends StatelessWidget {
 
     final card = SacredCard(
       // Do not pass onTap to avoid ripple; we add our own gentle press animation
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       child: Opacity(opacity: item.enabled ? 1.0 : 0.45, child: content),
       borderSide: BorderSide(color: (Theme.of(context).extension<PurpleUi>()?.cardOutline ?? cs.outline.withValues(alpha: 0.22))),
       radius: 16,
@@ -773,7 +774,7 @@ class _LargeToolTile extends StatelessWidget {
 class _PressableScale extends StatefulWidget {
   final Widget child;
   final VoidCallback onTap;
-  const _PressableScale({required this.child, required this.onTap});
+  _PressableScale({required this.child, required this.onTap});
 
   @override
   State<_PressableScale> createState() => _PressableScaleState();
@@ -797,7 +798,7 @@ class _PressableScaleState extends State<_PressableScale> {
       onTapUp: (_) => _setPressed(false),
       child: AnimatedScale(
         scale: _pressed ? 0.98 : 1.0,
-        duration: const Duration(milliseconds: 120),
+        duration: Duration(milliseconds: 120),
         curve: Curves.easeOutCubic,
         child: widget.child,
       ),
@@ -808,7 +809,7 @@ class _PressableScaleState extends State<_PressableScale> {
 
 // Achievements preview card: shows count and up to 3 recent unlocked achievements.
 class _AchievementsPreviewCard extends StatelessWidget {
-  const _AchievementsPreviewCard();
+  _AchievementsPreviewCard();
 
   List<AchievementModel> _recentUnlocked(List<AchievementModel> list, {int take = 3}) {
     final unlocked = list.where((a) => a.isUnlocked).toList();
@@ -832,17 +833,17 @@ class _AchievementsPreviewCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final purple = Theme.of(context).extension<PurpleUi>();
     return SacredCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(Icons.emoji_events_rounded, color: purple?.accent ?? cs.primary, size: 20),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(child: Text('Achievements', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600))),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(999),
@@ -852,11 +853,11 @@ class _AchievementsPreviewCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           if (unlockedCount == 0) ...[
             Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
+                padding: EdgeInsets.symmetric(vertical: 6),
                 child: Text(
                   'You haven’t unlocked any achievements yet — they’ll appear here as you keep going.',
                   textAlign: TextAlign.center,
@@ -864,27 +865,27 @@ class _AchievementsPreviewCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
                 onPressed: () => context.push('/achievements'),
                 icon: Icon(Icons.chevron_right_rounded, color: purple?.accent ?? cs.primary),
-                label: const Text('View all achievements'),
+                label: Text('View all achievements'),
               ),
             ),
           ] else ...[
             // Show up to 3 most recent unlocked achievements
             for (final a in recent) ...[
               _AchievementPreviewRow(name: a.displayName, description: a.description, status: 'Unlocked'),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
             ],
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
                 onPressed: () => context.push('/achievements'),
                 icon: Icon(Icons.chevron_right_rounded, color: purple?.accent ?? cs.primary),
-                label: const Text('View all achievements'),
+                label: Text('View all achievements'),
               ),
             ),
           ],
@@ -898,14 +899,14 @@ class _AchievementPreviewRow extends StatelessWidget {
   final String name;
   final String description;
   final String? status; // e.g., "Unlocked"
-  const _AchievementPreviewRow({required this.name, required this.description, this.status});
+  _AchievementPreviewRow({required this.name, required this.description, this.status});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final purple = Theme.of(context).extension<PurpleUi>();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(10),
@@ -914,13 +915,13 @@ class _AchievementPreviewRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.emoji_events_rounded, color: purple?.accent ?? cs.primary, size: 18),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name, style: Theme.of(context).textTheme.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   description,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant),
@@ -931,7 +932,7 @@ class _AchievementPreviewRow extends StatelessWidget {
             ),
           ),
           if (status != null && status!.isNotEmpty) ...[
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(status!, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.primary, fontWeight: FontWeight.w600)),
           ],
         ],
@@ -963,31 +964,31 @@ class _TitlesCard extends StatelessWidget {
     return FutureBuilder<List<String>>(
       future: app.getUnlockedTitleIds(),
       builder: (context, snap) {
-        final unlocked = snap.data ?? const <String>[];
+        final unlocked = snap.data ?? <String>[];
         final otherUnlocked = seeds
             .where((t) => unlocked.contains(t.id) && t.id != equippedId)
             .take(3)
             .toList();
 
         return SacredCard(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Icon(Icons.emoji_events_outlined, color: cs.primary, size: 20),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Text('Your Titles', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
                 ],
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               // Equipped title spotlight (tappable)
               InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () => _openChangeTitleSheet(context),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                   decoration: BoxDecoration(
                     color: cs.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(12),
@@ -996,13 +997,13 @@ class _TitlesCard extends StatelessWidget {
                   child: Row(
                     children: [
                       Icon(Icons.stars_rounded, color: cs.primary),
-                      const SizedBox(width: 10),
+                      SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Equipped: $equippedName', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text('Shown across your journey.', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
                           ],
                         ),
@@ -1012,10 +1013,10 @@ class _TitlesCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               if (unlocked.length > 1 && otherUnlocked.isNotEmpty) ...[
                 Text('Unlocked titles', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -1023,14 +1024,14 @@ class _TitlesCard extends StatelessWidget {
                     for (final t in otherUnlocked) _TitleChip(label: t.name),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
               ],
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
                   onPressed: () => _openChangeTitleSheet(context),
                   icon: Icon(Icons.chevron_right_rounded, color: cs.primary),
-                  label: const Text('Manage titles'),
+                  label: Text('Manage titles'),
                 ),
               ),
             ],
@@ -1043,13 +1044,13 @@ class _TitlesCard extends StatelessWidget {
 
 class _TitleChip extends StatelessWidget {
   final String label;
-  const _TitleChip({required this.label});
+  _TitleChip({required this.label});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(999),
@@ -1059,7 +1060,7 @@ class _TitleChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.label_rounded, size: 14, color: cs.primary),
-          const SizedBox(width: 6),
+          SizedBox(width: 6),
           Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600)),
         ],
       ),
@@ -1070,14 +1071,14 @@ class _TitleChip extends StatelessWidget {
 class _TitleStatusChip extends StatelessWidget {
   final bool isUnlocked;
   final bool isEquipped;
-  const _TitleStatusChip({required this.isUnlocked, required this.isEquipped});
+  _TitleStatusChip({required this.isUnlocked, required this.isEquipped});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     if (isEquipped) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(999),
@@ -1086,7 +1087,7 @@ class _TitleStatusChip extends StatelessWidget {
         child: Row(
           children: [
             Icon(Icons.check_rounded, size: 16, color: cs.primary),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text('Equipped', style: Theme.of(context).textTheme.labelSmall),
           ],
         ),
@@ -1094,7 +1095,7 @@ class _TitleStatusChip extends StatelessWidget {
     }
     if (isUnlocked) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(999),
@@ -1110,14 +1111,14 @@ class _TitleStatusChip extends StatelessWidget {
 // Sacred pill for equipped title under avatar
 class _EquippedTitlePill extends StatelessWidget {
   final String? title;
-  const _EquippedTitlePill({required this.title});
+  _EquippedTitlePill({required this.title});
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final purple = Theme.of(context).extension<PurpleUi>();
-    if (title == null || title!.trim().isEmpty) return const SizedBox.shrink();
+    if (title == null || title!.trim().isEmpty) return SizedBox.shrink();
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: purple?.accent.withValues(alpha: 0.12) ?? cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(999),
@@ -1127,7 +1128,7 @@ class _EquippedTitlePill extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.stars_rounded, color: purple?.accent ?? cs.primary, size: 16),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Text(
             title!,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -1151,7 +1152,7 @@ class _YourJourneySoFarCard extends StatelessWidget {
   final int currentStreak;
   final int longestStreak;
 
-  const _YourJourneySoFarCard({
+  _YourJourneySoFarCard({
     required this.chapters,
     required this.quizzes,
     required this.reflections,
@@ -1167,14 +1168,14 @@ class _YourJourneySoFarCard extends StatelessWidget {
     
     Widget row(String label, String value, {IconData? icon, bool dimmed = false}) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
+        padding: EdgeInsets.symmetric(vertical: 3),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(icon ?? Icons.check_circle_outline, 
                 color: dimmed ? cs.primary.withValues(alpha: 0.4) : cs.primary, 
                 size: 16),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: Text(
                 '$label: $value', 
@@ -1212,13 +1213,13 @@ class _YourJourneySoFarCard extends StatelessWidget {
     }
 
     return SacredCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('A quiet look at how far you\'ve come.', 
               style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           ...rows,
         ],
       ),

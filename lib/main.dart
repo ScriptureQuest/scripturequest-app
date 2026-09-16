@@ -1,18 +1,16 @@
+import 'widgets/product/product_ui.dart';
+import 'theme/scripture_theme.dart';
 import 'screens/connected/exploration_screen.dart';
-import 'package:level_up_your_faith/widgets/reading_v2/reading_design.dart';
 import 'package:flutter/material.dart';
 import 'package:level_up_your_faith/screens/connected/journeys_screen.dart';
 import 'package:level_up_your_faith/screens/connected/discovery_screen.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:async';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
 import 'package:level_up_your_faith/screens/main_navigation.dart';
 import 'package:level_up_your_faith/screens/home_screen.dart';
 import 'package:level_up_your_faith/screens/verses_screen.dart';
-import 'package:level_up_your_faith/screens/quest_board_screen.dart';
 import 'package:level_up_your_faith/screens/tasks_screen.dart';
 import 'package:level_up_your_faith/screens/profile_screen.dart';
 import 'package:level_up_your_faith/screens/verse_detail_screen.dart';
@@ -118,11 +116,9 @@ class MyApp extends StatelessWidget {
           update: (ctx, app, svc) => svc ?? CosmeticService(app: app),
         ),
       ],
-      child: Consumer2<AppProvider, CosmeticService>(
-        builder: (context, app, cosmetics, _) {
-          final mode = app.themeMode;
-          final theme = cosmetics.previewTheme ?? appThemeFor(mode);
-          debugPrint('MyApp: building MaterialApp with theme mode=$mode');
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
+          final theme = ScriptureThemes.build(settings.questThemeId);
           return MaterialApp.router(
             title: 'Scripture Quest',
             debugShowCheckedModeBanner: false,
@@ -150,19 +146,18 @@ final _router = GoRouter(
     // Onboarding shown outside the shell (no bottom nav)
     GoRoute(
       path: '/onboarding',
-      builder: (context, state) => const OnboardingScreen(),
+      builder: (context, state) => Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: const OnboardingScreen()),
     ),
     GoRoute(
       path: '/onboarding/personalized',
-      builder: (context, state) => const PersonalizedSetupFlow(),
+      builder: (context, state) => Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: const PersonalizedSetupFlow()),
     ),
     ShellRoute(
       builder: (context, state, child) {
         final path = state.uri.path;
-        final shell = MainNavigation(child: child);
-        return path == '/' || path == '/bible' || path == '/verses' || path.startsWith('/journeys') || path == '/journey-board' || path == '/you' || path.startsWith('/discoveries') || path == '/learn' || path.startsWith('/find-passage') || path == '/remembered' || path == '/memorization-practice'
-            ? ReadingDesign(child: shell)
-            : shell;
+        final modern = ['/', '/bible', '/verses', '/scripture', '/journeys', '/journey-board', '/you', '/discoveries', '/learn', '/find-passage', '/remembered', '/memorization-practice', '/play-learn', '/matching-game', '/verse-scramble', '/book-order-game', '/emoji-parables', '/memorization', '/chapter-quiz', '/journal', '/bookmarks', '/highlights', '/reading-stats', '/settings', '/profile'].any((p) => path == p || (p != '/' && path.startsWith('$p/')));
+        // Staged migration: preserve readable legacy surfaces until their own pass.
+        return MainNavigation(child: modern ? ProductWidth(maxWidth: ['/journal','/settings','/reading-stats','/profile'].contains(path) ? 820 : 1040, child: child) : Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: child));
       },
       routes: [
         GoRoute(path: '/journeys', builder: (context, state) => const JourneysScreen()),
@@ -356,7 +351,7 @@ final _router = GoRouter(
       path: '/verse/:id',
       builder: (context, state) {
         final verseId = state.pathParameters['id']!;
-        return VerseDetailScreen(verseId: verseId);
+        return Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: VerseDetailScreen(verseId: verseId));
       },
     ),
     // New: Quest detail (formerly Questline detail)
@@ -364,7 +359,7 @@ final _router = GoRouter(
       path: '/quest/:id',
       builder: (context, state) {
         final id = state.pathParameters['id']!;
-        return QuestlineDetailScreen(questlineId: id);
+        return Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: QuestlineDetailScreen(questlineId: id));
       },
     ),
     // Backward-compat: /questline/:id -> Quest detail
@@ -372,7 +367,7 @@ final _router = GoRouter(
       path: '/questline/:id',
       builder: (context, state) {
         final id = state.pathParameters['id']!;
-        return QuestlineDetailScreen(questlineId: id);
+        return Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: QuestlineDetailScreen(questlineId: id));
       },
     ),
     GoRoute(
@@ -382,13 +377,13 @@ final _router = GoRouter(
     // Public player profile routes (outside shell to avoid bottom nav)
     GoRoute(
       path: '/player/me',
-      builder: (context, state) => const PublicProfileScreen(userId: null),
+      builder: (context, state) => Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: const PublicProfileScreen(userId: null)),
     ),
     GoRoute(
       path: '/player/:id',
       builder: (context, state) {
         final id = state.pathParameters['id'];
-        return PublicProfileScreen(userId: id);
+        return Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: PublicProfileScreen(userId: id));
       },
     ),
   ],

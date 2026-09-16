@@ -41,11 +41,11 @@ class BibleReaderStyles {
         );
       case 'night':
         return const BibleReaderThemeData(
-          background: Color(0xFF131722),
+          background: Color(0xFF111C29),
           text: Color(0xFFE5E7EB),
           muted: Color(0xFF9CA3AF),
           red: Color(0xFFFF6A6A), // soft, not neon-bright
-          accent: Color(0xFF38BDF8), // soft neon blue
+          accent: Color(0xFF94CFD0), // Scripture Dark teal
         );
       case 'paper':
       default:
@@ -54,7 +54,7 @@ class BibleReaderStyles {
           text: Color(0xFF111827),
           muted: Color(0xFF6B7280),
           red: Color(0xFFC1121F), // classic red
-          accent: Color(0xFF0EA5E9), // FaithQuest teal accent
+          accent: Color(0xFF23675B), // Scripture Light forest green
         );
     }
   }

@@ -1,7 +1,7 @@
+import '../theme/scripture_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/models/chapter_quiz.dart';
 import 'package:level_up_your_faith/services/chapter_quiz_service.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
@@ -48,7 +48,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
     } catch (e) {
       setState(() {
         _quiz = null;
-        _answers = const [];
+        _answers = [];
         _loading = false;
       });
     }
@@ -66,15 +66,15 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chapter Learning'),
+        title: Text('Chapter Learning'),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: GamerColors.accent),
+          icon: Icon(Icons.arrow_back, color: QuestPalette.of(context).accent),
           onPressed: () => context.pop(),
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: GamerColors.accent))
+          ? Center(child: CircularProgressIndicator(color: QuestPalette.of(context).accent))
           : SafeArea(child: _buildBody(theme)),
     );
   }
@@ -83,19 +83,19 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
     if (_quiz == null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.menu_book, color: GamerColors.accent, size: 48),
-              const SizedBox(height: 12),
+              Icon(Icons.menu_book, color: QuestPalette.of(context).accent, size: 48),
+              SizedBox(height: 12),
               Text('No reflection available for this chapter yet.', style: theme.textTheme.titleMedium),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Text('More are coming soon. Keep reading joyfully! ✨', style: theme.textTheme.bodyMedium),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () => context.pop(),
-                child: const Text('Back'),
+                child: Text('Back'),
               ),
             ],
           ),
@@ -107,43 +107,43 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
       final result = _computeResult();
       final passed = result.totalFactual == 0 ? true : (result.correct / result.totalFactual) >= 0.6;
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _chapterTag(),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
-                color: GamerColors.darkCard,
+                color: QuestPalette.of(context).darkCard,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: GamerColors.accent.withValues(alpha: 0.25), width: 1),
+                border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.25), width: 1),
               ),
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(passed ? 'Well done.' : 'Keep going.', style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text('You answered ${result.correct} out of ${result.totalFactual} correctly.', style: theme.textTheme.bodyMedium),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Factual answers are checked; private reflections are not graded. Return to Scripture to explore what you noticed.',
-                    style: theme.textTheme.bodySmall?.copyWith(color: GamerColors.textSecondary),
+                    style: theme.textTheme.bodySmall?.copyWith(color: QuestPalette.of(context).textSecondary),
                   ),
                 ],
               ),
             ),
-            const Spacer(),
+            Spacer(),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => context.push(Uri(path: '/verses', queryParameters: {'ref': '${widget.bookId} ${widget.chapter}'}).toString()),
-                    child: const Text('Read the chapter'),
+                    child: Text('Read the chapter'),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -154,7 +154,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
                         _load();
                       });
                     },
-                    child: const Text('Try again'),
+                    child: Text('Try again'),
                   ),
                 ),
               ],
@@ -165,29 +165,29 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _chapterTag(),
-          TextButton(onPressed: () => context.push(Uri(path: '/verses', queryParameters: {'ref': '${widget.bookId} ${widget.chapter}'}).toString()), child: const Text('Read the passage in context')),
-          const SizedBox(height: 12),
+          TextButton(onPressed: () => context.push(Uri(path: '/verses', queryParameters: {'ref': '${widget.bookId} ${widget.chapter}'}).toString()), child: Text('Read the passage in context')),
+          SizedBox(height: 12),
           _difficultySelector(theme),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Expanded(
             child: ListView.separated(
               itemCount: _quiz!.questions.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) => SizedBox(height: 12),
               itemBuilder: (context, index) => _buildQuestionCard(context, index),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _saving ? null : _onFinish,
-              icon: const Icon(Icons.check, color: GamerColors.darkBackground),
-              label: const Text('Finish'),
+              icon: Icon(Icons.check, color: QuestPalette.of(context).darkBackground),
+              label: Text('Finish'),
             ),
           ),
         ],
@@ -197,16 +197,16 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
 
   Widget _chapterTag() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: GamerColors.accent.withValues(alpha: 0.08),
+        color: QuestPalette.of(context).accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.5), width: 1),
+        border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.5), width: 1),
       ),
       child: Text(
         '${_quiz!.bookId.toUpperCase()} • CHAPTER ${_quiz!.chapter}',
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: GamerColors.accent,
+              color: QuestPalette.of(context).accent,
               letterSpacing: 1.2,
             ),
       ),
@@ -222,31 +222,31 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
     final attempted = selected != null;
     return Container(
       decoration: BoxDecoration(
-        color: GamerColors.darkCard,
+        color: QuestPalette.of(context).darkCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.20), width: 1),
+        border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.20), width: 1),
       ),
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.help_outline, color: GamerColors.accent),
-              const SizedBox(width: 8),
+              Icon(Icons.help_outline, color: QuestPalette.of(context).accent),
+              SizedBox(width: 8),
               Expanded(child: Text(q.prompt, style: theme.textTheme.titleMedium)),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           ...List.generate(q.options.length, (optIdx) {
             final opt = q.options[optIdx];
             final selectedHere = selected == optIdx;
-            Color borderColor = GamerColors.accent.withValues(alpha: 0.20);
+            Color borderColor = QuestPalette.of(context).accent.withValues(alpha: 0.20);
             if (attempted && isFactual && selectedHere) {
-              borderColor = isCorrect ? GamerColors.success.withValues(alpha: 0.6) : GamerColors.textSecondary.withValues(alpha: 0.5);
+              borderColor = isCorrect ? QuestPalette.of(context).success.withValues(alpha: 0.6) : QuestPalette.of(context).textSecondary.withValues(alpha: 0.5);
             } else if (attempted && q.isReflective && selectedHere) {
-              borderColor = GamerColors.accent.withValues(alpha: 0.5);
+              borderColor = QuestPalette.of(context).accent.withValues(alpha: 0.5);
             }
             return InkWell(
               onTap: () {
@@ -259,39 +259,39 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
               },
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                margin: EdgeInsets.only(bottom: 8),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: borderColor, width: 1),
-                  color: selectedHere ? GamerColors.accent.withValues(alpha: 0.08) : Colors.transparent,
+                  color: selectedHere ? QuestPalette.of(context).accent.withValues(alpha: 0.08) : Colors.transparent,
                 ),
                 child: Row(
                   children: [
                     Icon(
                       selectedHere ? Icons.radio_button_checked : Icons.radio_button_off,
-                      color: selectedHere ? GamerColors.accent : GamerColors.textSecondary,
+                      color: selectedHere ? QuestPalette.of(context).accent : QuestPalette.of(context).textSecondary,
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10),
                     Expanded(child: Text(opt, style: theme.textTheme.bodyMedium)),
                   ],
                 ),
               ),
             );
           }),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           if (attempted && isFactual)
             Row(
               children: [
                 Icon(isCorrect ? Icons.check_circle : Icons.info_outline,
-                    color: isCorrect ? GamerColors.success : GamerColors.textSecondary, size: 18),
-                const SizedBox(width: 6),
+                    color: isCorrect ? QuestPalette.of(context).success : QuestPalette.of(context).textSecondary, size: 18),
+                SizedBox(width: 6),
                 Text(
                   isCorrect
                       ? 'Nice — that’s right.'
                       : 'Good try. Let’s look at the passage again next time.',
                   style: theme.textTheme.labelMedium?.copyWith(
-                    color: isCorrect ? GamerColors.success : GamerColors.textSecondary,
+                    color: isCorrect ? QuestPalette.of(context).success : QuestPalette.of(context).textSecondary,
                   ),
                 ),
               ],
@@ -299,8 +299,8 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
           if (attempted && q.isReflective)
             Row(
               children: [
-                const Icon(Icons.favorite, color: GamerColors.accent, size: 18),
-                const SizedBox(width: 6),
+                Icon(Icons.favorite, color: QuestPalette.of(context).accent, size: 18),
+                SizedBox(width: 6),
                 Text('Thanks for reflecting on this.', style: theme.textTheme.labelMedium),
               ],
             ),
@@ -323,7 +323,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Quiz saved · ${saved.xp > 0 ? '+${saved.xp} XP' : 'Earlier reward kept'}${saved.changes.isEmpty ? '' : '\n${saved.changes.join('\n')}'}')));
       }
     } catch (_) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not save this quiz. Please try again.')));
+      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not save this quiz. Please try again.')));
     } finally { if(mounted) setState(() => _saving = false); }
   }
 
@@ -345,7 +345,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
     String count(QuizDifficulty d) => '${d.desiredQuestionCount} questions';
     Widget chip(QuizDifficulty d, {required IconData icon}) {
       final selected = _selectedDifficulty == d;
-      final base = GamerColors.accent;
+      final base = QuestPalette.of(context).accent;
       final bg = selected ? base.withValues(alpha: 0.20) : base.withValues(alpha: 0.10);
       final border = selected ? base.withValues(alpha: 0.65) : base.withValues(alpha: 0.35);
       return InkWell(
@@ -364,7 +364,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
               },
         borderRadius: BorderRadius.circular(999),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(999),
@@ -375,14 +375,14 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
             children: [
               Icon(
                 selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                color: selected ? GamerColors.neonCyan : GamerColors.textSecondary,
+                color: selected ? QuestPalette.of(context).neonCyan : QuestPalette.of(context).textSecondary,
                 size: 16,
               ),
-              const SizedBox(width: 8),
-              Icon(icon, color: GamerColors.accent, size: 16),
-              const SizedBox(width: 6),
+              SizedBox(width: 8),
+              Icon(icon, color: QuestPalette.of(context).accent, size: 16),
+              SizedBox(width: 6),
               Text('${d.label} • ${count(d)}',
-                  style: theme.textTheme.labelLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
+                  style: theme.textTheme.labelLarge?.copyWith(color: theme.colorScheme.onSurface, fontWeight: FontWeight.w600)),
             ],
           ),
         ),
@@ -392,8 +392,8 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Choose your challenge:', style: theme.textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary)),
-        const SizedBox(height: 8),
+        Text('Choose your challenge:', style: theme.textTheme.labelLarge?.copyWith(color: QuestPalette.of(context).textSecondary)),
+        SizedBox(height: 8),
         Wrap(
           spacing: 10,
           runSpacing: 10,
@@ -412,5 +412,5 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
 class _QuizResult {
   final int totalFactual;
   final int correct;
-  const _QuizResult({required this.totalFactual, required this.correct});
+  _QuizResult({required this.totalFactual, required this.correct});
 }

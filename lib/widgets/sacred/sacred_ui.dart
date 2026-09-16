@@ -136,6 +136,10 @@ class _FadeSlideInState extends State<FadeSlideIn> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.of(context).disableAnimations) {
+      _c.stop();
+      return widget.child;
+    }
     final fade = CurvedAnimation(parent: _c, curve: Interval(0.0, 1.0, curve: widget.curve));
     final slide = Tween<Offset>(begin: Offset(0, widget.dy / 100), end: Offset.zero).animate(fade);
     return FadeTransition(

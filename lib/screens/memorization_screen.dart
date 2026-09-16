@@ -1,8 +1,8 @@
+import '../theme/scripture_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
-import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/widgets/home_action_button.dart';
 import 'package:level_up_your_faith/utils/memorization_defaults.dart';
 
@@ -31,11 +31,11 @@ class _MemorizationScreenState extends State<MemorizationScreen> {
   Color _statusColor(MemorizationStatus s) {
     switch (s) {
       case MemorizationStatus.learned:
-        return GamerColors.success;
+        return QuestPalette.of(context).success;
       case MemorizationStatus.practicing:
       case MemorizationStatus.newItem:
       default:
-        return GamerColors.neonCyan;
+        return QuestPalette.of(context).neonCyan;
     }
   }
 
@@ -57,63 +57,63 @@ class _MemorizationScreenState extends State<MemorizationScreen> {
           centerTitle: true,
           leading: Navigator.of(context).canPop()
               ? IconButton(
-                  icon: const Icon(Icons.arrow_back, color: GamerColors.accent),
+                  icon: Icon(Icons.arrow_back, color: QuestPalette.of(context).accent),
                   onPressed: () => context.pop(),
                 )
               : null,
-          actions: const [HomeActionButton()],
+          actions: [HomeActionButton()],
         ),
         body: Column(
                 children: [
                   if (usingDefaults)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             MemorizationDefaults.hintTitle,
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: GamerColors.textSecondary),
+                            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: QuestPalette.of(context).textSecondary),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             MemorizationDefaults.hintBody,
-                            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary),
+                            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: QuestPalette.of(context).textSecondary),
                           ),
                         ],
                       ),
                     ),
                   // Filters
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
                     child: Row(
                       children: [
                         ChoiceChip(
-                          label: const Text('All'),
+                          label: Text('All'),
                           selected: filter == 0,
                           onSelected: (_) => setState(() => filter = 0),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         ChoiceChip(
-                          label: const Text('Learning'),
+                          label: Text('Learning'),
                           selected: filter == 1,
                           onSelected: (_) => setState(() => filter = 1),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         ChoiceChip(
-                          label: const Text('Mastered'),
+                          label: Text('Mastered'),
                           selected: filter == 2,
                           onSelected: (_) => setState(() => filter = 2),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Expanded(
                     child: ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
                       itemCount: filtered.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, __) => SizedBox(height: 12),
                       itemBuilder: (context, idx) {
                         final keyStr = filtered[idx];
                         final parts = keyStr.split(':');
@@ -121,23 +121,23 @@ class _MemorizationScreenState extends State<MemorizationScreen> {
                         final status = app.getMemorizationStatus(keyStr);
                         final count = app.getMemorizationPracticeCount(keyStr);
                         return Container(
-                          padding: const EdgeInsets.all(14),
+                          padding: EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: GamerColors.darkCard,
+                            color: QuestPalette.of(context).darkCard,
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: GamerColors.accent.withValues(alpha: 0.22), width: 1),
+                            border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.22), width: 1),
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.psychology_alt, color: GamerColors.accent),
-                              const SizedBox(width: 10),
+                              Icon(Icons.psychology_alt, color: QuestPalette.of(context).accent),
+                              SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(ref, style: Theme.of(context).textTheme.titleMedium),
-                                    const SizedBox(height: 6),
+                                    SizedBox(height: 6),
                                     FutureBuilder<String>(
                                       future: context.read<AppProvider>().loadKjvPassage(ref),
                                       builder: (context, snap) {
@@ -146,17 +146,18 @@ class _MemorizationScreenState extends State<MemorizationScreen> {
                                         final snippet = body.trim().isEmpty ? '' : (body.trim().length > 90 ? body.trim().substring(0, 90) + '…' : body.trim());
                                         return Text(
                                           snippet.isEmpty ? ' ' : snippet,
-                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(color: GamerColors.textSecondary),
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(color: QuestPalette.of(context).textSecondary),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
                                         );
                                       },
                                     ),
-                                    const SizedBox(height: 8),
-                                    Row(
+                                    SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 8, runSpacing: 6,
                                       children: [
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                           decoration: BoxDecoration(
                                             color: _statusColor(status).withValues(alpha: 0.10),
                                             borderRadius: BorderRadius.circular(999),
@@ -164,18 +165,17 @@ class _MemorizationScreenState extends State<MemorizationScreen> {
                                           ),
                                           child: Text(_statusLabel(status), style: Theme.of(context).textTheme.labelSmall?.copyWith(color: _statusColor(status), fontWeight: FontWeight.w700)),
                                         ),
-                                        const SizedBox(width: 8),
-                                        Text('Streak $count', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: GamerColors.textSecondary)),
+                                        Text('Streak $count', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: QuestPalette.of(context).textSecondary)),
                                       ],
                                     )
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              SizedBox(width: 10),
                               ElevatedButton.icon(
                                 onPressed: () => context.push('/memorization-practice?key=${Uri.encodeComponent(keyStr)}'),
-                                icon: const Icon(Icons.play_arrow, color: GamerColors.darkBackground),
-                                label: const Text('Train'),
+                                icon: Icon(Icons.play_arrow, color: QuestPalette.of(context).darkBackground),
+                                label: Text('Train'),
                               )
                             ],
                           ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:level_up_your_faith/widgets/sacred/sacred_ui.dart';
-import 'package:level_up_your_faith/theme.dart';
+import '../../theme/scripture_theme.dart';
 
 /// Unified end screen panel for Play & Learn mini-games.
 /// Visual-only: shows a calm header, summary, optional XP line, and two actions.
@@ -31,7 +31,7 @@ class GameEndPanel extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.celebration, color: GamerColors.success),
+              Icon(Icons.celebration, color: QuestPalette.of(context).success),
               const SizedBox(width: 10),
               Expanded(child: Text(header, style: theme.textTheme.titleLarge ?? theme.textTheme.titleMedium)),
             ],
@@ -45,7 +45,7 @@ class GameEndPanel extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                const Icon(Icons.auto_awesome, size: 18, color: GamerColors.success),
+                Icon(Icons.auto_awesome, size: 18, color: QuestPalette.of(context).success),
                 const SizedBox(width: 6),
                 Text('+${(xp ?? 0)} XP', style: theme.textTheme.labelLarge),
               ],
@@ -55,27 +55,11 @@ class GameEndPanel extends StatelessWidget {
           LayoutBuilder(
             builder: (context, c) {
               final isWide = c.maxWidth > 420;
-              final children = <Widget>[
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onPlayAgain,
-                    icon: const Icon(Icons.replay, color: GamerColors.darkBackground),
-                    label: const Text('Play Again'),
-                  ),
-                ),
-                SizedBox(width: isWide ? 12 : 0, height: isWide ? 0 : 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onBackToHub,
-                    icon: Icon(Icons.extension, color: theme.colorScheme.primary),
-                    label: const Text('Back to Play & Learn'),
-                  ),
-                ),
-              ];
-              if (isWide) {
-                return Row(children: children);
-              }
-              return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
+              final again = ElevatedButton.icon(onPressed: onPlayAgain, icon: const Icon(Icons.replay), label: const Text('Play Again'));
+              final back = OutlinedButton.icon(onPressed:onBackToHub, icon: Icon(Icons.extension,color:cs.primary),label:const Text('Back to Play & Learn'));
+              return isWide
+                  ? Row(children:[Expanded(child:again),const SizedBox(width:12),Expanded(child:back)])
+                  : Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[again,const SizedBox(height:12),back]);
             },
           )
         ],

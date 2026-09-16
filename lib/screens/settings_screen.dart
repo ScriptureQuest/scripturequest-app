@@ -1,11 +1,12 @@
+import 'package:level_up_your_faith/providers/app_provider.dart';
+import '../widgets/product/product_ui.dart';
+import '../theme/scripture_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:level_up_your_faith/providers/settings_provider.dart';
-import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/models/quiz_difficulty.dart';
-import 'package:level_up_your_faith/providers/app_provider.dart';
 import 'package:level_up_your_faith/widgets/home_action_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -17,9 +18,6 @@ class SettingsScreen extends StatelessWidget {
     return Consumer<SettingsProvider>(
       builder: (context, sp, _) {
         final s = sp.settings;
-        // Watch AppProvider for theme mode updates
-        final app = context.watch<AppProvider>();
-        final appThemeMode = app.themeMode;
         return Scaffold(
             appBar: AppBar(
             leading: context.canPop()
@@ -30,11 +28,13 @@ class SettingsScreen extends StatelessWidget {
                 : null,
             title: Text('Settings', style: Theme.of(context).textTheme.headlineSmall),
             centerTitle: true,
-            actions: const [HomeActionButton()],
+            actions: [HomeActionButton()],
           ),
           body: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             children: [
+              _Section(title: 'Appearance', children: const [AppearanceChoices()]),
+              const SizedBox(height: 16),
               _Section(
                 title: 'Notifications',
                 children: [
@@ -45,7 +45,7 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icons.notifications_active,
                     onChanged: (v) => sp.setNotificationsEnabled(v),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _NeonSwitchTile(
                     title: 'Weekly Summary',
                     subtitle: 'Receive weekly progress reports',
@@ -55,7 +55,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               // ============ Quiz preferences (light) ============
               _Section(
                 title: 'Quiz preferences',
@@ -72,8 +72,8 @@ class SettingsScreen extends StatelessWidget {
                           value: QuizDifficulty.quick,
                           groupValue: sp.preferredQuizDifficulty,
                           activeColor: Theme.of(context).colorScheme.primary,
-                          title: const Text('Quick (3 questions)'),
-                          secondary: const Icon(Icons.bolt, color: GamerColors.accent),
+                          title: Text('Quick (3 questions)'),
+                          secondary: Icon(Icons.bolt, color: QuestPalette.of(context).accent),
                           onChanged: (v) async {
                             if (v != null) await sp.setPreferredQuizDifficulty(v);
                           },
@@ -83,8 +83,8 @@ class SettingsScreen extends StatelessWidget {
                           value: QuizDifficulty.standard,
                           groupValue: sp.preferredQuizDifficulty,
                           activeColor: Theme.of(context).colorScheme.primary,
-                          title: const Text('Standard (5 questions)'),
-                          secondary: const Icon(Icons.terrain, color: GamerColors.accent),
+                          title: Text('Standard (5 questions)'),
+                          secondary: Icon(Icons.terrain, color: QuestPalette.of(context).accent),
                           onChanged: (v) async {
                             if (v != null) await sp.setPreferredQuizDifficulty(v);
                           },
@@ -94,8 +94,8 @@ class SettingsScreen extends StatelessWidget {
                           value: QuizDifficulty.deep,
                           groupValue: sp.preferredQuizDifficulty,
                           activeColor: Theme.of(context).colorScheme.primary,
-                          title: const Text('Deep (7 questions)'),
-                          secondary: const Icon(Icons.local_florist, color: GamerColors.accent),
+                          title: Text('Deep (7 questions)'),
+                          secondary: Icon(Icons.local_florist, color: QuestPalette.of(context).accent),
                           onChanged: (v) async {
                             if (v != null) await sp.setPreferredQuizDifficulty(v);
                           },
@@ -105,7 +105,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _Section(
                 title: 'Reminders',
                 children: [
@@ -117,14 +117,14 @@ class SettingsScreen extends StatelessWidget {
                     onChanged: (v) => sp.setDailyReminderEnabled(v),
                   ),
                   if (s.dailyReminderEnabled) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     _TimeRow(
                       hour: s.dailyReminderHour,
                       minute: s.dailyReminderMinute,
                       onChanged: (h, m) => sp.setDailyReminderTime(hour: h, minute: m),
                     ),
                   ],
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _NeonSwitchTile(
                     title: 'Streak Protection Reminder',
                     subtitle: 'Last-call alert to keep your streak alive',
@@ -134,7 +134,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _Section(
                 title: 'Scripture',
                 children: [
@@ -145,7 +145,7 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icons.auto_stories,
                     onChanged: (v) => sp.setScripturePopupsEnabled(v),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   _NeonSwitchTile(
                     title: 'Show Jesus\' Words in Red',
                     subtitle: 'Apply respectful red-letter styling in Gospels + Acts 1 (KJV)',
@@ -155,68 +155,8 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              // ============ Theme Packs ============
-              _Section(
-                title: 'Theme',
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), width: 1),
-                    ),
-                    child: Column(
-                      children: [
-                        RadioListTile<AppThemeMode>(
-                          value: AppThemeMode.sacredDark,
-                          groupValue: appThemeMode,
-                          activeColor: Theme.of(context).colorScheme.primary,
-                          title: const Text('Sacred Dark'),
-                          subtitle: const Text('Original Scripture Quest™ look.'),
-                          onChanged: (m) async {
-                            await context.read<AppProvider>().setThemeMode(AppThemeMode.sacredDark);
-                          },
-                        ),
-                        Divider(height: 1, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
-                        RadioListTile<AppThemeMode>(
-                          value: AppThemeMode.bedtimeCalm,
-                          groupValue: appThemeMode,
-                          activeColor: Theme.of(context).colorScheme.primary,
-                          title: const Text('Bedtime Calm'),
-                          subtitle: const Text('Softer tones for late-night reading.'),
-                          onChanged: (m) async {
-                            await context.read<AppProvider>().setThemeMode(AppThemeMode.bedtimeCalm);
-                          },
-                        ),
-                        Divider(height: 1, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
-                        RadioListTile<AppThemeMode>(
-                          value: AppThemeMode.oliveDawn,
-                          groupValue: appThemeMode,
-                          activeColor: Theme.of(context).colorScheme.primary,
-                          title: const Text('Olive Dawn'),
-                          subtitle: const Text('Warm, earthy manuscript feel.'),
-                          onChanged: (m) async {
-                            await context.read<AppProvider>().setThemeMode(AppThemeMode.oliveDawn);
-                          },
-                        ),
-                        Divider(height: 1, color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)),
-                        RadioListTile<AppThemeMode>(
-                          value: AppThemeMode.oceanDeep,
-                          groupValue: appThemeMode,
-                          activeColor: Theme.of(context).colorScheme.primary,
-                          title: const Text('Ocean Deep'),
-                          subtitle: const Text('Cool, modern blue tones.'),
-                          onChanged: (m) async {
-                            await context.read<AppProvider>().setThemeMode(AppThemeMode.oceanDeep);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
+              const SizedBox(height:16),
               // ============ Support & Feedback ============
               _Section(
                 title: 'Support & Feedback',
@@ -226,7 +166,7 @@ class SettingsScreen extends StatelessWidget {
                     'If you\'d like to help support ongoing development and keep Scripture Quest free, you can give here.',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
@@ -237,16 +177,16 @@ class SettingsScreen extends StatelessWidget {
                         } else {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Could not open link')),
+                              SnackBar(content: Text('Could not open link')),
                             );
                           }
                         }
                       },
-                      icon: const Icon(Icons.open_in_new_rounded),
-                      label: const Text('Open GoFundMe'),
+                      icon: Icon(Icons.open_in_new_rounded),
+                      label: Text('Open GoFundMe'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   // Send Feedback / Report a Bug
                   SizedBox(
                     width: double.infinity,
@@ -263,7 +203,7 @@ class SettingsScreen extends StatelessWidget {
                           } else {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Could not open email client')),
+                                SnackBar(content: Text('Could not open email client')),
                               );
                             }
                           }
@@ -271,20 +211,20 @@ class SettingsScreen extends StatelessWidget {
                           debugPrint('Send feedback error: $e');
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Could not prepare feedback email')),
+                              SnackBar(content: Text('Could not prepare feedback email')),
                             );
                           }
                         }
                       },
-                      icon: const Icon(Icons.feedback_outlined),
-                      label: const Text('Send Feedback / Report a Bug'),
+                      icon: Icon(Icons.feedback_outlined),
+                      label: Text('Send Feedback / Report a Bug'),
                     ),
                   ),
                 ],
               ),
               // ============ Dev Tools (Debug Only) ============
               if (kDebugMode) ...[
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 _Section(
                   title: 'Developer Tools',
                   children: [
@@ -294,7 +234,7 @@ class SettingsScreen extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton.icon(
@@ -304,8 +244,8 @@ class SettingsScreen extends StatelessWidget {
                             context.go('/onboarding');
                           }
                         },
-                        icon: const Icon(Icons.restart_alt),
-                        label: const Text('Reset Onboarding (Dev)'),
+                        icon: Icon(Icons.restart_alt),
+                        label: Text('Reset Onboarding (Dev)'),
                       ),
                     ),
                   ],
@@ -323,12 +263,12 @@ class _Section extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _Section({required this.title, required this.children});
+  _Section({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
@@ -340,11 +280,11 @@ class _Section extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.tune, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(title, style: Theme.of(context).textTheme.titleMedium),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           ...children,
         ],
       ),
@@ -359,7 +299,7 @@ class _NeonSwitchTile extends StatelessWidget {
   final IconData icon;
   final ValueChanged<bool> onChanged;
 
-  const _NeonSwitchTile({
+  _NeonSwitchTile({
     required this.title,
     required this.subtitle,
     required this.value,
@@ -370,7 +310,7 @@ class _NeonSwitchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -379,13 +319,13 @@ class _NeonSwitchTile extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title, style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(subtitle, style: Theme.of(context).textTheme.labelSmall),
               ],
             ),
@@ -407,7 +347,7 @@ class _TimeRow extends StatelessWidget {
   final int minute;
   final void Function(int hour, int minute) onChanged;
 
-  const _TimeRow({required this.hour, required this.minute, required this.onChanged});
+  _TimeRow({required this.hour, required this.minute, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -415,18 +355,18 @@ class _TimeRow extends StatelessWidget {
     return Row(
       children: [
         Icon(Icons.schedule, color: Theme.of(context).colorScheme.primary),
-        const SizedBox(width: 8),
+        SizedBox(width: 8),
         Text('Reminder time', style: Theme.of(context).textTheme.labelLarge),
-        const Spacer(),
+        Spacer(),
         _DropdownPill<int>(
           value: hour,
           items: List.generate(24, (i) => i),
           labelBuilder: (h) => h.toString().padLeft(2, '0'),
           onChanged: (h) => onChanged(h!, minute),
         ),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 6),
-          child: Text(':', style: TextStyle(color: GamerColors.textSecondary, fontWeight: FontWeight.bold)),
+          child: Text(':', style: TextStyle(color: QuestPalette.of(context).textSecondary, fontWeight: FontWeight.bold)),
         ),
         _DropdownPill<int>(
           value: minute,
@@ -445,7 +385,7 @@ class _DropdownPill<T> extends StatelessWidget {
   final String Function(T) labelBuilder;
   final ValueChanged<T?> onChanged;
 
-  const _DropdownPill({
+  _DropdownPill({
     required this.value,
     required this.items,
     required this.labelBuilder,
@@ -455,7 +395,7 @@ class _DropdownPill<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
@@ -464,7 +404,7 @@ class _DropdownPill<T> extends StatelessWidget {
       child: DropdownButton<T>(
         value: value,
         dropdownColor: Theme.of(context).colorScheme.surface,
-        underline: const SizedBox.shrink(),
+        underline: SizedBox.shrink(),
         style: Theme.of(context).textTheme.labelLarge,
         items: items
             .map((e) => DropdownMenuItem<T>(

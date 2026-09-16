@@ -247,14 +247,14 @@ void main() {
     expect(tester.takeException(), isNull);
     await capture(tester, 'pass3-memory-result');
   });
-  testWidgets(
-      'connected discovery to learning to memory to further Scripture uses real routes',
+  for (final dark in [false, true]) testWidgets(
+      'connected discovery to learning to memory to further Scripture uses real routes (dark=$dark)',
       (tester) async {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.runAsync(
         () => app.completeReaderChapter('Psalms', 46, qualified: true));
-    await mount(tester, const CodexScreen(id: 'refuge'), const Size(390, 844));
+    await mount(tester, const CodexScreen(id: 'refuge'), const Size(390, 844), dark:dark);
     Future<void> tapText(String text) async {
       final finder = find.text(text);
       for (var i = 0; finder.evaluate().isEmpty && i < 20; i++) {

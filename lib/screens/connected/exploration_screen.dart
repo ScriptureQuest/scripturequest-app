@@ -1,3 +1,4 @@
+import '../../widgets/product/product_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -6,7 +7,6 @@ import '../../data/exploration/catalog.dart';
 import '../../services/exploration/exploration_service.dart';
 import '../../widgets/reading_v2/reading_design.dart';
 import '../../widgets/connected/journey_content.dart';
-import '../../widgets/connected/progress_summary.dart';
 import '../../widgets/exploration/exploration_art.dart';
 import 'journeys_screen.dart';
 
@@ -154,47 +154,28 @@ class ConnectionCard extends StatelessWidget {
 
 class LearnScreen extends StatelessWidget {
   const LearnScreen({super.key});
-  @override
-  Widget build(BuildContext context) => ExplorationPage(
-      title: 'Learn',
-      content: (c, app) => [
-            Text('Look closer. Carry it with you.',
-                style: Theme.of(c).textTheme.headlineMedium),
-            const SizedBox(height: 12),
-            const Text(
-                'Read the passage, find the evidence, then choose something worth remembering. No reflection is graded.'),
-            const SizedBox(height: 20),
-            const ProgressSummary(),
-            const SizedBox(height: 20),
-            for (final d in discoveries)
-              explorationLink(
-                  c,
-                  d.title,
-                  '${d.reference} · ${(app.explorationState['learning'] as Map).containsKey(d.id) ? 'Evidence found · revisit' : app.discoveryRecords.containsKey(d.id) ? 'You read this · look closer' : 'Read and explore'}',
-                  '/find-passage/${d.id}',
-                  icon: Icons.search),
-            explorationLink(c, 'Remembered Scripture',
-                'Your chosen verses and honest practice history', '/remembered',
-                icon: Icons.psychology_outlined),
-            const Divider(height: 32),
-            Text('Scripture Connections',
-                style: Theme.of(c).textTheme.titleLarge),
-            const Text(
-                'Four carefully scoped reading pairings. Each states the kind of connection; thematic pairings are editorial suggestions.'),
-            for (final connection in scriptureConnections)
-              ConnectionCard(connection: connection),
-            const Divider(height: 32),
-            Text('Chapter learning', style: Theme.of(c).textTheme.titleLarge),
-            for (final ref in [('John', 3), ('Romans', 8), ('Psalms', 23)])
-              explorationLink(
-                  c,
-                  '${ref.$1} ${ref.$2}',
-                  'Read the chapter, then try its existing quiz.',
-                  '/chapter-quiz?book=${ref.$1}&chapter=${ref.$2}'),
-            explorationLink(c, 'Learning games',
-                'Explore the existing games library.', '/play-learn',
-                icon: Icons.extension_outlined),
-          ]);
+  @override Widget build(BuildContext context) => ExplorationPage(title:'Learn',content:(c,app) {
+    final candidates = discoveries.where((d)=>app.discoveryRecords.containsKey(d.id) && !(app.explorationState['learning'] as Map).containsKey(d.id));
+    final next = candidates.isEmpty ? discoveries.first : candidates.first;
+    return [
+      Text('Explore. Practice. Discover.',style:Theme.of(c).textTheme.headlineMedium),
+      const SizedBox(height:12),const Text('Look closely at Scripture, give your memory a challenge, or play with what you are learning.'),const SizedBox(height:20),
+      const ProgressIdentity(),const SizedBox(height:24),
+      Text('A challenge from your reading',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:12),
+      ActivityCard(title:next.title,description:'${next.reference} · Find the evidence in the passage. ${candidates.isEmpty ? 'Open the Bible and explore.' : 'You have read this. Look closer.'}',route:'/find-passage/${next.id}',icon:Icons.search,featured:true),
+      const SizedBox(height:24),Text('Choose how to learn',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:12),
+      const ActivityShelf(children:[
+        ActivityCard(title:'Play & Learn',description:'Matching, verse puzzles, Bible book order, and parables. Familiar games with a Scripture purpose.',route:'/play-learn',icon:Icons.extension_outlined),
+        ActivityCard(title:'Remember Scripture',description:'Choose a passage to carry with you. Practice, use help, or recall independently.',route:'/remembered',icon:Icons.psychology_outlined),
+        ActivityCard(title:'Explore the Codex',description:'Return to discoveries, their meaning, and the Scripture that opened them.',route:'/discoveries',icon:Icons.auto_stories_outlined),
+      ]),const SizedBox(height:24),Text('Passage challenges',style:Theme.of(c).textTheme.titleLarge),
+      for(final d in discoveries) explorationLink(c,d.title,'${d.reference} · ${(app.explorationState['learning'] as Map).containsKey(d.id)?'Evidence found · revisit':'Find it in the Passage'}','/find-passage/${d.id}',icon:Icons.search),
+      const SizedBox(height:24),Text('Chapter Learning',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:8),const Text('Quick, Standard, and Deep challenges using the existing chapter library. Reflections stay optional and ungraded.'),
+      for(final ref in [('John',3),('Romans',8),('Psalms',23)]) explorationLink(c,'${ref.$1} ${ref.$2}','Read in context, then try the chapter challenge.','/chapter-quiz?book=${ref.$1}&chapter=${ref.$2}'),
+      const SizedBox(height:24),Text('Scripture Connections',style:Theme.of(c).textTheme.titleLarge),const Text('Compare passages with clear context. Thematic pairings are labeled as editorial suggestions.'),
+      for(final connection in scriptureConnections) ConnectionCard(connection:connection),
+    ];
+  });
 }
 
 /// A passage-backed observation, not a detached trivia question.

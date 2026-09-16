@@ -1,3 +1,4 @@
+import '../theme/scripture_theme.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -9,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
 import 'package:level_up_your_faith/widgets/sacred/sacred_ui.dart';
 import 'package:level_up_your_faith/widgets/reward_toast.dart';
-import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/widgets/common/game_end_panel.dart';
 
 class MatchingGameScreen extends StatefulWidget {
@@ -238,7 +238,7 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
       }
     } else {
       _flipBackTimer?.cancel();
-      _flipBackTimer = Timer(const Duration(milliseconds: 900), () {
+      _flipBackTimer = Timer(Duration(milliseconds: 900), () {
         if (!mounted) return;
         setState(() {
           _firstRevealed = null;
@@ -278,33 +278,33 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Matching Game'),
+        title: Text('Matching Game'),
         centerTitle: true,
       ),
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator())
             : Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SectionHeader('Match the Bible verse with its snippet.', icon: Icons.extension),
-                    const SizedBox(height: 8),
+                    SectionHeader('Match the Bible verse with its snippet.', icon: Icons.extension),
+                    SizedBox(height: 8),
                     Row(
                       children: [
                         Icon(Icons.psychology_alt_outlined, color: cs.primary),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text('Matches: $_matchedPairs / $_totalPairs', style: theme.textTheme.labelMedium),
-                        const Spacer(),
+                        Spacer(),
                         TextButton.icon(
                           onPressed: _setupBoard,
-                          icon: const Icon(Icons.refresh, color: GamerColors.accent),
-                          label: const Text('New Game'),
+                          icon: Icon(Icons.refresh, color: QuestPalette.of(context).accent),
+                          label: Text('New Game'),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Expanded(
                       child: LayoutBuilder(
                         builder: (context, c) {
@@ -333,13 +333,13 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
                       ),
                     ),
                     if (_completed) ...[
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       GameEndPanel(
                         header: 'Great job!',
                         summary: "All pairs found!",
                         xp: _awardedXp,
                         onPlayAgain: _setupBoard,
-                        onBackToHub: () => context.go('/community'),
+                        onBackToHub: () => context.go('/play-learn'),
                       ),
                     ],
                   ],
@@ -357,7 +357,7 @@ class _CardData {
   final _CardKind kind;
   final String text;
   final bool matched;
-  const _CardData({
+  _CardData({
     required this.pairId,
     required this.kind,
     required this.text,
@@ -373,7 +373,7 @@ class _MemoryCard extends StatelessWidget {
   final String label;
   final _CardKind hintType; // to show a small icon on revealed side
   final VoidCallback onTap;
-  const _MemoryCard({
+  _MemoryCard({
     required this.revealed,
     required this.matched,
     required this.label,
@@ -391,7 +391,7 @@ class _MemoryCard extends StatelessWidget {
 
     return AnimatedOpacity(
       opacity: matched ? 0.85 : 1,
-      duration: const Duration(milliseconds: 200),
+      duration: Duration(milliseconds: 200),
       child: InkWell(
         onTap: revealed ? null : onTap,
         borderRadius: BorderRadius.circular(16),
@@ -400,11 +400,11 @@ class _MemoryCard extends StatelessWidget {
             color: bg,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: matched ? GamerColors.success.withValues(alpha: 0.6) : cs.onSurfaceVariant.withValues(alpha: 0.15),
+              color: matched ? QuestPalette.of(context).success.withValues(alpha: 0.6) : cs.onSurfaceVariant.withValues(alpha: 0.15),
               width: 1,
             ),
           ),
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           child: revealed
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,14 +416,14 @@ class _MemoryCard extends StatelessWidget {
                           size: 18,
                           color: hintType == _CardKind.reference ? cs.primary : cs.secondary,
                         ),
-                        const SizedBox(width: 6),
+                        SizedBox(width: 6),
                         Text(
                           hintType == _CardKind.reference ? 'Reference' : 'Snippet',
                           style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Expanded(
                       child: Align(
                         alignment: Alignment.topLeft,
@@ -441,8 +441,8 @@ class _MemoryCard extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.visibility, color: GamerColors.textSecondary),
-                      const SizedBox(height: 8),
+                      Icon(Icons.visibility, color: QuestPalette.of(context).textSecondary),
+                      SizedBox(height: 8),
                       Text('Tap to reveal', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                     ],
                   ),

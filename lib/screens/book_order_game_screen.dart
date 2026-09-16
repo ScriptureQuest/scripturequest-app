@@ -1,3 +1,4 @@
+import '../theme/scripture_theme.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,7 +9,6 @@ import 'package:level_up_your_faith/widgets/sacred/sacred_ui.dart';
 import 'package:level_up_your_faith/widgets/reward_toast.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
 import 'package:level_up_your_faith/services/bible_service.dart';
-import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/widgets/common/game_end_panel.dart';
 
 class BookOrderGameScreen extends StatefulWidget {
@@ -162,17 +162,17 @@ class _BookOrderGameScreenState extends State<BookOrderGameScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Book Order Challenge'),
+        title: Text('Book Order Challenge'),
         centerTitle: true,
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SectionHeader('Drag the books into the right order.', icon: Icons.extension),
-              const SizedBox(height: 8),
+              SectionHeader('Drag the books into the right order.', icon: Icons.extension),
+              SizedBox(height: 8),
 
               if (!_sessionComplete && r != null) ...[
                 FadeSlideIn(
@@ -187,15 +187,15 @@ class _BookOrderGameScreenState extends State<BookOrderGameScreen> {
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: cs.primary.withValues(alpha: 0.4), width: 1),
                           ),
-                          child: const Icon(Icons.menu_book, color: Colors.white),
+                          child: Icon(Icons.menu_book, color: Colors.white),
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('Round ${_currentIndex + 1} of ${_rounds.length}', style: theme.textTheme.titleSmall),
-                              const SizedBox(height: 2),
+                              SizedBox(height: 2),
                               Text('Put these books in the correct order', style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
                             ],
                           ),
@@ -204,39 +204,39 @@ class _BookOrderGameScreenState extends State<BookOrderGameScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
 
                 // Draggable list
                 FadeSlideIn(
                   child: SacredCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     child: _DraggableBooks(
                       books: r.currentOrder,
                       onReorder: _onReorder,
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 if (_showHint && !(r.isCorrect))
                   Row(
                     children: [
-                      const Icon(Icons.info_outline, color: Colors.amber, size: 18),
-                      const SizedBox(width: 6),
+                      Icon(Icons.info_outline, color: Colors.amber, size: 18),
+                      SizedBox(width: 6),
                       Text('Try adjusting the order.', style: theme.textTheme.labelSmall?.copyWith(color: Colors.amber)),
                     ],
                   ),
 
                 if (r.isCorrect) ...[
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   SacredCard(
                     child: Row(
                       children: [
-                        const Icon(Icons.celebration, color: GamerColors.success),
-                        const SizedBox(width: 10),
+                        Icon(Icons.celebration, color: QuestPalette.of(context).success),
+                        SizedBox(width: 10),
                         Expanded(child: Text('Great job! That order looks right.', style: theme.textTheme.bodyMedium)),
                         ElevatedButton.icon(
                           onPressed: _goNext,
-                          icon: const Icon(Icons.arrow_forward, color: GamerColors.darkBackground),
+                          icon: Icon(Icons.arrow_forward, color: QuestPalette.of(context).darkBackground),
                           label: Text(_currentIndex + 1 < _rounds.length ? 'Next' : 'Finish'),
                         ),
                       ],
@@ -249,7 +249,7 @@ class _BookOrderGameScreenState extends State<BookOrderGameScreen> {
                   summary: 'You completed the challenge.',
                   xp: _awardedXp,
                   onPlayAgain: _startNewSession,
-                  onBackToHub: () => context.go('/community'),
+                  onBackToHub: () => context.go('/play-learn'),
                 ),
               ],
             ],
@@ -263,7 +263,7 @@ class _BookOrderGameScreenState extends State<BookOrderGameScreen> {
 class _DraggableBooks extends StatelessWidget {
   final List<String> books;
   final void Function(int oldIndex, int newIndex) onReorder;
-  const _DraggableBooks({required this.books, required this.onReorder});
+  _DraggableBooks({required this.books, required this.onReorder});
 
   @override
   Widget build(BuildContext context) {
@@ -277,14 +277,14 @@ class _DraggableBooks extends StatelessWidget {
       child: ReorderableListView.builder(
         itemCount: books.length,
         onReorder: onReorder,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        physics: NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(vertical: 4),
         buildDefaultDragHandles: false,
         itemBuilder: (context, index) {
           final b = books[index];
           return Container(
             key: ValueKey('book_$b'),
-            margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+            margin: EdgeInsets.symmetric(vertical: 6, horizontal: 6),
             decoration: BoxDecoration(
               color: cs.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(12),
@@ -293,7 +293,7 @@ class _DraggableBooks extends StatelessWidget {
             child: ListTile(
               leading: ReorderableDragStartListener(
                 index: index,
-                child: const Icon(Icons.drag_indicator, color: Colors.white70),
+                child: Icon(Icons.drag_indicator, color: Colors.white70),
               ),
               title: Text(b, style: theme.textTheme.titleMedium),
               minTileHeight: 52,

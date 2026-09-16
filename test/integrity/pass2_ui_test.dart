@@ -1,3 +1,4 @@
+import 'package:level_up_your_faith/theme/scripture_theme.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:google_fonts/google_fonts.dart';
@@ -46,10 +47,11 @@ void main() {
   });
   tearDown(() => app.dispose());
   final captureKey = GlobalKey();
-  Future<void> mount(WidgetTester tester, Widget screen, Size size) async {
+  Future<void> mount(WidgetTester tester, Widget screen, Size size, {bool dark = false}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     await tester.runAsync(() async {
+      await app.loadKjvPassage('John 3');
       final icons = FontLoader('MaterialIcons')..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
       await icons.load();
       for (final weight in [
@@ -66,10 +68,13 @@ void main() {
     final router =
         GoRouter(routes: [GoRoute(path: '/', builder: (_, __) => MainNavigation(child: screen))]);
     addTearDown(router.dispose);
+    final settings=SettingsProvider();
+    await tester.runAsync(() async { await settings.initialize(); await settings.setQuestTheme(dark?ScriptureThemes.scriptureDark:ScriptureThemes.scriptureLight); });
+    addTearDown(settings.dispose);
     await tester.pumpWidget(MultiProvider(
         providers: [
           ChangeNotifierProvider.value(value: app),
-          ChangeNotifierProvider(create: (_) => SettingsProvider()),
+          ChangeNotifierProvider.value(value: settings),
         ],
         child: RepaintBoundary(
             key: captureKey,
@@ -99,20 +104,21 @@ void main() {
     TestWidgetsFlutterBinding.instance.platformDispatcher.clearAllTestValues();
   });
 
-  testWidgets(
-      'actual John 3 reader renders Nicodemus 4 and 9 as body text, retaining Jesus speech',
+  for(final dark in [false,true]) testWidgets(
+      'actual John 3 reader renders Nicodemus 4 and 9 as body text, retaining Jesus speech (dark=$dark)',
       (tester) async {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     await mount(tester, const VersesScreen(selectedReference: 'John 3'),
-        const Size(390, 844));
+        const Size(390, 844), dark:dark);
+    await capture(tester, 'john3-initial-${dark?'dark':'light'}');
     Finder verse(int n) => find.byWidgetPredicate(
         (w) => w is RichText && w.text.toPlainText().startsWith('$n '));
     final bodyColor =
-        BibleReaderStyles.verseBody(1, BibleReaderStyles.themeFor('paper'))
+        BibleReaderStyles.verseBody(1, BibleReaderStyles.themeFor(dark?'night':'paper'))
             .color;
     final speechColor =
-        BibleReaderStyles.jesusWords(1, BibleReaderStyles.themeFor('paper'))
+        BibleReaderStyles.jesusWords(1, BibleReaderStyles.themeFor(dark?'night':'paper'))
             .color;
     List<Color?> colors(TextSpan span, [Color? parent]) => [
           if ((span.text ?? '').isNotEmpty) span.style?.color ?? parent,
@@ -136,7 +142,7 @@ void main() {
         expect(actual, isNot(contains(speechColor)),
             reason: 'Nicodemus must never inherit the Jesus speech color');
         expect(actual, contains(bodyColor));
-        await capture(tester, 'john3-$n');
+        await capture(tester, 'john3-$n-${dark?'dark':'light'}');
       } else {
         expect(actual, contains(speechColor),
             reason: 'Jesus speech must remain red');

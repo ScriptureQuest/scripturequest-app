@@ -1,3 +1,4 @@
+import '../theme/scripture_theme.dart';
 import 'dart:convert';
 import 'dart:math';
 
@@ -9,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
 import 'package:level_up_your_faith/widgets/reward_toast.dart';
 import 'package:level_up_your_faith/widgets/sacred/sacred_ui.dart';
-import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/widgets/common/game_end_panel.dart';
 
 class VerseScrambleScreen extends StatefulWidget {
@@ -70,7 +70,7 @@ class _VerseScrambleScreenState extends State<VerseScrambleScreen> {
             reference: 'John 3:16',
             text: 'For God so loved the world that he gave his one and only Son.',
             missing: ['loved', 'world', 'Son'],
-            distractors: const ['king', 'earth', 'walked'],
+            distractors: ['king', 'earth', 'walked'],
           ),
         );
       });
@@ -116,7 +116,7 @@ class _VerseScrambleScreenState extends State<VerseScrambleScreen> {
           reference: 'Psalm 23:1',
           text: 'The Lord is my shepherd; I shall not want.',
           missing: ['shepherd', 'want'],
-          distractors: const ['desire', 'teacher', 'kingdom'],
+          distractors: ['desire', 'teacher', 'kingdom'],
         ),
       ];
     }
@@ -137,7 +137,7 @@ class _VerseScrambleScreenState extends State<VerseScrambleScreen> {
       });
       if (r.isComplete) {
         // Small delay to let UI show filled state
-        Future.delayed(const Duration(milliseconds: 250), () {
+        Future.delayed(Duration(milliseconds: 250), () {
           if (!mounted) return;
           setState(() {});
         });
@@ -195,39 +195,39 @@ class _VerseScrambleScreenState extends State<VerseScrambleScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Verse Scramble'),
+        title: Text('Verse Scramble'),
         centerTitle: true,
       ),
       body: SafeArea(
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator())
             : Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                padding: EdgeInsets.fromLTRB(16, 12, 16, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SectionHeader('Tap the right words to fix the verse.', icon: Icons.extension),
-                    const SizedBox(height: 8),
+                    SectionHeader('Tap the right words to fix the verse.', icon: Icons.extension),
+                    SizedBox(height: 8),
                     if (!_sessionComplete && r != null) ...[
                       _RoundCard(round: r, wrongChoice: _wrongChoice),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       _ChoicesGrid(
                         options: r.choices,
                         onTap: _onChoiceTap,
                       ),
                       if (r.isComplete) ...[
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         SacredCard(
                           child: Row(
                             children: [
-                              const Icon(Icons.celebration, color: GamerColors.success),
-                              const SizedBox(width: 10),
+                              Icon(Icons.celebration, color: QuestPalette.of(context).success),
+                              SizedBox(width: 10),
                               Expanded(
                                 child: Text('Great job! This verse looks right.', style: theme.textTheme.bodyMedium),
                               ),
                               ElevatedButton.icon(
                                 onPressed: _goNext,
-                                icon: const Icon(Icons.arrow_forward, color: GamerColors.darkBackground),
+                                icon: Icon(Icons.arrow_forward, color: QuestPalette.of(context).darkBackground),
                                 label: Text(_currentIndex + 1 < _rounds.length ? 'Next' : 'Finish'),
                               ),
                             ],
@@ -240,7 +240,7 @@ class _VerseScrambleScreenState extends State<VerseScrambleScreen> {
                         summary: "You completed the challenge.",
                         xp: _awardedXp,
                         onPlayAgain: _startNewSession,
-                        onBackToHub: () => context.go('/community'),
+                        onBackToHub: () => context.go('/play-learn'),
                       ),
                     ],
                   ],
@@ -254,7 +254,7 @@ class _VerseScrambleScreenState extends State<VerseScrambleScreen> {
 class _RoundCard extends StatelessWidget {
   final _Round round;
   final bool wrongChoice;
-  const _RoundCard({required this.round, required this.wrongChoice});
+  _RoundCard({required this.round, required this.wrongChoice});
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +267,7 @@ class _RoundCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(round.reference, style: theme.textTheme.titleMedium?.copyWith(color: cs.primary)),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Wrap(
               alignment: WrapAlignment.start,
               runSpacing: 8,
@@ -278,12 +278,12 @@ class _RoundCard extends StatelessWidget {
                       : Text(p.text!, style: theme.textTheme.bodyLarge?.copyWith(fontSize: 18, height: 1.45)),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             if (wrongChoice)
               Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Colors.amber, size: 18),
-                  const SizedBox(width: 6),
+                  Icon(Icons.info_outline, color: Colors.amber, size: 18),
+                  SizedBox(width: 6),
                   Text('Try again', style: theme.textTheme.labelSmall?.copyWith(color: Colors.amber)),
                 ],
               ),
@@ -296,14 +296,14 @@ class _RoundCard extends StatelessWidget {
 
 class _BlankChip extends StatelessWidget {
   final String label;
-  const _BlankChip({required this.label});
+  _BlankChip({required this.label});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      margin: const EdgeInsets.only(right: 6),
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      margin: EdgeInsets.only(right: 6),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
@@ -317,7 +317,7 @@ class _BlankChip extends StatelessWidget {
 class _ChoicesGrid extends StatelessWidget {
   final List<String> options;
   final void Function(String choice) onTap;
-  const _ChoicesGrid({required this.options, required this.onTap});
+  _ChoicesGrid({required this.options, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -332,7 +332,7 @@ class _ChoicesGrid extends StatelessWidget {
             onTap: () => onTap(o),
             borderRadius: BorderRadius.circular(22),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(22),
@@ -341,8 +341,8 @@ class _ChoicesGrid extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.touch_app_rounded, size: 16, color: GamerColors.textSecondary),
-                  const SizedBox(width: 6),
+                  Icon(Icons.touch_app_rounded, size: 16, color: QuestPalette.of(context).textSecondary),
+                  SizedBox(width: 6),
                   Text(o, style: theme.textTheme.labelLarge),
                 ],
               ),

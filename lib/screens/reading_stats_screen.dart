@@ -1,9 +1,9 @@
+import '../theme/scripture_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:level_up_your_faith/providers/app_provider.dart';
-import 'package:level_up_your_faith/theme.dart';
 import 'package:level_up_your_faith/widgets/streak_indicator.dart';
 import 'package:level_up_your_faith/widgets/home_action_button.dart';
 
@@ -31,21 +31,21 @@ class ReadingStatsScreen extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: GamerColors.textPrimary),
-            onPressed: () => context.go('/profile'),
+            icon: Icon(Icons.arrow_back, color: QuestPalette.of(context).textPrimary),
+            onPressed: () => context.canPop() ? context.pop() : context.go('/you'),
           ),
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Reading Stats', style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 2),
+              SizedBox(height: 2),
               Text('Your Scripture journey so far.', style: Theme.of(context).textTheme.labelSmall),
             ],
           ),
-          actions: const [HomeActionButton()],
+          actions: [HomeActionButton()],
         ),
         body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 28),
           children: [
             // A) SUMMARY SECTION
             _SummaryCard(
@@ -55,17 +55,17 @@ class ReadingStatsScreen extends StatelessWidget {
               longestStreak: longestStreak,
             ),
 
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
 
             // A.1) QUIZ SUMMARY (secondary stat)
             _QuizSummaryCard(totalCompleted: app.totalCompletedQuizzes),
 
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
 
             // B) RECENT ACTIVITY (Last 7 Days)
             _RecentActivity(),
 
-            const SizedBox(height: 18),
+            SizedBox(height: 18),
 
             // C) PER-BOOK PROGRESS
             _PerBookProgressList(entries: bookEntries),
@@ -82,7 +82,7 @@ class _SummaryCard extends StatelessWidget {
   final int currentStreak;
   final int longestStreak;
 
-  const _SummaryCard({
+  _SummaryCard({
     required this.totalChaptersRead,
     required this.totalBooksCompleted,
     required this.currentStreak,
@@ -93,25 +93,25 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: GamerColors.darkCard,
+        color: QuestPalette.of(context).darkCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.2), width: 1),
+        border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [const Icon(Icons.auto_stories, color: GamerColors.accent), const SizedBox(width: 8), Text('Summary', style: theme.textTheme.titleLarge)]),
-          const SizedBox(height: 12),
+          Row(children: [Icon(Icons.auto_stories, color: QuestPalette.of(context).accent), SizedBox(width: 8), Text('Summary', style: theme.textTheme.titleLarge)]),
+          SizedBox(height: 12),
           Row(
             children: [
               Expanded(child: _MiniStat(icon: Icons.menu_book, label: 'Chapters Read', value: '$totalChaptersRead')),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(child: _MiniStat(icon: Icons.library_add_check, label: 'Books Completed', value: '$totalBooksCompleted')),
             ],
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           StreakIndicator(streakDays: currentStreak, longestStreak: longestStreak),
         ],
       ),
@@ -123,23 +123,23 @@ class _MiniStat extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _MiniStat({required this.icon, required this.label, required this.value});
+  _MiniStat({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: GamerColors.darkSurface,
+        color: QuestPalette.of(context).darkSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.2), width: 1),
+        border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [Icon(icon, color: GamerColors.accent, size: 18), const SizedBox(width: 6), Text(label, style: Theme.of(context).textTheme.labelSmall)]),
-          const SizedBox(height: 8),
-          Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: GamerColors.accent, fontWeight: FontWeight.w700)),
+          Row(children: [Icon(icon, color: QuestPalette.of(context).accent, size: 18), SizedBox(width: 6), Expanded(child: Text(label, style: Theme.of(context).textTheme.labelSmall))]),
+          SizedBox(height: 8),
+          Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: QuestPalette.of(context).accent, fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -148,7 +148,7 @@ class _MiniStat extends StatelessWidget {
 
 class _QuizSummaryCard extends StatelessWidget {
   final int totalCompleted;
-  const _QuizSummaryCard({required this.totalCompleted});
+  _QuizSummaryCard({required this.totalCompleted});
 
   @override
   Widget build(BuildContext context) {
@@ -159,41 +159,41 @@ class _QuizSummaryCard extends StatelessWidget {
         : 'Try a short quiz after John 3, Romans 8, Psalm 23, Proverbs 3, or Luke 2.';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: GamerColors.darkCard,
+        color: QuestPalette.of(context).darkCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.2), width: 1),
+        border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.quiz_outlined, color: GamerColors.accent),
-              const SizedBox(width: 8),
-              Text('Chapter Quizzes Completed', style: theme.textTheme.titleLarge),
+              Icon(Icons.quiz_outlined, color: QuestPalette.of(context).accent),
+              SizedBox(width: 8),
+              Expanded(child: Text('Chapter Learning', style: theme.textTheme.titleLarge)),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: GamerColors.darkSurface,
+                  color: QuestPalette.of(context).darkSurface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: GamerColors.accent.withValues(alpha: 0.2), width: 1),
+                  border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.2), width: 1),
                 ),
                 child: Text(
                   '$totalCompleted',
                   style: theme.textTheme.titleLarge?.copyWith(
-                    color: GamerColors.accent,
+                    color: QuestPalette.of(context).accent,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Text(
                   subtitle,
@@ -209,7 +209,7 @@ class _QuizSummaryCard extends StatelessWidget {
 }
 
 class _RecentActivity extends StatelessWidget {
-  const _RecentActivity();
+  _RecentActivity();
 
   @override
   Widget build(BuildContext context) {
@@ -218,17 +218,17 @@ class _RecentActivity extends StatelessWidget {
     final entries = activity.entries.toList(); // ordered oldest -> newest
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: GamerColors.darkCard,
+        color: QuestPalette.of(context).darkCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.2), width: 1),
+        border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [const Icon(Icons.calendar_today, color: GamerColors.accent), const SizedBox(width: 8), Text('Recent Activity', style: Theme.of(context).textTheme.titleLarge)]),
-          const SizedBox(height: 12),
+          Row(children: [Icon(Icons.calendar_today, color: QuestPalette.of(context).accent), SizedBox(width: 8), Text('Recent Activity', style: Theme.of(context).textTheme.titleLarge)]),
+          SizedBox(height: 12),
           _ActivityBars(entries: entries),
         ],
       ),
@@ -238,7 +238,7 @@ class _RecentActivity extends StatelessWidget {
 
 class _ActivityBars extends StatelessWidget {
   final List<MapEntry<String, int>> entries;
-  const _ActivityBars({required this.entries});
+  _ActivityBars({required this.entries});
 
   String _weekdayLabel(DateTime d) {
     // Monday=1 ... Sunday=7
@@ -292,7 +292,7 @@ class _ActivityBars extends StatelessWidget {
               barWidth: barWidth,
               maxVisualUnits: maxChaptersVisual,
             ),
-            if (e != entries.last) const SizedBox(width: gap),
+            if (e != entries.last) SizedBox(width: gap),
           ],
         ],
       ),
@@ -306,7 +306,7 @@ class _Bar extends StatelessWidget {
   final double maxHeight;
   final double barWidth;
   final int maxVisualUnits;
-  const _Bar({required this.value, required this.label, required this.maxHeight, required this.barWidth, required this.maxVisualUnits});
+  _Bar({required this.value, required this.label, required this.maxHeight, required this.barWidth, required this.maxVisualUnits});
 
   @override
   Widget build(BuildContext context) {
@@ -325,26 +325,26 @@ class _Bar extends StatelessWidget {
             borderRadius: BorderRadius.circular(6),
             gradient: hasAny
                 ? LinearGradient(colors: [
-                    GamerColors.neonCyan.withValues(alpha: 0.85),
-                    GamerColors.neonPurple.withValues(alpha: 0.85),
+                    QuestPalette.of(context).neonCyan.withValues(alpha: 0.85),
+                    QuestPalette.of(context).neonPurple.withValues(alpha: 0.85),
                   ], begin: Alignment.bottomCenter, end: Alignment.topCenter)
                 : null,
-            color: hasAny ? null : GamerColors.accent.withValues(alpha: 0.08),
+            color: hasAny ? null : QuestPalette.of(context).accent.withValues(alpha: 0.08),
             boxShadow: hasAny
                 ? [
                     BoxShadow(
-                      color: GamerColors.neonPurple.withValues(alpha: 0.15),
+                      color: QuestPalette.of(context).neonPurple.withValues(alpha: 0.15),
                       blurRadius: 8,
                       spreadRadius: 0,
-                      offset: const Offset(0, 2),
+                      offset: Offset(0, 2),
                     ),
                   ]
                 : null,
-            border: Border.all(color: GamerColors.accent.withValues(alpha: hasAny ? 0.12 : 0.06), width: 1),
+            border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: hasAny ? 0.12 : 0.06), width: 1),
           ),
         ),
-        const SizedBox(height: 6),
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        SizedBox(height: 6),
+        Expanded(child: Text(label, style: Theme.of(context).textTheme.labelSmall)),
       ],
     );
   }
@@ -352,29 +352,29 @@ class _Bar extends StatelessWidget {
 
 class _PerBookProgressList extends StatelessWidget {
   final List<_BookProgress> entries;
-  const _PerBookProgressList({required this.entries});
+  _PerBookProgressList({required this.entries});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: GamerColors.darkCard,
+        color: QuestPalette.of(context).darkCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.2), width: 1),
+        border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [const Icon(Icons.menu_book, color: GamerColors.accent), const SizedBox(width: 8), Text('Progress by Book', style: Theme.of(context).textTheme.titleLarge)]),
-          const SizedBox(height: 8),
+          Row(children: [Icon(Icons.menu_book, color: QuestPalette.of(context).accent), SizedBox(width: 8), Text('Progress by Book', style: Theme.of(context).textTheme.titleLarge)]),
+          SizedBox(height: 8),
           if (entries.isEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: EdgeInsets.only(top: 4),
               child: Text('You haven’t started any books yet.', style: Theme.of(context).textTheme.labelMedium),
             )
           else ...[
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             ...entries.map((e) => _BookRow(entry: e)).toList(),
           ],
         ],
@@ -385,18 +385,18 @@ class _PerBookProgressList extends StatelessWidget {
 
 class _BookRow extends StatelessWidget {
   final _BookProgress entry;
-  const _BookRow({required this.entry});
+  _BookRow({required this.entry});
 
   @override
   Widget build(BuildContext context) {
     final pct = entry.totalChapters > 0 ? (entry.readChapters / entry.totalChapters).clamp(0.0, 1.0) : 0.0;
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.symmetric(vertical: 8),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: GamerColors.darkSurface,
+        color: QuestPalette.of(context).darkSurface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: GamerColors.accent.withValues(alpha: 0.15), width: 1),
+        border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.15), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -411,24 +411,24 @@ class _BookRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text('${entry.readChapters} / ${entry.totalChapters}', style: Theme.of(context).textTheme.labelMedium),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: SizedBox(
               height: 10,
               child: Stack(
                 children: [
-                  Container(color: GamerColors.darkCard),
+                  Container(color: QuestPalette.of(context).darkCard),
                   FractionallySizedBox(
                     alignment: Alignment.centerLeft,
                     widthFactor: pct,
                     child: Container(
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [GamerColors.neonCyan.withValues(alpha: 0.9), GamerColors.neonPurple.withValues(alpha: 0.9)]),
+                        gradient: LinearGradient(colors: [QuestPalette.of(context).neonCyan.withValues(alpha: 0.9), QuestPalette.of(context).neonPurple.withValues(alpha: 0.9)]),
                       ),
                     ),
                   ),
@@ -446,5 +446,5 @@ class _BookProgress {
   final String book;
   final int totalChapters;
   final int readChapters;
-  const _BookProgress({required this.book, required this.totalChapters, required this.readChapters});
+  _BookProgress({required this.book, required this.totalChapters, required this.readChapters});
 }

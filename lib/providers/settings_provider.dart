@@ -1,3 +1,6 @@
+import 'dart:convert';
+import '../services/storage_service.dart';
+import '../theme/scripture_theme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:level_up_your_faith/models/settings.dart';
@@ -15,7 +18,21 @@ class SettingsProvider extends ChangeNotifier {
   
   // Reader prefs getters
   double get bibleFontScale => _settings.bibleFontScale;
-  String get bibleReaderTheme => _settings.bibleReaderTheme;
+  String? _questThemeId;
+  bool _readerFollowsTheme = false;
+  String get questThemeId => _questThemeId ?? (_settings.bibleReaderTheme == 'night' ? ScriptureThemes.scriptureDark : ScriptureThemes.scriptureLight);
+  bool get readerFollowsTheme => _readerFollowsTheme;
+  String get bibleReaderTheme => _readerFollowsTheme ? (questThemeId == ScriptureThemes.scriptureDark ? 'night' : 'paper') : _settings.bibleReaderTheme;
+  Future<void> _saveAppearance(String id, bool follows) async {
+    final storage = await StorageService.getInstance();
+    await storage.save('scripture_appearance_v1', jsonEncode({'themeId': id, 'readerFollowsTheme': follows}));
+    _questThemeId = id; _readerFollowsTheme = follows; notifyListeners();
+  }
+  Future<void> setQuestTheme(String id) async {
+    if (!ScriptureThemes.ids.contains(id)) throw ArgumentError('Unknown theme');
+    await _saveAppearance(id, _questThemeId == null ? true : _readerFollowsTheme);
+  }
+  Future<void> setReaderFollowsTheme(bool follows) => _saveAppearance(questThemeId, follows);
   bool get redLettersEnabled => _settings.redLettersEnabled;
   // Typed font style getter
   ReaderFontStyle get readerFontStyle {
@@ -65,7 +82,7 @@ class SettingsProvider extends ChangeNotifier {
 
   // Typed reader color scheme mapping for convenience
   ReaderColorScheme get readerColorScheme {
-    switch ((_settings.bibleReaderTheme).toLowerCase()) {
+    switch (bibleReaderTheme.toLowerCase()) {
       case 'sepia':
         return ReaderColorScheme.sepia;
       case 'night':
@@ -79,6 +96,14 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> initialize() async {
     _service = await SettingsService.getInstance();
     _settings = await _service.load();
+    final appearance = (await StorageService.getInstance()).getString('scripture_appearance_v1');
+    if (appearance != null) {
+      try {
+        final data = jsonDecode(appearance) as Map;
+        _questThemeId = data['themeId'] as String?;
+        _readerFollowsTheme = data['readerFollowsTheme'] == true;
+      } catch (_) { debugPrint('Appearance preference unreadable; retained without replacement.'); }
+    }
     _loaded = true;
     // Initialize notifications and request permissions if enabled, then resync
     try {
@@ -120,6 +145,7 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> setBibleReaderTheme(String theme) async {
+    if (_readerFollowsTheme) await _saveAppearance(questThemeId, false);
     _settings = _settings.copyWith(bibleReaderTheme: theme);
     await _service.save(_settings);
     notifyListeners();

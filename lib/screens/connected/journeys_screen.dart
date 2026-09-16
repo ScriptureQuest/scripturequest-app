@@ -1,3 +1,4 @@
+import '../../widgets/product/product_ui.dart';
 import '../../widgets/exploration/exploration_art.dart';
 import '../../data/exploration/catalog.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +8,6 @@ import 'package:level_up_your_faith/models/questline.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
 import 'package:level_up_your_faith/widgets/reading_v2/reading_design.dart';
 import 'package:level_up_your_faith/widgets/connected/journey_content.dart';
-import 'package:level_up_your_faith/widgets/connected/progress_summary.dart';
 import 'package:level_up_your_faith/widgets/journal/journal_editor_sheet.dart';
 
 class ConnectedPage extends StatelessWidget {
@@ -394,17 +394,15 @@ class YouScreen extends StatelessWidget {
         const SizedBox(height: 12),
         const Text('What you have explored, discovered, and chosen to keep.'),
         const SizedBox(height: 24),
-        const ProgressSummary(),
+        const ProgressIdentity(),
         const SizedBox(height: 20),
-        _link(
-            context,
-            Icons.route_outlined,
-            'Journey Board',
-            'Where you have been and what you are working toward',
-            '/journey-board'),
-        _link(context, Icons.auto_stories_outlined, 'Codex',
-            'What you have discovered and what it means', '/discoveries'),
-        _link(context, Icons.psychology_outlined, 'Remembered Scripture', 'Chosen verses, practice and recall history', '/remembered'),
+        const ActivityShelf(children:[
+          ActivityCard(title:'Journey Board',description:'Where you have been, what you have completed, and what comes next.',route:'/journey-board',icon:Icons.route_outlined),
+          ActivityCard(title:'Codex discoveries',description:'Scripture you explored and discoveries worth returning to.',route:'/discoveries',icon:Icons.auto_stories_outlined),
+          ActivityCard(title:'Remembered Scripture',description:'The words you chose to carry and your practice history.',route:'/remembered',icon:Icons.psychology_outlined),
+        ]),
+        const SizedBox(height:24),
+        Text('Your personal library',style:Theme.of(context).textTheme.titleLarge),
         _link(context, Icons.workspace_premium_outlined, 'Achievements',
             'Milestones of engagement and learning', '/achievements'),
         _link(context, Icons.edit_note, 'Journal',

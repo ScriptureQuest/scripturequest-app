@@ -485,3 +485,14 @@ Four discoveries, four bounded Connections, three vector landscape variants, hon
 Validation: 54 tests including all Pass 1/2 tests; zero analyzer errors/no new diagnostic identities; release Flutter Web build; actual Flutter widget navigation, phone/desktop renderings, large text/night setting, persistence and reward replay checks. Details and exact acceptance steps: `docs/PASS3_EXPLORATION_AND_MEMORY.md`. Browser/Codespaces and native-device acceptance are not claimed from this workspace.
 
 The 19 unmatched red-letter verses still await trusted-content review. No Scripture data guesses were made. Future themes, larger content/art libraries, universal old-game audit and fuller personal history remain deferred in the Master Roadmap. Preserve unrelated preexisting preview/configuration files outside the Pass 3 commit. Stop for Zeb’s Pass 3 review before any later phase.
+
+
+## Pass 4 handoff — 2026-09-16
+
+VERIFIED: continued on `v2/reading-design` from Pass 3 `378926bdedf82453ca63fe70d030a6206813ab74`. Scripture Light is retained and Scripture Dark is implemented through a shared theme registry/semantic palette. Appearance uses the additive `scripture_appearance_v1` key, independently of progression data, and preserves existing reader preferences. No infrastructure, Flutter/dependency, iOS, Bible-data or progress-service changes were made.
+
+Learn, Play & Learn, Achievements, You and important personal-library screens now share the evolving V2 presentation. Journey Board/Codex/Connections/remembering and Daily/Weekly/XP systems are retained. Legacy compatibility boundaries preserve untouched routes; older cosmetic preview integration remains staged work.
+
+VERIFIED validation: all 62 tests pass; analyzer 0 errors, 92 warnings and 26 infos with no new diagnostic identities; production Flutter Web build succeeds. Both themes have 88 screen/size render checks, large-text control checks, connected discovery/learning/remembering navigation and real John 3 red-letter rendering assertions. Detailed scope, acceptance walkthrough and limits are in `docs/PASS4_THEMES_AND_PRODUCT_COHESION.md`.
+
+UNVERIFIED/deferred: real browser/Codespaces and native iPhone/VoiceOver acceptance, the reported Journey/45-second qualification concern, the 19 unmatched red-letter verses requiring trusted review, and unrelated legacy issues. No comprehensive bug hunt or new-game expansion was undertaken. Preexisting preview/configuration working-tree changes remain excluded from this delivery. Stop for Zeb's Pass 4 review.

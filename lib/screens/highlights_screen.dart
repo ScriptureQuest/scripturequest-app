@@ -1,9 +1,9 @@
+import '../theme/scripture_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
 import 'package:level_up_your_faith/widgets/bible_reader_styles.dart';
-import 'package:level_up_your_faith/theme.dart';
 
 class HighlightsScreen extends StatelessWidget {
   const HighlightsScreen({super.key});
@@ -15,16 +15,16 @@ class HighlightsScreen extends StatelessWidget {
         final keys = app.highlightedVerseKeysRecent;
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Highlights'),
+            title: Text('Highlights'),
             centerTitle: true,
           ),
           body: SafeArea(
             child: (keys.isEmpty)
                 ? _emptyState(context)
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    padding: EdgeInsets.fromLTRB(16, 12, 16, 24),
                     itemCount: keys.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    separatorBuilder: (_, __) => SizedBox(height: 8),
                     itemBuilder: (context, index) {
                       final k = keys[index];
                       final colorKey = app.getHighlightColorKey(k) ?? 'sun';
@@ -43,7 +43,7 @@ class HighlightsScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: color.withValues(alpha: 0.35), width: 1),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           child: Row(
                             children: [
                               Container(
@@ -51,14 +51,14 @@ class HighlightsScreen extends StatelessWidget {
                                 height: 12,
                                 decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   displayRef,
                                   style: Theme.of(context).textTheme.titleMedium,
                                 ),
                               ),
-                              const Icon(Icons.chevron_right, color: GamerColors.textSecondary),
+                              Icon(Icons.chevron_right, color: QuestPalette.of(context).textSecondary),
                             ],
                           ),
                         ),
@@ -74,17 +74,17 @@ class HighlightsScreen extends StatelessWidget {
   Widget _emptyState(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.highlight_alt, size: 48, color: GamerColors.textSecondary),
-            const SizedBox(height: 12),
+            Icon(Icons.highlight_alt, size: 48, color: QuestPalette.of(context).textSecondary),
+            SizedBox(height: 12),
             Text(
               'No highlights yet',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               'Long‑press a verse in the Bible to add a highlight.',
               style: Theme.of(context).textTheme.bodyMedium,

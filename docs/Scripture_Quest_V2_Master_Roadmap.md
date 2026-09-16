@@ -288,3 +288,26 @@ IN PROGRESS: Zeb’s Codespaces acceptance/product review.
 BLOCKED: Real-iPhone/VoiceOver validation and independent trusted-content review remain unverified here.
 NEEDS FROM ME: Test the Pass 3 handoff in the existing Codespace and give product feedback.
 NEXT ENGINEERING ACTION: Respond to Pass 3 review findings only. Do not begin the next phase without approval.
+
+
+## Latest approved execution — Pass 4 (2026-09-16)
+
+**Implementation and automated validation complete; awaiting Zeb's review.** The approved Pass 4 theme/product-cohesion scope supersedes the older Pass 4 scheduling. Details: `PASS4_THEMES_AND_PRODUCT_COHESION.md`.
+
+**KEEP:** Scripture Light; visible Daily/Weekly Quests, XP/levels, Journeys and their history; Journey Board, Codex, discoveries, Connections, remembered Scripture; existing games, achievements, reading plans, journal and saved passages; all Pass 1–3 protections.
+
+**UPGRADE:** designed Scripture Dark; shared semantic themes/components; expressive Learn and Play & Learn; family-based accomplishment cards and filters; cohesive You/personal-library surfaces; responsive game results and deeper-screen labels. Theme selection persists separately from earned progress, with an independent reader override.
+
+**REDESIGN / STAGE:** modern V2 appearance now uses the new built-in theme registry. Unmodernized legacy routes retain a compatibility theme boundary. Existing cosmetic/theme-pack data remains; adapting its global preview behavior to the new system is deferred. No new pack shop or currency was added.
+
+**DEFER:** earlier ownership/backup/onboarding work, full personal history, additional theme packs/atmospheres, final graphics library, broad legacy migration, word searches/crosswords/new games. Preserve these ideas for explicit future approval. Record the reported Journey/45-second qualification concern for the later integration/bug pass; do not treat it as fixed. The 19 unmatched red-letter verses still require trusted-content review.
+
+VERIFIED: 62 tests passed; static analysis 0 errors/92 warnings/26 infos, no new diagnostic identities; production Web build succeeded on Flutter 3.32.8. Both themes checked across 88 screen/size combinations, with additional large-text controls and connected discovery/learning/remembering navigation. Actual John 3 rendering checks pass in both themes. Diff contains no progression-service, Bible-data, dependency or iOS changes. Browser/native acceptance is not claimed.
+
+CURRENT STATE — supersedes earlier execution summaries:
+WORKING: Pass 4 Light/Dark theme system and scoped deeper-screen modernization; full automated regression suite and Web build.
+BROKEN: No failing scoped regression test; unrelated legacy diagnostics/issues are not certified by this pass.
+IN PROGRESS: Transfer and Zeb's hands-on product review.
+BLOCKED: Native-device/VoiceOver validation and trusted review of the 19 unmatched verses remain outstanding.
+NEEDS FROM ME: Test both themes and the connected product in the existing Codespace.
+NEXT ENGINEERING ACTION: Respond to Pass 4 review only. Do not start Pass 5, the comprehensive bug pass, or game expansion without approval.

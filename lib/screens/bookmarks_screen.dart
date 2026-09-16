@@ -1,8 +1,8 @@
+import '../theme/scripture_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:level_up_your_faith/providers/app_provider.dart';
-import 'package:level_up_your_faith/theme.dart';
 
 class BookmarksScreen extends StatelessWidget {
   const BookmarksScreen({super.key});
@@ -15,11 +15,11 @@ class BookmarksScreen extends StatelessWidget {
       appBar: AppBar(
         leading: Navigator.of(context).canPop()
             ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: GamerColors.accent),
+                icon: Icon(Icons.arrow_back, color: QuestPalette.of(context).accent),
                 onPressed: () => context.pop(),
               )
             : null,
-        title: const Text('Bookmarks'),
+        title: Text('Bookmarks'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -30,24 +30,24 @@ class BookmarksScreen extends StatelessWidget {
 
   Widget _emptyState(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: GamerColors.darkCard,
+          color: QuestPalette.of(context).darkCard,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: GamerColors.accent.withValues(alpha: 0.20), width: 1),
+          border: Border.all(color: QuestPalette.of(context).accent.withValues(alpha: 0.20), width: 1),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('No bookmarks yet.', style: Theme.of(context).textTheme.bodyLarge),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(
               'Bookmark a chapter or verse to find it quickly later.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: GamerColors.textSecondary),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: QuestPalette.of(context).textSecondary),
             ),
           ],
         ),
@@ -57,9 +57,9 @@ class BookmarksScreen extends StatelessWidget {
 
   Widget _list(List<String> keys, BuildContext context) {
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+      padding: EdgeInsets.fromLTRB(12, 12, 12, 20),
       itemCount: keys.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 6),
+      separatorBuilder: (_, __) => SizedBox(height: 6),
       itemBuilder: (context, index) {
         final key = keys[index];
         final parsed = _parseKey(key);
@@ -67,9 +67,9 @@ class BookmarksScreen extends StatelessWidget {
 
         return ListTile(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          leading: const Icon(Icons.bookmark, color: GamerColors.accent),
+          leading: Icon(Icons.bookmark, color: QuestPalette.of(context).accent),
           title: Text(title),
-          subtitle: const Text('Tap to open in Bible'),
+          subtitle: Text('Tap to open in Bible'),
           onTap: () {
             final ref = Uri.encodeComponent('${parsed['book']} ${parsed['chapter']}');
             context.push('/verses?ref=$ref');
