@@ -516,3 +516,13 @@ IN PROGRESS: User acceptance of Pass 5.
 BLOCKED: Native/release claims require their later validation stage.
 NEEDS FROM ME: Import the Pass 5 bundle into the existing Codespace and review the connected flows.
 NEXT ENGINEERING ACTION: Wait for Zeb’s review; do not begin Pass 6, comprehensive bug work or content expansion.
+
+## Post-Pass-5 live startup repair — 2026-09-23
+
+VERIFIED: investigated live Today-spinner failure from Pass 5 commit `23a8e666e9cf219cef03910120383c7ccc67e1c7`. StorageService published a singleton before its async preferences load finished, allowing concurrent Settings/App startup to bypass readiness. AppProvider's await was present but the factory contract was broken. The race was reproduced before repair using an explicitly held cold platform load and the same current_user/save errors.
+
+VERIFIED repair: one shared storage-initialization Future, instance published only after readiness, genuine errors propagated and later retry permitted. No data reset, migration, delays, progression changes or consumer-specific initialization. Only production file changed: `lib/services/storage_service.dart`.
+
+VERIFIED validation: 75 tests passed (all 73 prior plus cold-start and failure/retry regressions); analyzer zero errors/no new diagnostics; production Web build succeeded. The reported registerExtension/DWDS warning is a separate SDK debug-hook warning; no production workaround added. Details: `docs/STARTUP_STORAGE_FIX.md`.
+
+NEXT: import the fix and reload the existing Firefox/Codespaces preview without clearing saved data. Live-browser confirmation remains pending; stop after this repair. Pass 6 and unrelated work remain unauthorized.

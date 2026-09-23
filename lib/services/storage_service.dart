@@ -3,17 +3,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 
 class StorageService {
-  static StorageService? _instance;
+  static Future<StorageService>? _initialization;
   static SharedPreferences? _prefs;
 
   StorageService._();
 
-  static Future<StorageService> getInstance() async {
-    if (_instance == null) {
-      _instance = StorageService._();
+  /// All concurrent startup consumers share readiness, not a partial singleton.
+  static Future<StorageService> getInstance() =>
+      _initialization ??= _initialize();
+
+  static Future<StorageService> _initialize() async {
+    try {
       _prefs = await SharedPreferences.getInstance();
+      return StorageService._();
+    } catch (_) {
+      // Propagate failure to every waiter. A later explicit attempt may retry.
+      _initialization = null;
+      rethrow;
     }
-    return _instance!;
   }
 
   /// Critical callers can detect failed writes; never silently claim success.
