@@ -1,3 +1,4 @@
+import '../data/connected/connected_catalog.dart';
 import '../utils/integrity/serial_queue.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
@@ -3077,7 +3078,7 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  static const connectedJourneyIds = {'onboarding_getting_started', 'knowing_jesus', 'psalms_of_peace'};
+  static Set<String> get connectedJourneyIds => ConnectedCatalog.current.journeyIds;
   Future<List<QuestlineProgressView>> journeyHistory() async {
     final uid = (await _userService.getCurrentUser()).id;
     final defs = await _questlineService.getAvailableQuestlines(uid);

@@ -311,3 +311,16 @@ IN PROGRESS: Transfer and Zeb's hands-on product review.
 BLOCKED: Native-device/VoiceOver validation and trusted review of the 19 unmatched verses remain outstanding.
 NEEDS FROM ME: Test both themes and the connected product in the existing Codespace.
 NEXT ENGINEERING ACTION: Respond to Pass 4 review only. Do not start Pass 5, the comprehensive bug pass, or game expansion without approval.
+
+
+## Pass 5 completed — Continuity & Content Foundations (2026-09-23)
+
+Approved separately after the Post-Pass-4 assessment. The existing five tabs, visible Daily/Weekly quests, XP/levels, Journey Board, Codex and optional/private reflection remain authoritative.
+
+**IMPLEMENTED:** shared typed connected-content boundary; existing Journey definitions extracted without changes to identifiers/templates/rewards; canonical passage relationships including many-to-many Journey discoveries; namespaced editorial orientations; read-only continuation resolver and state adapter; Today/onboarding handoff/result/Learn/discovery/finished-Journey integration; explicit destination ownership with Remembered Scripture history under You and practice under Learn. AppProvider remains the existing progression authority and grows only from 6,050 to 6,051 lines.
+
+**VERIFIED:** 73 tests pass (all prior 62 plus 11 new), analyzer 0 errors/no new diagnostics (92 preexisting warnings, 26 infos), production Flutter Web build succeeds. Saved-state reads/restart, duplicate/reward protections, existing red-letter rendering, both themes, phone/large layouts and push/back navigation pass. Existing Journey definition values match the Pass 4 source. No persistence migration or content expansion. Implementation details, contracts and future registration instructions: `docs/PASS5_CONTINUITY_AND_CONTENT_FOUNDATIONS.md`.
+
+**PRESERVE:** all Pass 1–4 behavior and previous deferred requirements. **DEFER:** comprehensive bug hunt, universal legacy-game receipt audit, full provider/storage/router decomposition, backup/restore and fuller onboarding, new content/game libraries, third theme, native/VoiceOver/release qualification and the 19 unmatched red-letter verses requiring trusted review. The earlier roadmap’s release-qualification Pass 5 is moved to a later approved milestone; it has not been silently retired or completed.
+
+**Next gate:** Zeb tests this Pass 5 bundle in Codespaces and reviews continuity. No Pass 6 or broad bug/content expansion is authorized by completion of this pass.

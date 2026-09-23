@@ -644,7 +644,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     },
               child: _busy
                   ? const Text('Preparing...')
-                  : const Text('Enter Quest Hub'),
+                  : const Text('See my first Scripture step'),
             ),
           ),
           const SizedBox(height: 16),

@@ -1,3 +1,4 @@
+import 'next_action_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -48,7 +49,7 @@ class TodayJourney extends StatelessWidget {
       Text(journey == null ? 'YOUR SCRIPTURE QUEST' : 'YOUR CURRENT JOURNEY',
           style: theme.textTheme.labelMedium),
       const SizedBox(height: 12),
-      Text(journey?.questline.title ?? 'Start somewhere meaningful.',
+      Text(journey?.questline.title ?? (app.lastBibleReference == null ? 'Start somewhere meaningful.' : 'Your reading continues.'),
           style: theme.textTheme.headlineMedium),
       const SizedBox(height: 8),
       Text(journey == null
@@ -66,16 +67,7 @@ class TodayJourney extends StatelessWidget {
             style: theme.textTheme.titleLarge),
       ],
       const SizedBox(height: 18),
-      SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            icon: const Icon(Icons.route_outlined),
-            label: Text(
-                journey == null ? 'Choose my Journey' : 'Continue Journey'),
-            onPressed: () => context.push(journey == null
-                ? '/journeys'
-                : '/journeys/${journey.questline.id}'),
-          )),
+      const NextActionPanel(),
       if (app.activeReadingPlan != null)
         TextButton.icon(
             onPressed: () => context.push('/reading-plans'),

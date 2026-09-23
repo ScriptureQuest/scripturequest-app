@@ -1,3 +1,4 @@
+import '../models/connected/destination.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:level_up_your_faith/theme.dart';
@@ -299,12 +300,7 @@ class _BottomNavBarState extends State<_BottomNavBar> {
   Widget build(BuildContext context) {
     final app = context.watch<AppProvider>();
     final location = GoRouterState.of(context).uri.toString();
-    int currentIndex = -1;
-    if (location == '/' || location.startsWith('/tasks')) currentIndex = 0;
-    else if (location.startsWith('/journeys') || location.startsWith('/quests') || location.startsWith('/questline') || location.startsWith('/reading-plans')) currentIndex = 1;
-    else if (location.startsWith('/bible') || location.startsWith('/verses') || location.startsWith('/scripture')) currentIndex = 2;
-    else if (location == '/learn' || location.startsWith('/find-passage') || location == '/remembered' || location.startsWith('/play-learn') || location.contains('game') || location.contains('quiz') || location.contains('memorization') || location.contains('scramble') || location.contains('parables')) currentIndex = 3;
-    else currentIndex = 4;
+    final currentIndex = ConnectedDestination.ownerOf(location).index;
 
     // Nudge when a new event arrives
     if (app.questTabNudgeEvent != 0 &&

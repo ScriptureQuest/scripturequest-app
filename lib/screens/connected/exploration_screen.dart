@@ -1,3 +1,5 @@
+import '../../widgets/connected/next_action_panel.dart';
+import '../../data/connected/connected_catalog.dart';
 import '../../widgets/product/product_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -107,14 +109,11 @@ class CodexScreen extends StatelessWidget {
                             onPressed: () => c.push('/discoveries/${d.id}'),
                             child: const Text('Open discovery guide')),
                       if (id != null) ...[
-                        for (final connection in scriptureConnections
-                            .where((s) => s.from.startsWith(d.reference + ':')))
+                        for (final connection in ConnectedCatalog.current.connectionsFor(d))
                           ConnectionCard(connection: connection),
-                        explorationLink(
-                            c,
-                            'Follow the Journey',
-                            'Read in context and continue exploring.',
-                            '/journeys/${d.journey}'),
+                        for(final journey in ConnectedCatalog.current.journeysFor(d))
+                          explorationLink(c, journey.title, 'Explore this passage in a Journey.', '/journeys/${journey.id}'),
+                        NextActionPanel(reference:d.reference,learning:true),
                         explorationLink(
                             c,
                             'Your exploration, kept',
@@ -155,14 +154,12 @@ class ConnectionCard extends StatelessWidget {
 class LearnScreen extends StatelessWidget {
   const LearnScreen({super.key});
   @override Widget build(BuildContext context) => ExplorationPage(title:'Learn',content:(c,app) {
-    final candidates = discoveries.where((d)=>app.discoveryRecords.containsKey(d.id) && !(app.explorationState['learning'] as Map).containsKey(d.id));
-    final next = candidates.isEmpty ? discoveries.first : candidates.first;
     return [
       Text('Explore. Practice. Discover.',style:Theme.of(c).textTheme.headlineMedium),
       const SizedBox(height:12),const Text('Look closely at Scripture, give your memory a challenge, or play with what you are learning.'),const SizedBox(height:20),
       const ProgressIdentity(),const SizedBox(height:24),
-      Text('A challenge from your reading',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:12),
-      ActivityCard(title:next.title,description:'${next.reference} · Find the evidence in the passage. ${candidates.isEmpty ? 'Open the Bible and explore.' : 'You have read this. Look closer.'}',route:'/find-passage/${next.id}',icon:Icons.search,featured:true),
+      Text('Continue your Scripture Quest',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:12),
+      const NextActionPanel(learning:true),
       const SizedBox(height:24),Text('Choose how to learn',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:12),
       const ActivityShelf(children:[
         ActivityCard(title:'Play & Learn',description:'Matching, verse puzzles, Bible book order, and parables. Familiar games with a Scripture purpose.',route:'/play-learn',icon:Icons.extension_outlined),
@@ -171,7 +168,7 @@ class LearnScreen extends StatelessWidget {
       ]),const SizedBox(height:24),Text('Passage challenges',style:Theme.of(c).textTheme.titleLarge),
       for(final d in discoveries) explorationLink(c,d.title,'${d.reference} · ${(app.explorationState['learning'] as Map).containsKey(d.id)?'Evidence found · revisit':'Find it in the Passage'}','/find-passage/${d.id}',icon:Icons.search),
       const SizedBox(height:24),Text('Chapter Learning',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:8),const Text('Quick, Standard, and Deep challenges using the existing chapter library. Reflections stay optional and ungraded.'),
-      for(final ref in [('John',3),('Romans',8),('Psalms',23)]) explorationLink(c,'${ref.$1} ${ref.$2}','Read in context, then try the chapter challenge.','/chapter-quiz?book=${ref.$1}&chapter=${ref.$2}'),
+      for(final ref in ConnectedCatalog.chapterLearning) explorationLink(c,ref.label,'Read in context, then try the chapter challenge.','/chapter-quiz?book=${ref.book}&chapter=${ref.chapter}'),
       const SizedBox(height:24),Text('Scripture Connections',style:Theme.of(c).textTheme.titleLarge),const Text('Compare passages with clear context. Thematic pairings are labeled as editorial suggestions.'),
       for(final connection in scriptureConnections) ConnectionCard(connection:connection),
     ];
@@ -263,6 +260,7 @@ class _FindPassageScreenState extends State<FindPassageScreen> {
                             style: Theme.of(c).textTheme.titleMedium))),
               if (finished) ...[
                 const AccomplishmentMark(icon: Icons.search),
+                NextActionPanel(reference:d.reference,learning:true),
                 explorationLink(
                     c,
                     'Keep exploring this discovery',

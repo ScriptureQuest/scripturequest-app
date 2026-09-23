@@ -1,6 +1,7 @@
+import '../../data/connected/connected_catalog.dart';
+import '../../widgets/connected/next_action_panel.dart';
 import '../../widgets/product/product_ui.dart';
 import '../../widgets/exploration/exploration_art.dart';
-import '../../data/exploration/catalog.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -110,7 +111,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                            ExplorationArt(scene: d.id == 'knowing_jesus' ? 'light' : d.id == 'psalms_of_peace' ? 'peace' : 'night', illustrated: context.watch<AppProvider>().illustratedExploration),
+                            ExplorationArt(scene: ConnectedCatalog.current.scene(d.id), illustrated: context.watch<AppProvider>().illustratedExploration),
                             const SizedBox(height: 14),
                             Row(children: [
                               Icon(v?.progress.isCompleted == true
@@ -136,7 +137,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
                             ] else
                               Text('${d.steps.length} steps · At your pace'),
                             if (widget.board)
-                              for (final discovery in discoveries.where((entry) => d.steps.any((step) => (JourneyContent.reference(step) == entry.reference || (JourneyContent.reference(step) ?? '').startsWith('${entry.reference}:'))) && context.read<AppProvider>().discoveryRecords.containsKey(entry.id)))
+                              for (final discovery in ConnectedCatalog.current.forJourney(d.id).where((entry) => context.read<AppProvider>().discoveryRecords.containsKey(entry.id)))
                                 _link(context, Icons.auto_stories_outlined, discovery.title,
                                   (context.read<AppProvider>().explorationState['learning'] as Map).containsKey(discovery.id) ? 'Discovery kept · passage evidence found' : 'Discovery kept · look closer in the passage', '/discoveries/${discovery.id}'),
                             TextButton(
@@ -304,7 +305,7 @@ class _GuidedJourneyScreenState extends State<GuidedJourneyScreen> {
                         Text(ref ?? 'Pause and respond',
                             style: Theme.of(context).textTheme.titleLarge),
                         const SizedBox(height: 8),
-                        Text(JourneyContent.orientations[step.id] ??
+                        Text(ConnectedCatalog.current.orientation(d.id, step.id) ??
                             (response
                                 ? 'What stayed with you? Keep a thought or question, or continue without writing.'
                                 : d.description)),
@@ -365,18 +366,14 @@ class _GuidedJourneyScreenState extends State<GuidedJourneyScreen> {
                               style: TextStyle(fontSize: 13)),
                       ]));
                 })),
-          for (final discovery in discoveries.where((e) => e.journey == d.id))
+          for (final discovery in ConnectedCatalog.current.forJourney(d.id))
             _link(
                 context,
                 Icons.auto_stories_outlined,
                 'A discovery along the way',
                 '${discovery.title} · ${discovery.reference}',
                 '/discoveries/${discovery.id}'),
-          if (complete)
-            FilledButton.icon(
-                onPressed: () => context.go('/journeys'),
-                icon: const Icon(Icons.explore_outlined),
-                label: const Text('Explore another Journey')),
+          if (complete) NextActionPanel(finishedJourney:d.id),
           _link(context, Icons.route_outlined, 'Keep the accomplishment',
               'See your Journey Board.', '/journey-board'),
           _link(context, Icons.edit_note, 'Your journal',

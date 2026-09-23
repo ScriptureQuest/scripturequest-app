@@ -1,3 +1,4 @@
+import 'next_action_panel.dart';
 import '../../data/exploration/catalog.dart';
 import '../exploration/exploration_art.dart';
 import 'package:flutter/material.dart';
@@ -107,15 +108,7 @@ class ReadingResultSheet extends StatelessWidget {
                     TextButton(onPressed: () => Navigator.pop(context, '/discoveries/$id'), child: const Text('Open my discovery')),
                   ],
                   const SizedBox(height: 24),
-                  FilledButton(
-                      onPressed: () => Navigator.pop(
-                          context,
-                          result.nextJourneyId == null
-                              ? '/journeys'
-                              : '/journeys/${result.nextJourneyId}'),
-                      child: Text(result.nextJourneyId == null
-                          ? 'Explore what comes next'
-                          : 'See my next Journey step')),
+                  NextActionPanel(reference: result.reference, onNavigate: (route) => Navigator.pop(context, route)),
                   TextButton(
                       onPressed: () => Navigator.pop(context, 'reflect'),
                       child: const Text('Keep a reflection · optional')),

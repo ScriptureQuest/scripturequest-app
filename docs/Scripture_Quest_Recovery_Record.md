@@ -496,3 +496,23 @@ Learn, Play & Learn, Achievements, You and important personal-library screens no
 VERIFIED validation: all 62 tests pass; analyzer 0 errors, 92 warnings and 26 infos with no new diagnostic identities; production Flutter Web build succeeds. Both themes have 88 screen/size render checks, large-text control checks, connected discovery/learning/remembering navigation and real John 3 red-letter rendering assertions. Detailed scope, acceptance walkthrough and limits are in `docs/PASS4_THEMES_AND_PRODUCT_COHESION.md`.
 
 UNVERIFIED/deferred: real browser/Codespaces and native iPhone/VoiceOver acceptance, the reported Journey/45-second qualification concern, the 19 unmatched red-letter verses requiring trusted review, and unrelated legacy issues. No comprehensive bug hunt or new-game expansion was undertaken. Preexisting preview/configuration working-tree changes remain excluded from this delivery. Stop for Zeb's Pass 4 review.
+
+
+## Pass 5 handoff — 2026-09-23
+
+VERIFIED baseline: approved Pass 4 `e71db8bc3c7eb239ebb975702b228e1121378b05` on `v2/reading-design`. No infrastructure/setup investigation was repeated.
+
+VERIFIED implementation: typed connected-content relationships, unchanged Journey definitions extracted from the transition service, deterministic read-only guidance outside AppProvider, shared next actions on existing connected surfaces, and centralized navigation ownership. Existing reward/qualification/storage writers are unchanged. AppProvider line count 6,050 → 6,051. No stable saved IDs, XP values, Bible data, plan enrollments, themes, dependencies or native configuration were changed.
+
+VERIFIED validation: all 73 tests pass; analyzer 0 errors, 92 existing warnings, 26 infos, no new diagnostic identities; production Web build succeeds. Pass 1–4 regressions pass. New tests cover existing saved state, repeated nonmutating guidance reads, Journey/plan priority, completion, invalid content registration, returning-user continuation, and phone/desktop Light/Dark push/back behavior. Existing Journey definition values compare identically with the baseline. See `docs/PASS5_CONTINUITY_AND_CONTENT_FOUNDATIONS.md`.
+
+UNVERIFIED: live Codespaces browser and native iPhone/VoiceOver acceptance, real-time qualification concern, trusted review of the 19 unmatched red-letter verses, and unrelated legacy issues. No comprehensive bug hunt was undertaken. Preexisting preview/configuration working-tree files remain outside this delivery.
+
+CURRENT STATE
+
+WORKING: Pass 1–4 foundations plus connected-content and continuation guidance, validated by the full suite and Web build.
+BROKEN: No remaining Pass-5-blocking failure found; previously deferred issues remain recorded, not claimed fixed.
+IN PROGRESS: User acceptance of Pass 5.
+BLOCKED: Native/release claims require their later validation stage.
+NEEDS FROM ME: Import the Pass 5 bundle into the existing Codespace and review the connected flows.
+NEXT ENGINEERING ACTION: Wait for Zeb’s review; do not begin Pass 6, comprehensive bug work or content expansion.
