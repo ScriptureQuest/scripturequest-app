@@ -1,3 +1,4 @@
+import 'screens/activities/activity_screen.dart';
 import 'widgets/product/product_ui.dart';
 import 'theme/scripture_theme.dart';
 import 'screens/connected/exploration_screen.dart';
@@ -280,6 +281,7 @@ final _router = GoRouter(
           path: '/reading-plans',
           builder: (context, state) => const ReadingPlansScreen(),
         ),
+        GoRoute(path: '/play-learn/activity/:id', builder: (context, state) => ScriptureActivityScreen(id: state.pathParameters['id']!)),
         // Play & Learn hub (lists all mini-games)
         GoRoute(
           path: '/play-learn',

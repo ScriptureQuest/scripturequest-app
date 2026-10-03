@@ -1,3 +1,6 @@
+import '../data/activities/activity_catalog.dart';
+import '../models/activities/activity.dart';
+import '../services/activities/activity_history.dart';
 import '../data/connected/connected_catalog.dart';
 import '../utils/integrity/serial_queue.dart';
 import 'package:flutter/foundation.dart';
@@ -3198,6 +3201,45 @@ class AppProvider extends ChangeNotifier {
     }
     final changes = await _creditExplorationGoals('quiz:$b:$chapter', '$b $chapter');
     _currentUser = await _userService.getCurrentUser(); _quests = await _questService.getAllQuests(); notifyListeners();
+    return (xp: _currentUser!.totalXP - user.totalXP, changes: changes);
+  });
+
+  Map<String, dynamic> get activityRecords => ActivityHistory(_storageService).read(_currentUser!.id);
+
+  /// One completion authority for catalog activities. Uses the existing serial
+  /// exploration boundary, user receipts and quest writers; never credits reading.
+  Future<({int xp, List<String> changes})> completeActivity(String id,
+      {Map<String, String> answers = const {}, int hints = 0}) => _runExploration(() async {
+    final activity = ActivityCatalog.byId(id);
+    if (hints < 0 || (activity.kind != ActivityKind.legacy &&
+        (answers.length != activity.words.length || activity.words.any((w) => answers[w.answer] != w.answer)))) {
+      throw ArgumentError('Activity is not complete');
+    }
+    final user = await _userService.getCurrentUser();
+    final history = ActivityHistory(_storageService);
+    final baselineKey = 'activities_legacy_count_${user.id}';
+    if (_storageService.getInt(baselineKey) == null) {
+      await _storageService.save(baselineKey, _learningGamesCompleted);
+    }
+    final pending = await history.record(user.id, id, hints);
+    final changes = <String>[];
+    if (pending) {
+      await _userService.addXP(_applyStreakBonusToXp(activity.xp), receiptId: 'activity:$id');
+      // Classic sessions have mixed passages; do not invent a Scripture target.
+      if (activity.passage != null) changes.addAll(await _creditExplorationGoals('activity:$id', activity.passage!.label));
+      final count = _storageService.getInt(baselineKey)! + history.read(user.id).length;
+      await _storageService.save(_learningGamesCompletedKey(user.id), count);
+      _learningGamesCompleted = count;
+      for (final threshold in [1, 5, 15]) {
+        if (count >= threshold) await unlockAchievementPublic('learning_games_$threshold');
+      }
+      if (id == 'book_order_v1') await unlockAchievementPublic('book_order_once');
+      if (id == 'parables_v1') await unlockAchievementPublic('emoji_parables_once');
+      await history.settle(user.id, id);
+    }
+    _currentUser = await _userService.getCurrentUser();
+    _quests = await _questService.getAllQuests();
+    notifyListeners();
     return (xp: _currentUser!.totalXP - user.totalXP, changes: changes);
   });
 

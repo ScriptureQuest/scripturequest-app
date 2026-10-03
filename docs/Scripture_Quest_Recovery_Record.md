@@ -526,3 +526,20 @@ VERIFIED repair: one shared storage-initialization Future, instance published on
 VERIFIED validation: 75 tests passed (all 73 prior plus cold-start and failure/retry regressions); analyzer zero errors/no new diagnostics; production Web build succeeded. The reported registerExtension/DWDS warning is a separate SDK debug-hook warning; no production workaround added. Details: `docs/STARTUP_STORAGE_FIX.md`.
 
 NEXT: import the fix and reload the existing Firefox/Codespaces preview without clearing saved data. Live-browser confirmation remains pending; stop after this repair. Pass 6 and unrelated work remain unauthorized.
+
+
+## Pass 6 completed — Play & Learn 2.0 (2026-10-03)
+
+Built directly on `12d8b0379e013966e3ab5501a3ff3e85ca5a75bb`; the original storage readiness fix and its tests are unchanged.
+
+IMPLEMENTED: typed activity catalog, six passage-backed puzzles (three word searches with two modes and three connected crosswords), completion/best-hint history, replay-safe classic-game integration, Scripture result links, chapter-learning follow-ups, and existing Pass 5 continuation. Existing Light/Dark design and all five product tabs remain. AppProvider adds 42 lines (6,051 → 6,093); game/catalog/history implementation is separate.
+
+VERIFIED: **85 tests passed**, including all previous 75 and ten new test cases (nine logic/integrity plus one continuous UI scenario containing the 12 theme/size checks, actual crossword completion, word-search completion and replay). Static analysis: **0 errors, 92 existing warnings, 26 existing infos; no new diagnostics**. Production Flutter Web build succeeds with the existing `--no-pub --no-tree-shake-icons` cache accommodation. Final renders inspected; diff whitespace checks pass. Full-history bundle and independent-clone verification are part of the handoff.
+
+Reward integration uses stable per-activity receipts and pending delivery. Only first puzzle completions advance eligible learning quests; no puzzle credits reading, discovery or independent recall. Old game counts/XP are preserved; new distinct completions count once. No historical per-game receipts exist, so first post-upgrade classic completion can earn one new catalog reward, as documented.
+
+DEFERRED: larger content/game libraries, unfinished-board resume, deeper activity recommendations, full provider/backup/router work, comprehensive bug hunt, native/VoiceOver/release qualification, and the **19 unmatched red-letter verses requiring trusted review**. Prior reading-timer acceptance concern remains. Existing older game pools remain subject to a later trusted-content audit.
+
+Testing note: the UI scenarios run in one continuous app event loop to exercise static completion queues without carrying them across separate fake test loops. No previous regression tests were modified or removed. Native/live Codespaces acceptance remains unverified.
+
+Details: `docs/PASS6_PLAY_AND_LEARN.md`. NEXT: transfer and user review. Stop after Pass 6; no Pass 7 work authorized.

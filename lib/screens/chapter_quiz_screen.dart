@@ -1,3 +1,6 @@
+import 'activities/activity_screen.dart';
+import '../models/connected/passage_reference.dart';
+import '../data/activities/activity_catalog.dart';
 import '../theme/scripture_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -108,8 +111,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
       final passed = result.totalFactual == 0 ? true : (result.correct / result.totalFactual) >= 0.6;
       return Padding(
         padding: EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
             _chapterTag(),
             SizedBox(height: 16),
@@ -134,7 +136,11 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
                 ],
               ),
             ),
-            Spacer(),
+            const SizedBox(height: 16),
+            for (final activity in ActivityCatalog.forPassage(PassageReference(widget.bookId, widget.chapter)))
+              TextButton(onPressed: () => context.push(activity.route), child: Text('${activity.family} · ${activity.title}')),
+            ActivityFollowUp(passage: PassageReference(widget.bookId, widget.chapter)),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(

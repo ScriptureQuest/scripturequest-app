@@ -1,3 +1,5 @@
+import 'package:go_router/go_router.dart';
+import '../../models/connected/passage_reference.dart';
 import 'package:flutter/material.dart';
 import 'package:level_up_your_faith/widgets/sacred/sacred_ui.dart';
 import '../../theme/scripture_theme.dart';
@@ -8,6 +10,8 @@ class GameEndPanel extends StatelessWidget {
   final String header; // e.g., "Great job!"
   final String summary; // e.g., "You matched all pairs."
   final int? xp; // already-awarded XP; if null or <= 0, hides the line
+  final List<String> references;
+  final VoidCallback? onRetrySave;
   final VoidCallback onPlayAgain;
   final VoidCallback onBackToHub;
 
@@ -18,6 +22,8 @@ class GameEndPanel extends StatelessWidget {
     required this.onPlayAgain,
     required this.onBackToHub,
     this.xp,
+    this.onRetrySave,
+    this.references = const [],
   });
 
   @override
@@ -51,6 +57,12 @@ class GameEndPanel extends StatelessWidget {
               ],
             ),
           ],
+          for (final ref in references.toSet())
+            if (PassageReference.tryParse(ref) != null)
+              TextButton.icon(onPressed: () => context.push(PassageReference.tryParse(ref)!.destination.route), icon: const Icon(Icons.menu_book), label: Text('Explore $ref')),
+          if (xp == 0) const Text('Practice complete · earlier reward kept.'),
+          if (xp == null && onRetrySave != null)
+            TextButton(onPressed: onRetrySave, child: const Text('Save result / retry')),
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, c) {

@@ -165,7 +165,7 @@ class _VerseScrambleScreenState extends State<VerseScrambleScreen> {
   }
 
   Future<void> _completeSession() async {
-    if (_sessionComplete) return;
+    if (_sessionComplete && _xpGranted) return;
     setState(() {
       _sessionComplete = true;
     });
@@ -173,16 +173,16 @@ class _VerseScrambleScreenState extends State<VerseScrambleScreen> {
       _xpGranted = true;
       try {
         final app = context.read<AppProvider>();
-        const base = 14; // between 10–20, gentle
-        final awarded = await app.awardMiniGameXp(base);
-        _awardedXp = awarded;
-        await app.incrementLearningGamesCompleted();
+        final result = await app.completeActivity('scramble_v1');
+        final awarded = result.xp;
+        if (mounted) setState(() => _awardedXp = awarded);
         if (mounted) {
-          final subtitle = awarded > 0 ? '+$awarded XP' : null;
+          final subtitle = awarded > 0 ? '+$awarded XP' : 'Practice complete · earlier reward kept';
           RewardToast.showSuccess(context, title: 'Play & Learn completed!', subtitle: subtitle);
         }
       } catch (e) {
         debugPrint('verse-scramble: award xp error: $e');
+        if (mounted) setState(() => _xpGranted = false);
       }
     }
   }
@@ -235,13 +235,15 @@ class _VerseScrambleScreenState extends State<VerseScrambleScreen> {
                         ),
                       ],
                     ] else ...[
-                      GameEndPanel(
+                      Expanded(child: SingleChildScrollView(child: GameEndPanel(
                         header: 'Scramble Solved!',
                         summary: "You completed the challenge.",
                         xp: _awardedXp,
+                        references: _rounds.map((r) => r.reference).toList(),
+                        onRetrySave: _completeSession,
                         onPlayAgain: _startNewSession,
                         onBackToHub: () => context.go('/play-learn'),
-                      ),
+                      ))),
                     ],
                   ],
                 ),

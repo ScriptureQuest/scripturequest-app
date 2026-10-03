@@ -1,3 +1,4 @@
+import '../data/activities/activity_catalog.dart';
 import '../theme/scripture_theme.dart';
 import 'dart:convert';
 import 'dart:math';
@@ -137,24 +138,23 @@ class _EmojiParablesScreenState extends State<EmojiParablesScreen> {
   }
 
   Future<void> _completeSession() async {
-    if (_sessionComplete) return;
+    if (_sessionComplete && _xpGranted) return;
     setState(() => _sessionComplete = true);
     if (!_xpGranted && mounted) {
       _xpGranted = true;
       try {
         final app = context.read<AppProvider>();
-        const base = 12; // consistent with other games (gentle)
-        final awarded = await app.awardMiniGameXp(base);
-        _awardedXp = awarded;
-        await app.incrementLearningGamesCompleted();
+        final result = await app.completeActivity('parables_v1');
+        final awarded = result.xp;
+        if (mounted) setState(() => _awardedXp = awarded);
         // One-off achievement for Emoji Parables
-        await app.unlockAchievementPublic('emoji_parables_once');
         if (mounted) {
-          final subtitle = awarded > 0 ? '+$awarded XP' : null;
+          final subtitle = awarded > 0 ? '+$awarded XP' : 'Practice complete · earlier reward kept';
           RewardToast.showSuccess(context, title: 'Play & Learn completed!', subtitle: subtitle);
         }
       } catch (e) {
         debugPrint('emoji-parables: award xp error: $e');
+        if (mounted) setState(() => _xpGranted = false);
       }
     }
   }
@@ -239,13 +239,15 @@ class _EmojiParablesScreenState extends State<EmojiParablesScreen> {
                         ),
                       ],
                     ] else ...[
-                      GameEndPanel(
+                      Expanded(child: SingleChildScrollView(child: GameEndPanel(
                         header: 'Puzzle Completed!',
                         summary: "You completed the challenge.",
                         xp: _awardedXp,
+                        references: _rounds.map((r) => ActivityCatalog.parableReferences[r.correctTitle]).whereType<String>().toList(),
+                        onRetrySave: _completeSession,
                         onPlayAgain: _startNewSession,
                         onBackToHub: () => context.go('/play-learn'),
-                      ),
+                      ))),
                     ],
                   ],
                 ),

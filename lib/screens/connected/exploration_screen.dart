@@ -162,7 +162,7 @@ class LearnScreen extends StatelessWidget {
       const NextActionPanel(learning:true),
       const SizedBox(height:24),Text('Choose how to learn',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:12),
       const ActivityShelf(children:[
-        ActivityCard(title:'Play & Learn',description:'Matching, verse puzzles, Bible book order, and parables. Familiar games with a Scripture purpose.',route:'/play-learn',icon:Icons.extension_outlined),
+        ActivityCard(title:'Play & Learn',description:'Passage word searches, Scripture crosswords, matching, verse puzzles, book order and parables.',route:'/play-learn',icon:Icons.extension_outlined),
         ActivityCard(title:'Remember Scripture',description:'Choose a passage to carry with you. Practice, use help, or recall independently.',route:'/remembered',icon:Icons.psychology_outlined),
         ActivityCard(title:'Explore the Codex',description:'Return to discoveries, their meaning, and the Scripture that opened them.',route:'/discoveries',icon:Icons.auto_stories_outlined),
       ]),const SizedBox(height:24),Text('Passage challenges',style:Theme.of(c).textTheme.titleLarge),

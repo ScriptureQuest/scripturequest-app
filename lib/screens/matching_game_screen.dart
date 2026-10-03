@@ -249,7 +249,7 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
   }
 
   Future<void> _onComplete() async {
-    if (_completed) return;
+    if (_completed && _xpGranted) return;
     setState(() {
       _completed = true;
     });
@@ -258,15 +258,16 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
       _xpGranted = true;
       try {
         final app = context.read<AppProvider>();
-        const base = 15; // gentle XP between 10–20
-        final awarded = await app.awardMiniGameXp(base);
-        _awardedXp = awarded;
+        final result = await app.completeActivity('matching_v1');
+        final awarded = result.xp;
+        if (mounted) setState(() => _awardedXp = awarded);
         if (mounted) {
-          final subtitle = awarded > 0 ? '+$awarded XP' : null;
+          final subtitle = awarded > 0 ? '+$awarded XP' : 'Practice complete · earlier reward kept';
           RewardToast.showSuccess(context, title: 'Play & Learn completed!', subtitle: subtitle);
         }
       } catch (e) {
         debugPrint('matching-game: award xp error: $e');
+        if (mounted) setState(() => _xpGranted = false);
       }
     }
   }
@@ -334,13 +335,15 @@ class _MatchingGameScreenState extends State<MatchingGameScreen> {
                     ),
                     if (_completed) ...[
                       SizedBox(height: 8),
-                      GameEndPanel(
+                      Expanded(child: SingleChildScrollView(child: GameEndPanel(
                         header: 'Great job!',
                         summary: "All pairs found!",
                         xp: _awardedXp,
+                        references: _cards.where((c) => c.kind == _CardKind.reference).map((c) => c.text).toList(),
+                        onRetrySave: _onComplete,
                         onPlayAgain: _setupBoard,
                         onBackToHub: () => context.go('/play-learn'),
-                      ),
+                      ))),
                     ],
                   ],
                 ),

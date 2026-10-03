@@ -129,7 +129,7 @@ class _BookOrderGameScreenState extends State<BookOrderGameScreen> {
   }
 
   Future<void> _completeSession() async {
-    if (_sessionComplete) return;
+    if (_sessionComplete && _xpGranted) return;
     setState(() {
       _sessionComplete = true;
     });
@@ -137,18 +137,17 @@ class _BookOrderGameScreenState extends State<BookOrderGameScreen> {
       _xpGranted = true;
       try {
         final app = context.read<AppProvider>();
-        const base = 12; // between 10–20 XP
-        final awarded = await app.awardMiniGameXp(base);
-        _awardedXp = awarded;
-        await app.incrementLearningGamesCompleted();
+        final result = await app.completeActivity('book_order_v1');
+        final awarded = result.xp;
+        if (mounted) setState(() => _awardedXp = awarded);
         // One-off achievement for Book Order
-        await app.unlockAchievementPublic('book_order_once');
         if (mounted) {
-          final subtitle = awarded > 0 ? '+$awarded XP' : null;
+          final subtitle = awarded > 0 ? '+$awarded XP' : 'Practice complete · earlier reward kept';
           RewardToast.showSuccess(context, title: 'Play & Learn completed!', subtitle: subtitle);
         }
       } catch (e) {
         debugPrint('book-order: award xp error: $e');
+        if (mounted) setState(() => _xpGranted = false);
       }
     }
   }
@@ -244,13 +243,15 @@ class _BookOrderGameScreenState extends State<BookOrderGameScreen> {
                   ),
                 ],
               ] else ...[
-                GameEndPanel(
+                Expanded(child: SingleChildScrollView(child: GameEndPanel(
                   header: 'Books in Order!',
                   summary: 'You completed the challenge.',
                   xp: _awardedXp,
+                        references: const ['Genesis 1'],
+                        onRetrySave: _completeSession,
                   onPlayAgain: _startNewSession,
                   onBackToHub: () => context.go('/play-learn'),
-                ),
+                ))),
               ],
             ],
           ),
