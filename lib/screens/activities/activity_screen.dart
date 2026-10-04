@@ -1,3 +1,4 @@
+import '../../widgets/sessions/done_for_now.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -17,23 +18,20 @@ class ActivityFollowUp extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text('Keep exploring ${passage.label}',
-            style: Theme.of(context).textTheme.titleLarge),
+        NextActionPanel(
+            reference: passage.label, learning: true, secondaryJourney: true),
         TextButton.icon(
-            onPressed: () => context.push(passage.destination.route),
-            icon: const Icon(Icons.menu_book),
-            label: const Text('Read the passage in context')),
-        for (final d in ConnectedCatalog.current.forPassage(passage)) ...[
-          TextButton(
-              onPressed: () => context.push('/find-passage/${d.id}'),
-              child: Text('Find it in the Passage · ${d.title}')),
+            onPressed: () => context.push(
+                Uri(path: '/learn', queryParameters: {'ref': passage.label})
+                    .toString()),
+            icon: const Icon(Icons.auto_stories_outlined),
+            label: const Text('All learning for this passage')),
+        for (final d in ConnectedCatalog.current.forPassage(passage))
           TextButton(
               onPressed: () => context.push(
                   '/memorization-practice?key=${Uri.encodeComponent(d.memoryKey)}'),
               child: const Text('Choose a verse to remember')),
-        ],
-        const SizedBox(height: 8),
-        NextActionPanel(reference: passage.label, learning: true),
+        DoneForNow(passage: passage),
       ]);
 }
 
@@ -53,6 +51,10 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
   final letters = <GridCell, String>{};
   final hinted = <String>{};
   final input = TextEditingController();
+  final answerFocus = FocusNode();
+  final gridScroll = ScrollController();
+  Map? pendingDelivery;
+  int? deliveredHints;
   final scroll = ScrollController();
   GridCell? anchor;
   int selected = 0, seed = 0;
@@ -73,6 +75,8 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
         throw StateError('Not a puzzle');
       _reset();
       final app = context.read<AppProvider>();
+      final record = app.activityRecords[widget.id] as Map?;
+      pendingDelivery = record?['pending'] == true ? record : null;
       final result = <int, String>{};
       for (final w in activity!.words) {
         final text = await app
@@ -95,6 +99,7 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
 
   void _reset() {
     if (scroll.hasClients) scroll.jumpTo(0);
+    deliveredHints = null;
     found.clear();
     letters.clear();
     hinted.clear();
@@ -136,6 +141,36 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
     }
   }
 
+  Future<void> retryDelivery() async {
+    if (busy || pendingDelivery == null) return;
+    setState(() => busy = true);
+    try {
+      final app = context.read<AppProvider>();
+      final accepted = app.activityRecords[widget.id] as Map?;
+      if (accepted == null || accepted['pending'] != true)
+        throw StateError('No pending completion');
+      // This reconstructs the already accepted submission, never an unfinished board.
+      final hints = accepted['bestHints'] as int;
+      final result = await app.completeActivity(widget.id,
+          answers: {for (final w in activity!.words) w.answer: w.answer},
+          hints: hints);
+      if (mounted)
+        setState(() {
+          saved = true;
+          pendingDelivery = null;
+          deliveredHints = hints;
+          message =
+              '${result.xp > 0 ? '+${result.xp} XP saved' : 'Earlier reward kept'}.\n${result.changes.join('\n')}';
+        });
+    } catch (_) {
+      if (mounted)
+        setState(() => message =
+            'Delivery could not finish. Your pending record is kept. Retry when ready.');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   void tapSearch(GridCell cell) {
     if (saved || busy) return;
     setState(() {
@@ -162,11 +197,19 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
           crossword!.entries[index].cells.map((c) => letters[c] ?? '').join();
       message = null;
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      answerFocus.requestFocus();
+      final fieldContext = answerFocus.context;
+      if (fieldContext != null) Scrollable.ensureVisible(fieldContext);
+    });
   }
 
   @override
   void dispose() {
     input.dispose();
+    answerFocus.dispose();
+    gridScroll.dispose();
     scroll.dispose();
     super.dispose();
   }
@@ -179,7 +222,19 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
         body: ProductWidth(
             child: loadError != null
                 ? Padding(
-                    padding: const EdgeInsets.all(24), child: Text(loadError!))
+                    padding: const EdgeInsets.all(24),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Text(loadError!),
+                      TextButton(
+                          onPressed: () {
+                            setState(() {
+                              loadError = null;
+                              loaded = false;
+                            });
+                            _load();
+                          },
+                          child: const Text('Retry'))
+                    ]))
                 : !loaded
                     ? const Center(child: CircularProgressIndicator())
                     : ListView(
@@ -194,20 +249,23 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
                                 '${a.passage!.label} · KJV · ${a.words.length} words'),
                             const SizedBox(height: 8),
                             const Text(
-                                'First completion earns 10 base XP. Replays and difficulty changes keep the same reward. Looking at Scripture is encouraged.'),
+                                'Passage words from KJV. Replays keep earlier rewards. Looking at Scripture is encouraged.'),
                             TextButton(
                                 onPressed: () =>
                                     context.push(a.passage!.destination.route),
                                 child: const Text('Open Scripture')),
                             if (saved) ...[
                               const Icon(Icons.check_circle_outline, size: 48),
-                              Text('Passage explored',
+                              Text('Activity completed',
                                   style: Theme.of(context)
                                       .textTheme
                                       .headlineSmall),
-                              Text(message ?? ''),
+                              Semantics(
+                                  liveRegion: true, child: Text(message ?? '')),
+                              const Text(
+                                  'This records activity completion, not reading or independent recall.'),
                               Text(
-                                  '${hinted.length} answer hints used · personal best tracks fewer hints, not speed.'),
+                                  '${deliveredHints ?? hinted.length} answer hints used · personal best tracks fewer hints, not speed.'),
                               const SizedBox(height: 16),
                               ActivityFollowUp(passage: a.passage!),
                               const SizedBox(height: 16),
@@ -220,9 +278,19 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
                                   label:
                                       const Text('Play again · no repeat XP')),
                               TextButton(
-                                  onPressed: () => context.pop(),
+                                  onPressed: () => context.canPop()
+                                      ? context.pop()
+                                      : context.go('/play-learn'),
                                   child: const Text('Back to activities')),
                             ] else ...[
+                              if (pendingDelivery != null) ...[
+                                const Text(
+                                    'Your earlier activity completion still needs delivery. No replay is required.'),
+                                FilledButton(
+                                    onPressed: busy ? null : retryDelivery,
+                                    child:
+                                        const Text('Retry saved completion')),
+                              ],
                               if (a.kind == ActivityKind.wordSearch) ...[
                                 Wrap(spacing: 8, children: [
                                   ChoiceChip(
@@ -244,8 +312,11 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
                                     ? 'Horizontal, vertical and diagonal; both directions.'
                                     : 'Horizontal and vertical; forward only.'),
                                 const Text(
-                                    'Tap the first letter, then the last. Tap the selected letter again to cancel. Scroll the grid sideways on small phones.'),
+                                    'Tap the first and last letter. Tap the start again to cancel. Scroll sideways when needed.'),
                                 const SizedBox(height: 12),
+                                Text(anchor == null
+                                    ? '${found.length} / ${a.words.length} words found'
+                                    : 'Start selected: row ${anchor!.row + 1}, column ${anchor!.col + 1}. Choose the last letter.'),
                                 _searchGrid(),
                                 const SizedBox(height: 12),
                                 LinearProgressIndicator(
@@ -254,7 +325,7 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
                                     '${found.length} / ${a.words.length} found'),
                               ] else ...[
                                 const Text(
-                                    'Select a clue or a square, then type the whole answer in the answer box. Crossing letters stay shared. The grid scrolls sideways on phones.'),
+                                    'Choose a clue or square, then enter the whole answer. Crossing letters are shared.'),
                                 const SizedBox(height: 12),
                                 _entryInput(),
                                 const SizedBox(height: 16),
@@ -352,8 +423,11 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
     });
   }
 
-  Widget _grid(int rows, int cols, Widget Function(GridCell) cell) =>
-      SingleChildScrollView(
+  Widget _grid(int rows, int cols, Widget Function(GridCell) cell) => Scrollbar(
+      controller: gridScroll,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+          controller: gridScroll,
           scrollDirection: Axis.horizontal,
           child: SizedBox(
               width: cols * 44.0,
@@ -365,7 +439,7 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
                       SizedBox(
                           width: 44, height: 44, child: cell(GridCell(r, c)))
                   ])
-              ])));
+              ]))));
   Widget _entryInput() {
     final e = crossword!.entries[selected];
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -374,6 +448,7 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
           style: Theme.of(context).textTheme.titleMedium),
       TextField(
           key: const Key('crossword-answer'),
+          focusNode: answerFocus,
           controller: input,
           textCapitalization: TextCapitalization.characters,
           inputFormatters: [

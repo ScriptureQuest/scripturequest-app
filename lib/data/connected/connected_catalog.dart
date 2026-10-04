@@ -1,6 +1,7 @@
 import '../../models/questline.dart';
 import '../../models/connected/passage_reference.dart';
 import '../exploration/catalog.dart';
+import '../../services/chapter_quiz_service.dart';
 import 'journey_definitions.dart';
 import 'journey_editorial.dart';
 
@@ -54,11 +55,10 @@ class ConnectedCatalog {
               ?.sameChapter(PassageReference.tryParse(d.reference)!) ==
           true);
   // Existing surfaced chapter challenges; content remains owned by ChapterQuizService.
-  static const chapterLearning = [
-    PassageReference('John', 3),
-    PassageReference('Romans', 8),
-    PassageReference('Psalms', 23)
-  ];
+  static List<PassageReference> get chapterLearning => [
+        for (final quiz in ChapterQuizService.getAllQuizzes())
+          PassageReference(quiz.bookId, quiz.chapter),
+      ];
   List<String> validate() {
     final errors = <String>[];
     void unique(Iterable<String> ids, String kind) {

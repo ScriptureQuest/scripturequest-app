@@ -1,3 +1,5 @@
+import '../services/sessions/session_return.dart';
+import 'dart:async';
 import '../data/activities/activity_catalog.dart';
 import '../models/activities/activity.dart';
 import '../services/activities/activity_history.dart';
@@ -1974,33 +1976,81 @@ class AppProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> initialize() async {
+  Future<void>? _initializationAttempt;
+  bool _servicesReady = false;
+  Object? _initializationError;
+  bool _initializationAttempted = false;
+  Object? get initializationError => _initializationError;
+  bool get initializationAttempted => _initializationAttempted;
+
+  /// Concurrent consumers share one attempt; explicit Retry uses this same path.
+  Future<void> initialize() {
+    if (_initializationAttempt != null) return _initializationAttempt!;
+    final completer = Completer<void>();
+    _initializationAttempt = completer.future;
+    _initializationAttempted = true;
+    _initializationError = null;
+    _initializeApp().then(
+      (_) {
+        _initializationAttempt = null;
+        completer.complete();
+      },
+      onError: (Object error, StackTrace stack) {
+        _initializationError = error;
+        _isLoading = false;
+        _initialized = false;
+        _initializationAttempt = null;
+        notifyListeners();
+        completer.completeError(error, stack);
+      },
+    );
+    return completer.future;
+  }
+
+  /// UI startup records errors without leaving an unhandled asynchronous error.
+  Future<void> startInitialization() async {
+    try {
+      await initialize();
+    } catch (_) {
+      /* Retry state is already published. */
+    }
+  }
+
+  Future<void> _initializeApp() async {
     _isLoading = true;
     notifyListeners();
 
-    _storageService = await StorageService.getInstance();
-    _userService = UserService(_storageService);
-    _verseService = VerseService(_storageService);
-    _questService = TaskService(_storageService);
-    _questProgressService = QuestProgressService(
-        questService: _questService, verseService: _verseService);
-    _questBoardService = QuestBoardService();
-    _achievementService = AchievementService(_storageService);
-    _reflectionService = ReflectionService(_storageService);
-    _journalService = JournalService(_storageService);
-    // Initialize Book Mastery service (depends on storage + bible)
-    _bookMasteryService = BookMasteryService(_storageService, _bibleService);
-    _bookmarkService = BookmarkService(_storageService);
-    _friendService = FriendService(_storageService);
-    // Soul Avatar equipment (for Faith Power): safe to load with current user
-    _equipmentService = EquipmentService(_storageService);
-    // Unified reward services
-    _titlesService = TitlesService(_storageService);
-    _inventoryService = InventoryService(_storageService);
-    _rewardService =
-        RewardService(_userService, _titlesService, _inventoryService);
-    _questlineService = QuestlineService(_storageService, _questService);
+    if (!_servicesReady) {
+      _storageService = await StorageService.getInstance();
+      _userService = UserService(_storageService);
+      _verseService = VerseService(_storageService);
+      _questService = TaskService(_storageService);
+      _questProgressService = QuestProgressService(
+        questService: _questService,
+        verseService: _verseService,
+      );
+      _questBoardService = QuestBoardService();
+      _achievementService = AchievementService(_storageService);
+      _reflectionService = ReflectionService(_storageService);
+      _journalService = JournalService(_storageService);
+      // Initialize Book Mastery service (depends on storage + bible)
+      _bookMasteryService = BookMasteryService(_storageService, _bibleService);
+      _bookmarkService = BookmarkService(_storageService);
+      _friendService = FriendService(_storageService);
+      // Soul Avatar equipment (for Faith Power): safe to load with current user
+      _equipmentService = EquipmentService(_storageService);
+      // Unified reward services
+      _titlesService = TitlesService(_storageService);
+      _inventoryService = InventoryService(_storageService);
+      _rewardService = RewardService(
+        _userService,
+        _titlesService,
+        _inventoryService,
+      );
+      _questlineService = QuestlineService(_storageService, _questService);
 
+      _servicesReady = true;
+    }
     await loadData();
     // Set user for equipment persistence after user is loaded
     try {
@@ -2028,6 +2078,18 @@ class AppProvider extends ChangeNotifier {
   }
 
   bool get isInitialized => _initialized;
+
+  SessionReturn? get sessionReturn => _currentUser == null
+      ? null
+      : SessionReturn.read(_storageService, _currentUser!.id);
+  int get currentActivityCapacity =>
+      (_currentUser == null
+          ? 0
+          : _storageService.getInt(
+                  'activities_legacy_count_${_currentUser!.id}',
+                ) ??
+                _learningGamesCompleted) +
+      ActivityCatalog.all.length;
 
   // Attach Gear service for LootService wiring
   void attachGearInventory(GearInventoryService gear) {

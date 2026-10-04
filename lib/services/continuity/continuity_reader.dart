@@ -1,3 +1,4 @@
+import '../chapter_quiz_service.dart';
 import '../../providers/app_provider.dart';
 import '../../models/connected/passage_reference.dart';
 import 'next_action.dart';
@@ -11,6 +12,11 @@ class ContinuityReader {
         .explorationState; // Corrupt history surfaces an error, never a reset.
     return ContinuitySnapshot(
         activeJourney: app.focusedJourney,
+        activities: Map.unmodifiable(app.activityRecords),
+        quizzes: Set.unmodifiable(ChapterQuizService.getAllQuizzes()
+            .where((q) => app.hasCompletedQuiz(q.bookId, q.chapter))
+            .map((q) => '${q.bookId}:${q.chapter}')),
+        returnPoint: app.sessionReturn,
         completedJourneys: Set.unmodifiable(history
             .where((v) => v.progress.isCompleted)
             .map((v) => v.questline.id)),

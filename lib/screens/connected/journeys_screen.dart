@@ -13,16 +13,22 @@ import 'package:level_up_your_faith/widgets/journal/journal_editor_sheet.dart';
 
 class ConnectedPage extends StatelessWidget {
   final String title;
+  final double maxWidth;
   final List<Widget> children;
   final ScrollController? controller;
-  const ConnectedPage({super.key, required this.title, required this.children, this.controller});
+  const ConnectedPage(
+      {super.key,
+      required this.title,
+      required this.children,
+      this.controller,
+      this.maxWidth = 680});
   @override
   Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(title: Text(title)),
       body: Align(
           alignment: Alignment.topCenter,
           child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 680),
+              constraints: BoxConstraints(maxWidth: maxWidth),
               child: ListView(
                   controller: controller,
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
@@ -47,7 +53,8 @@ class _JourneysScreenState extends State<JourneysScreen> {
   void _load() {
     final app = context.read<AppProvider>();
     _data = (() async {
-      if (widget.board) app.discoveryRecords; // Surface read failure in the existing error state.
+      if (widget.board)
+        app.discoveryRecords; // Surface read failure in the existing error state.
       return (await app.getAvailableQuestlines(), await app.journeyHistory());
     })();
   }
@@ -111,7 +118,11 @@ class _JourneysScreenState extends State<JourneysScreen> {
                           child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                            ExplorationArt(scene: ConnectedCatalog.current.scene(d.id), illustrated: context.watch<AppProvider>().illustratedExploration),
+                            ExplorationArt(
+                                scene: ConnectedCatalog.current.scene(d.id),
+                                illustrated: context
+                                    .watch<AppProvider>()
+                                    .illustratedExploration),
                             const SizedBox(height: 14),
                             Row(children: [
                               Icon(v?.progress.isCompleted == true
@@ -137,9 +148,24 @@ class _JourneysScreenState extends State<JourneysScreen> {
                             ] else
                               Text('${d.steps.length} steps · At your pace'),
                             if (widget.board)
-                              for (final discovery in ConnectedCatalog.current.forJourney(d.id).where((entry) => context.read<AppProvider>().discoveryRecords.containsKey(entry.id)))
-                                _link(context, Icons.auto_stories_outlined, discovery.title,
-                                  (context.read<AppProvider>().explorationState['learning'] as Map).containsKey(discovery.id) ? 'Discovery kept · passage evidence found' : 'Discovery kept · look closer in the passage', '/discoveries/${discovery.id}'),
+                              for (final discovery in ConnectedCatalog.current
+                                  .forJourney(d.id)
+                                  .where((entry) => context
+                                      .read<AppProvider>()
+                                      .discoveryRecords
+                                      .containsKey(entry.id)))
+                                _link(
+                                    context,
+                                    Icons.auto_stories_outlined,
+                                    discovery.title,
+                                    (context
+                                                    .read<AppProvider>()
+                                                    .explorationState[
+                                                'learning'] as Map)
+                                            .containsKey(discovery.id)
+                                        ? 'Discovery kept · passage evidence found'
+                                        : 'Discovery kept · look closer in the passage',
+                                    '/discoveries/${discovery.id}'),
                             TextButton(
                                 onPressed: () async {
                                   await context.push(AppProvider
@@ -164,7 +190,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
                     'Reading Plans',
                     'A schedule for what to read next. Your existing enrollment is preserved.',
                     '/reading-plans'),
-                _link(context, Icons.explore_outlined, 'More guided quests',
+                _link(context, Icons.explore_outlined, 'Other guided reading',
                     'Explore the existing guided-quest library.', '/quests'),
                 _link(context, Icons.route_outlined, 'Journey Board',
                     'Your exploration, kept permanently.', '/journey-board'),
@@ -172,7 +198,7 @@ class _JourneysScreenState extends State<JourneysScreen> {
               _link(
                   context,
                   Icons.auto_stories_outlined,
-                  'Codex discoveries',
+                  'Codex — Discoveries',
                   'Return to what you have discovered in Scripture.',
                   '/discoveries'),
             ]);
@@ -256,6 +282,85 @@ class _GuidedJourneyScreenState extends State<GuidedJourneyScreen> {
         final app = context.read<AppProvider>();
         final complete = v?.progress.isCompleted == true;
         final current = v?.currentStep;
+        Widget buildStep(QuestlineStep step) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Builder(builder: (context) {
+              final ref = JourneyContent.reference(step);
+              final response = JourneyContent.reflection(step);
+              final done =
+                  v?.progress.completedStepIds.contains(step.id) == true;
+              final active = current?.id == step.id;
+              final skipped =
+                  v?.progress.skippedStepIds.contains(step.id) == true;
+              final canRead = ref !=
+                  null; // Scripture is always available, even before enrollment.
+              return ReadingSurface(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text(
+                        '${skipped ? 'Passed · ' : done ? '✓ ' : ''}STEP ${step.order}${response ? ' · OPTIONAL RESPONSE' : active ? ' · UP NEXT' : ''}',
+                        style: Theme.of(context).textTheme.labelMedium),
+                    const SizedBox(height: 10),
+                    Text(ref ?? 'Pause and respond',
+                        style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: 8),
+                    Text(ConnectedCatalog.current.orientation(d.id, step.id) ??
+                        (response
+                            ? 'What stayed with you? Keep a thought or question, or continue without writing.'
+                            : d.description)),
+                    if (canRead)
+                      TextButton.icon(
+                          icon: const Icon(Icons.menu_book_outlined),
+                          label: Text(
+                              done ? 'Revisit Scripture' : 'Read in the Bible'),
+                          onPressed: () async {
+                            await context.push(JourneyContent.route(ref));
+                            if (mounted) setState(_load);
+                          }),
+                    if (response && active) ...[
+                      TextButton.icon(
+                          icon: const Icon(Icons.edit_note),
+                          label: const Text('Keep a reflection'),
+                          onPressed: _busy
+                              ? null
+                              : () async {
+                                  final previous = d.steps
+                                      .where((s) =>
+                                          s.order < step.order &&
+                                          JourneyContent.reference(s) != null)
+                                      .toList();
+                                  final linked = previous.isEmpty
+                                      ? null
+                                      : JourneyContent.reference(previous.last);
+                                  await showModalBottomSheet<void>(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      useSafeArea: true,
+                                      builder: (_) => JournalEditorSheet(
+                                          initialTitle: d.title,
+                                          initialLinkedRef: linked,
+                                          initialLinkedRefRoute: linked == null
+                                              ? null
+                                              : JourneyContent.route(linked),
+                                          questlineId: d.id,
+                                          stepId: step.id));
+                                  if (mounted) setState(_load);
+                                }),
+                      TextButton(
+                          onPressed: _busy
+                              ? null
+                              : () => _act(() => app.markQuestlineStepDone(
+                                  d.id, step.id,
+                                  stepXp: 0, skipReflection: true)),
+                          child: const Text('Continue without writing')),
+                    ],
+                    if (active && ref != null)
+                      const Text(
+                          'Complete this chapter in the reader after 45 seconds to advance this step.',
+                          style: TextStyle(fontSize: 13)),
+                  ]));
+            }));
         return ConnectedPage(title: d.title, children: [
           Text(JourneyContent.purposes[d.id] ?? d.description,
               style: Theme.of(context).textTheme.headlineMedium),
@@ -264,13 +369,6 @@ class _GuidedJourneyScreenState extends State<GuidedJourneyScreen> {
               ? 'This Journey is part of your story. Revisit any passage, or choose what comes next.'
               : 'Read in context. Notice what stands out. Reflections are optional, private, and never graded.'),
           const SizedBox(height: 20),
-          if (v != null) ...[
-            LinearProgressIndicator(value: v.completionRatio),
-            const SizedBox(height: 8),
-            Text(
-                '${v.completedSteps}/${v.totalSteps} steps${complete ? ' · Complete' : ''}'),
-            const SizedBox(height: 20)
-          ],
           if (v == null)
             FilledButton(
                 onPressed:
@@ -281,91 +379,33 @@ class _GuidedJourneyScreenState extends State<GuidedJourneyScreen> {
                 onPressed:
                     _busy ? null : () => _act(() => app.focusJourney(d.id)),
                 child: const Text('Make this my current Journey')),
-          for (final step in d.steps)
-            Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Builder(builder: (context) {
-                  final ref = JourneyContent.reference(step);
-                  final response = JourneyContent.reflection(step);
-                  final done =
-                      v?.progress.completedStepIds.contains(step.id) == true;
-                  final active = current?.id == step.id;
-                  final skipped =
-                      v?.progress.skippedStepIds.contains(step.id) == true;
-                  final canRead = ref !=
-                      null; // Scripture is always available, even before enrollment.
-                  return ReadingSurface(
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                        Text(
-                            '${skipped ? 'Passed · ' : done ? '✓ ' : ''}STEP ${step.order}${response ? ' · OPTIONAL RESPONSE' : active ? ' · UP NEXT' : ''}',
-                            style: Theme.of(context).textTheme.labelMedium),
-                        const SizedBox(height: 10),
-                        Text(ref ?? 'Pause and respond',
-                            style: Theme.of(context).textTheme.titleLarge),
-                        const SizedBox(height: 8),
-                        Text(ConnectedCatalog.current.orientation(d.id, step.id) ??
-                            (response
-                                ? 'What stayed with you? Keep a thought or question, or continue without writing.'
-                                : d.description)),
-                        if (canRead)
-                          TextButton.icon(
-                              icon: const Icon(Icons.menu_book_outlined),
-                              label: Text(done
-                                  ? 'Revisit Scripture'
-                                  : 'Read in the Bible'),
-                              onPressed: () async {
-                                await context.push(JourneyContent.route(ref));
-                                if (mounted) setState(_load);
-                              }),
-                        if (response && active) ...[
-                          TextButton.icon(
-                              icon: const Icon(Icons.edit_note),
-                              label: const Text('Keep a reflection'),
-                              onPressed: _busy
-                                  ? null
-                                  : () async {
-                                      final previous = d.steps
-                                          .where((s) =>
-                                              s.order < step.order &&
-                                              JourneyContent.reference(s) !=
-                                                  null)
-                                          .toList();
-                                      final linked = previous.isEmpty
-                                          ? null
-                                          : JourneyContent.reference(
-                                              previous.last);
-                                      await showModalBottomSheet<void>(
-                                          context: context,
-                                          isScrollControlled: true,
-                                          useSafeArea: true,
-                                          builder: (_) => JournalEditorSheet(
-                                              initialTitle: d.title,
-                                              initialLinkedRef: linked,
-                                              initialLinkedRefRoute:
-                                                  linked == null
-                                                      ? null
-                                                      : JourneyContent.route(
-                                                          linked),
-                                              questlineId: d.id,
-                                              stepId: step.id));
-                                      if (mounted) setState(_load);
-                                    }),
-                          TextButton(
-                              onPressed: _busy
-                                  ? null
-                                  : () => _act(() => app.markQuestlineStepDone(
-                                      d.id, step.id,
-                                      stepXp: 0, skipReflection: true)),
-                              child: const Text('Continue without writing')),
-                        ],
-                        if (active && ref != null)
-                          const Text(
-                              'Complete this chapter in the reader after 45 seconds to advance this step.',
-                              style: TextStyle(fontSize: 13)),
-                      ]));
-                })),
+          if (current != null)
+            buildStep(current)
+          else if (!complete && d.steps.isNotEmpty)
+            buildStep(d.steps.first),
+          if (v != null) ...[
+            LinearProgressIndicator(value: v.completionRatio),
+            const SizedBox(height: 8),
+            Text(
+                '${v.completedSteps}/${v.totalSteps} steps${complete ? ' · Complete' : ''}'),
+            const SizedBox(height: 20)
+          ],
+          ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              title: Text(complete
+                  ? 'Revisit the Journey outline'
+                  : 'See the Journey outline'),
+              subtitle: const Text(
+                  'All passages remain available. Reflections stay optional.'),
+              children: [
+                for (final step in d.steps.where((s) =>
+                    s.id !=
+                    (current?.id ??
+                        (!complete && d.steps.isNotEmpty
+                            ? d.steps.first.id
+                            : null))))
+                  buildStep(step)
+              ]),
           for (final discovery in ConnectedCatalog.current.forJourney(d.id))
             _link(
                 context,
@@ -373,7 +413,7 @@ class _GuidedJourneyScreenState extends State<GuidedJourneyScreen> {
                 'A discovery along the way',
                 '${discovery.title} · ${discovery.reference}',
                 '/discoveries/${discovery.id}'),
-          if (complete) NextActionPanel(finishedJourney:d.id),
+          if (complete) NextActionPanel(finishedJourney: d.id),
           _link(context, Icons.route_outlined, 'Keep the accomplishment',
               'See your Journey Board.', '/journey-board'),
           _link(context, Icons.edit_note, 'Your journal',
@@ -393,13 +433,29 @@ class YouScreen extends StatelessWidget {
         const SizedBox(height: 24),
         const ProgressIdentity(),
         const SizedBox(height: 20),
-        const ActivityShelf(children:[
-          ActivityCard(title:'Journey Board',description:'Where you have been, what you have completed, and what comes next.',route:'/journey-board',icon:Icons.route_outlined),
-          ActivityCard(title:'Codex discoveries',description:'Scripture you explored and discoveries worth returning to.',route:'/discoveries',icon:Icons.auto_stories_outlined),
-          ActivityCard(title:'Remembered Scripture',description:'The words you chose to carry and your practice history.',route:'/remembered',icon:Icons.psychology_outlined),
+        const ActivityShelf(children: [
+          ActivityCard(
+              title: 'Journey Board',
+              description:
+                  'Where you have been, what you have completed, and what comes next.',
+              route: '/journey-board',
+              icon: Icons.route_outlined),
+          ActivityCard(
+              title: 'Codex — Discoveries',
+              description:
+                  'Scripture you explored and discoveries worth returning to.',
+              route: '/discoveries',
+              icon: Icons.auto_stories_outlined),
+          ActivityCard(
+              title: 'Remembered Scripture',
+              description:
+                  'The words you chose to carry and your practice history.',
+              route: '/remembered',
+              icon: Icons.psychology_outlined),
         ]),
-        const SizedBox(height:24),
-        Text('Your personal library',style:Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 24),
+        Text('Your personal library',
+            style: Theme.of(context).textTheme.titleLarge),
         _link(context, Icons.workspace_premium_outlined, 'Achievements',
             'Milestones of engagement and learning', '/achievements'),
         _link(context, Icons.edit_note, 'Journal',
@@ -412,7 +468,23 @@ class YouScreen extends StatelessWidget {
             '/reading-stats'),
         _link(context, Icons.person_outline, 'Profile',
             'Your existing profile and preferences', '/profile'),
-        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Illustrated exploration'), subtitle: const Text('Gentle Journey and Codex landscapes. Scripture stays on a plain reading surface.'), value: context.watch<AppProvider>().illustratedExploration, onChanged: (value) async { try { await context.read<AppProvider>().setIllustratedExploration(value); } catch (_) { if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preference could not be saved.'))); } }),
+        SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Illustrated exploration'),
+            subtitle: const Text(
+                'Gentle Journey and Codex landscapes. Scripture stays on a plain reading surface.'),
+            value: context.watch<AppProvider>().illustratedExploration,
+            onChanged: (value) async {
+              try {
+                await context
+                    .read<AppProvider>()
+                    .setIllustratedExploration(value);
+              } catch (_) {
+                if (context.mounted)
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Preference could not be saved.')));
+              }
+            }),
         _link(context, Icons.settings_outlined, 'Settings',
             'Reading comfort and app preferences', '/settings'),
       ]);

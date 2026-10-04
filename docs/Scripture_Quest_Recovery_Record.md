@@ -543,3 +543,16 @@ DEFERRED: larger content/game libraries, unfinished-board resume, deeper activit
 Testing note: the UI scenarios run in one continuous app event loop to exercise static completion queues without carrying them across separate fake test loops. No previous regression tests were modified or removed. Native/live Codespaces acceptance remains unverified.
 
 Details: `docs/PASS6_PLAY_AND_LEARN.md`. NEXT: transfer and user review. Stop after Pass 6; no Pass 7 work authorized.
+
+
+## Pass 7 completed — A Clear Scripture Session (2026-10-04)
+
+Authorized separately and built directly on Pass 6 `02bfdc6a9df6855772fa1d213db0a1605f4860aa`. The original `12d8b0379e013966e3ab5501a3ff3e85ca5a75bb` StorageService repair remains in ancestry and unchanged.
+
+IMPLEMENTED: one principal Today action with expandable existing quests; explicit session-context continuation; passage-centered Learn using existing content and completion/pending/replay state; truthful shared saved outcomes and Done for Now; current-step Journey hierarchy; actionable startup Retry; visible/foreground/loaded-chapter reading presence. Existing progression writers and reward economy remain. Only additive persistence is the per-user stopping marker. AppProvider 6,093 → 6,155 lines (+62); dedicated services/widgets own new session logic.
+
+VERIFIED: **98 tests pass** (all 85 earlier plus 13 new); analyzer **0 errors, 92 existing warnings, 26 infos**, identical diagnostic identities; production Web build succeeds. New UI scenario exercises 28 Light/Dark phone/large views, 320px at 1.5 text scale, real navigation/lifecycle, pending delivery and modal stopping. Hidden-route reader time was reproduced before fixing and is protected by regression coverage. Existing startup race tests remain.
+
+DEFERRED: backup/recovery, comprehensive integrity audit, larger content, onboarding, provider/storage/router decomposition, native/VoiceOver/release qualification, older content pools and the 19 unmatched red-letter verses. Live-browser/native acceptance is not claimed. Legacy weekly-title range and Bible fallback logs are recorded for later investigation.
+
+Details: `docs/PASS7_CLEAR_SCRIPTURE_SESSION.md`. Full-history transfer verification is part of the handoff. CURRENT STATE: implementation and automated acceptance complete; user review outstanding. NEXT: review Pass 7 in the existing Codespace. **Do not begin Pass 8 without authorization.**

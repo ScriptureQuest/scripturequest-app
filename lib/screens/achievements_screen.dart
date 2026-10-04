@@ -155,7 +155,12 @@ class AchievementCard extends StatelessWidget {
               const SizedBox(height: 10),
               Text(secret
                   ? 'Keep exploring Scripture to reveal this accomplishment.'
-                  : a.description),
+                  : a.id == 'learning_games_15' &&
+                          !a.isUnlocked &&
+                          context.read<AppProvider>().currentActivityCapacity <
+                              15
+                      ? '${a.description} More distinct activities are needed before this milestone is available. Your existing progress is kept.'
+                      : a.description),
               if (!secret &&
                   !a.isUnlocked &&
                   a.progress > 0 &&

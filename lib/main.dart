@@ -55,6 +55,7 @@ import 'package:level_up_your_faith/screens/emoji_parables_screen.dart';
 import 'package:level_up_your_faith/screens/support_screen.dart';
 import 'package:level_up_your_faith/screens/play_learn_hub_screen.dart';
 import 'package:level_up_your_faith/screens/quest_hub_screen.dart';
+import 'widgets/sessions/startup_gate.dart';
 
 void main() {
   // Capture and log framework errors early so we can diagnose startup issues.
@@ -89,19 +90,16 @@ class MyApp extends StatelessWidget {
             if (gear != null) {
               app.attachGearInventory(gear);
             }
-            if (!app.isInitialized) {
-              app.initialize();
+            if (!app.initializationAttempted) {
+              app.startInitialization();
             }
             return app;
           },
         ),
         ChangeNotifierProvider(create: (_) => SettingsProvider()..initialize()),
         // Soul Avatar equipment provider (depends on GearInventoryService and AppProvider user)
-        ChangeNotifierProxyProvider2<
-          GearInventoryService,
-          AppProvider,
-          EquipmentProvider
-        >(
+        ChangeNotifierProxyProvider2<GearInventoryService, AppProvider,
+            EquipmentProvider>(
           create: (ctx) => EquipmentProvider(
             gearInventoryService: ctx.read<GearInventoryService>(),
           ),
@@ -125,6 +123,8 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: theme,
             routerConfig: _router,
+            builder: (context, child) =>
+                StartupGate(child: child ?? const SizedBox.shrink()),
           );
         },
       ),
@@ -147,28 +147,90 @@ final _router = GoRouter(
     // Onboarding shown outside the shell (no bottom nav)
     GoRoute(
       path: '/onboarding',
-      builder: (context, state) => Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: const OnboardingScreen()),
+      builder: (context, state) => Theme(
+          data: appThemeFor(context.read<AppProvider>().themeMode),
+          child: const OnboardingScreen()),
     ),
     GoRoute(
       path: '/onboarding/personalized',
-      builder: (context, state) => Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: const PersonalizedSetupFlow()),
+      builder: (context, state) => Theme(
+          data: appThemeFor(context.read<AppProvider>().themeMode),
+          child: const PersonalizedSetupFlow()),
     ),
     ShellRoute(
       builder: (context, state, child) {
         final path = state.uri.path;
-        final modern = ['/', '/bible', '/verses', '/scripture', '/journeys', '/journey-board', '/you', '/discoveries', '/learn', '/find-passage', '/remembered', '/memorization-practice', '/play-learn', '/matching-game', '/verse-scramble', '/book-order-game', '/emoji-parables', '/memorization', '/chapter-quiz', '/journal', '/bookmarks', '/highlights', '/reading-stats', '/settings', '/profile'].any((p) => path == p || (p != '/' && path.startsWith('$p/')));
+        final modern = [
+          '/',
+          '/bible',
+          '/verses',
+          '/scripture',
+          '/journeys',
+          '/journey-board',
+          '/you',
+          '/discoveries',
+          '/learn',
+          '/find-passage',
+          '/remembered',
+          '/memorization-practice',
+          '/play-learn',
+          '/matching-game',
+          '/verse-scramble',
+          '/book-order-game',
+          '/emoji-parables',
+          '/memorization',
+          '/chapter-quiz',
+          '/journal',
+          '/bookmarks',
+          '/highlights',
+          '/reading-stats',
+          '/settings',
+          '/profile'
+        ].any((p) => path == p || (p != '/' && path.startsWith('$p/')));
         // Staged migration: preserve readable legacy surfaces until their own pass.
-        return MainNavigation(child: modern ? ProductWidth(maxWidth: ['/journal','/settings','/reading-stats','/profile'].contains(path) ? 820 : 1040, child: child) : Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: child));
+        return MainNavigation(
+            child: modern
+                ? ProductWidth(
+                    maxWidth: [
+                      '/journal',
+                      '/settings',
+                      '/reading-stats',
+                      '/profile'
+                    ].contains(path)
+                        ? 820
+                        : 1040,
+                    child: child)
+                : Theme(
+                    data: appThemeFor(context.read<AppProvider>().themeMode),
+                    child: child));
       },
       routes: [
-        GoRoute(path: '/journeys', builder: (context, state) => const JourneysScreen()),
-        GoRoute(path: '/journeys/:id', builder: (context, state) => GuidedJourneyScreen(id: state.pathParameters['id']!)),
+        GoRoute(
+            path: '/journeys',
+            builder: (context, state) => const JourneysScreen()),
+        GoRoute(
+            path: '/journeys/:id',
+            builder: (context, state) =>
+                GuidedJourneyScreen(id: state.pathParameters['id']!)),
         GoRoute(path: '/you', builder: (context, state) => const YouScreen()),
-        GoRoute(path: '/discoveries', builder: (context, state) => const DiscoveryScreen()),
-        GoRoute(path: '/discoveries/:id', builder: (context, state) => CodexScreen(id: state.pathParameters['id']!)),
-        GoRoute(path: '/learn', builder: (context, state) => const LearnScreen()),
-        GoRoute(path: '/find-passage/:id', builder: (context, state) => FindPassageScreen(id: state.pathParameters['id']!)),
-        GoRoute(path: '/remembered', builder: (context, state) => const RememberedScreen()),
+        GoRoute(
+            path: '/discoveries',
+            builder: (context, state) => const DiscoveryScreen()),
+        GoRoute(
+            path: '/discoveries/:id',
+            builder: (context, state) =>
+                CodexScreen(id: state.pathParameters['id']!)),
+        GoRoute(
+            path: '/learn',
+            builder: (context, state) =>
+                LearnScreen(reference: state.uri.queryParameters['ref'])),
+        GoRoute(
+            path: '/find-passage/:id',
+            builder: (context, state) =>
+                FindPassageScreen(id: state.pathParameters['id']!)),
+        GoRoute(
+            path: '/remembered',
+            builder: (context, state) => const RememberedScreen()),
         GoRoute(path: '/', builder: (context, state) => const QuestHubScreen()),
         // Convenience alias to always navigate Home via /home
         GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
@@ -281,7 +343,10 @@ final _router = GoRouter(
           path: '/reading-plans',
           builder: (context, state) => const ReadingPlansScreen(),
         ),
-        GoRoute(path: '/play-learn/activity/:id', builder: (context, state) => ScriptureActivityScreen(id: state.pathParameters['id']!)),
+        GoRoute(
+            path: '/play-learn/activity/:id',
+            builder: (context, state) =>
+                ScriptureActivityScreen(id: state.pathParameters['id']!)),
         // Play & Learn hub (lists all mini-games)
         GoRoute(
           path: '/play-learn',
@@ -353,7 +418,9 @@ final _router = GoRouter(
       path: '/verse/:id',
       builder: (context, state) {
         final verseId = state.pathParameters['id']!;
-        return Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: VerseDetailScreen(verseId: verseId));
+        return Theme(
+            data: appThemeFor(context.read<AppProvider>().themeMode),
+            child: VerseDetailScreen(verseId: verseId));
       },
     ),
     // New: Quest detail (formerly Questline detail)
@@ -361,7 +428,9 @@ final _router = GoRouter(
       path: '/quest/:id',
       builder: (context, state) {
         final id = state.pathParameters['id']!;
-        return Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: QuestlineDetailScreen(questlineId: id));
+        return Theme(
+            data: appThemeFor(context.read<AppProvider>().themeMode),
+            child: QuestlineDetailScreen(questlineId: id));
       },
     ),
     // Backward-compat: /questline/:id -> Quest detail
@@ -369,7 +438,9 @@ final _router = GoRouter(
       path: '/questline/:id',
       builder: (context, state) {
         final id = state.pathParameters['id']!;
-        return Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: QuestlineDetailScreen(questlineId: id));
+        return Theme(
+            data: appThemeFor(context.read<AppProvider>().themeMode),
+            child: QuestlineDetailScreen(questlineId: id));
       },
     ),
     GoRoute(
@@ -379,13 +450,17 @@ final _router = GoRouter(
     // Public player profile routes (outside shell to avoid bottom nav)
     GoRoute(
       path: '/player/me',
-      builder: (context, state) => Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: const PublicProfileScreen(userId: null)),
+      builder: (context, state) => Theme(
+          data: appThemeFor(context.read<AppProvider>().themeMode),
+          child: const PublicProfileScreen(userId: null)),
     ),
     GoRoute(
       path: '/player/:id',
       builder: (context, state) {
         final id = state.pathParameters['id'];
-        return Theme(data: appThemeFor(context.read<AppProvider>().themeMode), child: PublicProfileScreen(userId: id));
+        return Theme(
+            data: appThemeFor(context.read<AppProvider>().themeMode),
+            child: PublicProfileScreen(userId: id));
       },
     ),
   ],

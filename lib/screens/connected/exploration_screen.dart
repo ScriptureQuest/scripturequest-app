@@ -1,3 +1,6 @@
+import '../../widgets/sessions/passage_learning_panel.dart';
+import '../../widgets/sessions/done_for_now.dart';
+import '../../models/connected/passage_reference.dart';
 import '../../widgets/connected/next_action_panel.dart';
 import '../../data/connected/connected_catalog.dart';
 import '../../widgets/product/product_ui.dart';
@@ -15,15 +18,20 @@ import 'journeys_screen.dart';
 /// Shared error boundary for saved exploration data: never resets unreadable records.
 class ExplorationPage extends StatelessWidget {
   final String title;
+  final double maxWidth;
   final List<Widget> Function(BuildContext, AppProvider) content;
   const ExplorationPage(
-      {super.key, required this.title, required this.content});
+      {super.key,
+      required this.title,
+      required this.content,
+      this.maxWidth = 680});
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppProvider>();
     try {
       app.explorationState;
-      return ConnectedPage(title: title, children: content(context, app));
+      return ConnectedPage(
+          title: title, maxWidth: maxWidth, children: content(context, app));
     } catch (_) {
       return ConnectedPage(title: title, children: const [
         Text(
@@ -48,7 +56,7 @@ class CodexScreen extends StatelessWidget {
   const CodexScreen({super.key, this.id});
   @override
   Widget build(BuildContext context) => ExplorationPage(
-      title: 'Codex',
+      title: 'Codex — Discoveries',
       content: (c, app) {
         final records = app.discoveryRecords;
         final selected =
@@ -109,11 +117,17 @@ class CodexScreen extends StatelessWidget {
                             onPressed: () => c.push('/discoveries/${d.id}'),
                             child: const Text('Open discovery guide')),
                       if (id != null) ...[
-                        for (final connection in ConnectedCatalog.current.connectionsFor(d))
+                        for (final connection
+                            in ConnectedCatalog.current.connectionsFor(d))
                           ConnectionCard(connection: connection),
-                        for(final journey in ConnectedCatalog.current.journeysFor(d))
-                          explorationLink(c, journey.title, 'Explore this passage in a Journey.', '/journeys/${journey.id}'),
-                        NextActionPanel(reference:d.reference,learning:true),
+                        for (final journey
+                            in ConnectedCatalog.current.journeysFor(d))
+                          explorationLink(
+                              c,
+                              journey.title,
+                              'Explore this passage in a Journey.',
+                              '/journeys/${journey.id}'),
+                        NextActionPanel(reference: d.reference, learning: true),
                         explorationLink(
                             c,
                             'Your exploration, kept',
@@ -152,27 +166,92 @@ class ConnectionCard extends StatelessWidget {
 }
 
 class LearnScreen extends StatelessWidget {
-  const LearnScreen({super.key});
-  @override Widget build(BuildContext context) => ExplorationPage(title:'Learn',content:(c,app) {
-    return [
-      Text('Explore. Practice. Discover.',style:Theme.of(c).textTheme.headlineMedium),
-      const SizedBox(height:12),const Text('Look closely at Scripture, give your memory a challenge, or play with what you are learning.'),const SizedBox(height:20),
-      const ProgressIdentity(),const SizedBox(height:24),
-      Text('Continue your Scripture Quest',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:12),
-      const NextActionPanel(learning:true),
-      const SizedBox(height:24),Text('Choose how to learn',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:12),
-      const ActivityShelf(children:[
-        ActivityCard(title:'Play & Learn',description:'Passage word searches, Scripture crosswords, matching, verse puzzles, book order and parables.',route:'/play-learn',icon:Icons.extension_outlined),
-        ActivityCard(title:'Remember Scripture',description:'Choose a passage to carry with you. Practice, use help, or recall independently.',route:'/remembered',icon:Icons.psychology_outlined),
-        ActivityCard(title:'Explore the Codex',description:'Return to discoveries, their meaning, and the Scripture that opened them.',route:'/discoveries',icon:Icons.auto_stories_outlined),
-      ]),const SizedBox(height:24),Text('Passage challenges',style:Theme.of(c).textTheme.titleLarge),
-      for(final d in discoveries) explorationLink(c,d.title,'${d.reference} · ${(app.explorationState['learning'] as Map).containsKey(d.id)?'Evidence found · revisit':'Find it in the Passage'}','/find-passage/${d.id}',icon:Icons.search),
-      const SizedBox(height:24),Text('Chapter Learning',style:Theme.of(c).textTheme.titleLarge),const SizedBox(height:8),const Text('Quick, Standard, and Deep challenges using the existing chapter library. Reflections stay optional and ungraded.'),
-      for(final ref in ConnectedCatalog.chapterLearning) explorationLink(c,ref.label,'Read in context, then try the chapter challenge.','/chapter-quiz?book=${ref.book}&chapter=${ref.chapter}'),
-      const SizedBox(height:24),Text('Scripture Connections',style:Theme.of(c).textTheme.titleLarge),const Text('Compare passages with clear context. Thematic pairings are labeled as editorial suggestions.'),
-      for(final connection in scriptureConnections) ConnectionCard(connection:connection),
-    ];
-  });
+  final String? reference;
+  const LearnScreen({super.key, this.reference});
+  @override
+  Widget build(BuildContext context) => ExplorationPage(
+      title: 'Learn',
+      maxWidth: 960,
+      content: (c, app) {
+        final passage =
+            PassageReference.tryParse(reference ?? app.lastBibleReference);
+        return [
+          Text('Learn from Scripture',
+              style: Theme.of(c).textTheme.headlineMedium),
+          const SizedBox(height: 12),
+          const Text('Stay with your passage, or browse the library below.'),
+          const SizedBox(height: 20),
+          if (passage != null) ...[
+            PassageLearningPanel(passage: passage),
+            const SizedBox(height: 24),
+          ] else ...[
+            const Text(
+                'Choose a passage in the Bible, or begin with the learning library below.'),
+            const NextActionPanel(learning: true),
+            const SizedBox(height: 24),
+          ],
+          Text('Browse the learning library',
+              style: Theme.of(c).textTheme.titleLarge),
+          const SizedBox(height: 12),
+          const ActivityShelf(children: [
+            ActivityCard(
+                title: 'Play & Learn',
+                description:
+                    'Passage word searches, Scripture crosswords, matching, verse puzzles, book order and parables.',
+                route: '/play-learn',
+                icon: Icons.extension_outlined),
+            ActivityCard(
+                title: 'Remember Scripture',
+                description:
+                    'Choose a passage to carry with you. Practice, use help, or recall independently.',
+                route: '/remembered',
+                icon: Icons.psychology_outlined),
+            ActivityCard(
+                title: 'Codex — Discoveries',
+                description:
+                    'Return to discoveries, their meaning, and the Scripture that opened them.',
+                route: '/discoveries',
+                icon: Icons.auto_stories_outlined),
+          ]),
+          const SizedBox(height: 24),
+          ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              initiallyExpanded: passage == null,
+              title: const Text('Passage challenges'),
+              children: [
+                for (final d in discoveries)
+                  explorationLink(
+                      c,
+                      d.title,
+                      '${d.reference} · ${(app.explorationState['learning'] as Map).containsKey(d.id) ? 'Evidence found · revisit' : 'Find it in the Passage'}',
+                      '/find-passage/${d.id}',
+                      icon: Icons.search),
+              ]),
+          ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              initiallyExpanded: passage == null,
+              title: const Text('Chapter Learning'),
+              subtitle: const Text('All five existing chapter challenges'),
+              children: [
+                for (final ref in ConnectedCatalog.chapterLearning)
+                  explorationLink(
+                      c,
+                      ref.label,
+                      'Quick, Standard or Deep · reflections are optional.',
+                      '/chapter-quiz?book=${ref.book}&chapter=${ref.chapter}'),
+              ]),
+          ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              initiallyExpanded: passage == null,
+              title: const Text('Scripture Connections'),
+              subtitle: const Text(
+                  'Textual relationships and labeled editorial suggestions'),
+              children: [
+                for (final connection in scriptureConnections)
+                  ConnectionCard(connection: connection),
+              ]),
+        ];
+      });
 }
 
 /// A passage-backed observation, not a detached trivia question.
@@ -210,11 +289,7 @@ class _FindPassageScreenState extends State<FindPassageScreen> {
               : 'Look again in the passage. Try another verse, or use the clue.';
         });
       if (mounted && r.correct && scroll.hasClients) {
-        await scroll.animateTo(0,
-            duration: MediaQuery.of(context).disableAnimations
-                ? Duration.zero
-                : const Duration(milliseconds: 220),
-            curve: Curves.easeOut);
+        scroll.jumpTo(0);
       }
     } catch (_) {
       if (mounted)
@@ -260,7 +335,6 @@ class _FindPassageScreenState extends State<FindPassageScreen> {
                             style: Theme.of(c).textTheme.titleMedium))),
               if (finished) ...[
                 const AccomplishmentMark(icon: Icons.search),
-                NextActionPanel(reference:d.reference,learning:true),
                 explorationLink(
                     c,
                     'Keep exploring this discovery',
@@ -271,8 +345,11 @@ class _FindPassageScreenState extends State<FindPassageScreen> {
                     'Remember a verse from this passage',
                     'Practice at your own pace.',
                     '/memorization-practice?key=${Uri.encodeComponent(d.memoryKey)}'),
+                NextActionPanel(reference: d.reference, learning: true),
+                DoneForNow(passage: PassageReference.tryParse(d.reference)!),
               ],
-              for (final line in lines)
+              for (final line in lines.where(
+                  (line) => !finished || line.startsWith('${d.answerVerse} ')))
                 Padding(
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: OutlinedButton(

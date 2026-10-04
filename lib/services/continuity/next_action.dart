@@ -1,12 +1,18 @@
+import '../sessions/passage_learning.dart';
+import '../sessions/session_return.dart';
 import '../../data/connected/connected_catalog.dart';
 import '../../models/connected/destination.dart';
 import '../../models/connected/passage_reference.dart';
 import '../../models/questline.dart';
 
+enum SessionContext { today, journey, freeReading, passageLearning }
+
 class NextAction {
   final String title, reason;
   final ConnectedDestination destination;
-  const NextAction(this.title, this.reason, this.destination);
+  final bool optionalReplay;
+  const NextAction(this.title, this.reason, this.destination,
+      {this.optionalReplay = false});
 }
 
 /// Values copied from existing state. No callbacks, provider or storage access.
@@ -15,6 +21,9 @@ class ContinuitySnapshot {
   final Set<String> completedJourneys, discoveries, learned, remembered;
   final PassageReference? recentReading, planReading;
   final String? planTitle;
+  final Set<String> quizzes;
+  final Map<String, dynamic> activities;
+  final SessionReturn? returnPoint;
   const ContinuitySnapshot(
       {this.activeJourney,
       this.completedJourneys = const {},
@@ -23,7 +32,10 @@ class ContinuitySnapshot {
       this.remembered = const {},
       this.recentReading,
       this.planReading,
-      this.planTitle});
+      this.planTitle,
+      this.quizzes = const {},
+      this.activities = const {},
+      this.returnPoint});
 }
 
 class NextActionGuidance {
@@ -33,7 +45,14 @@ class NextActionGuidance {
   NextAction resolve(ContinuitySnapshot s,
       {PassageReference? passage,
       bool learning = false,
-      String? finishedJourney}) {
+      String? finishedJourney,
+      SessionContext? context,
+      DateTime? now}) {
+    // Explicit session context is used by V2 screens. Existing callers retain
+    // their established navigation contract until they opt into the context.
+    if (context != null)
+      return _contextual(
+          s, passage, context, finishedJourney, now ?? DateTime.now());
     final j = s.activeJourney;
     if (j != null &&
         !j.progress.isCompleted &&
@@ -106,5 +125,80 @@ class NextActionGuidance {
     final first = catalog.journey(catalog.curated.first.id);
     return NextAction('Begin ${first.title}', catalog.purpose(first.id),
         ConnectedDestination('/journeys/${first.id}'));
+  }
+
+  NextAction _contextual(ContinuitySnapshot s, PassageReference? passage,
+      SessionContext context, String? finishedJourney, DateTime now) {
+    if (context == SessionContext.today &&
+        s.returnPoint?.isToday(now) == true) {
+      final p = PassageReference.tryParse(s.returnPoint!.reference)!;
+      return NextAction(
+          'Return to ${p.label}',
+          'Your session is saved. You can stop here, or revisit when you are ready.',
+          p.destination,
+          optionalReplay: true);
+    }
+    if (context == SessionContext.today || context == SessionContext.journey) {
+      final j = s.activeJourney;
+      if (j != null &&
+          !j.progress.isCompleted &&
+          j.questline.id != finishedJourney) {
+        final p = catalog.passage(j.currentStep);
+        return NextAction(
+            'Continue ${j.questline.title}',
+            p == null
+                ? 'Your next step is an optional response. Continue with or without writing.'
+                : '${p.label} · ${catalog.orientation(j.questline.id, j.currentStep!.id) ?? catalog.purpose(j.questline.id)}',
+            ConnectedDestination('/journeys/${j.questline.id}'));
+      }
+    }
+    final recent = passage ??
+        s.recentReading ??
+        PassageReference.tryParse(s.returnPoint?.reference);
+    if (recent != null) {
+      final view = PassageLearning.build(recent,
+          catalog: catalog,
+          learned: s.learned,
+          quizzes: s.quizzes,
+          activities: s.activities,
+          remembered: s.remembered,
+          earnedDiscoveries: s.discoveries);
+      // Evidence comes first after reading when it is available; chapter learning
+      // follows, then passage games. Pending deliveries always take precedence.
+      final pending =
+          view.opportunities.where((o) => o.state == OpportunityState.pending);
+      final available = view.opportunities
+          .where((o) => o.state == OpportunityState.available)
+          .toList();
+      available.sort((a, b) => (a.route.startsWith('/find-passage') ? 0 : 1)
+          .compareTo(b.route.startsWith('/find-passage') ? 0 : 1));
+      final next = pending.isNotEmpty ? pending.first : available.firstOrNull;
+      if (next != null)
+        return NextAction(
+            next.title,
+            '${recent.label} · ${next.state == OpportunityState.pending ? 'An earlier completion still needs delivery. Retry keeps the same reward identity.' : next.detail}',
+            ConnectedDestination(next.route));
+      if (context == SessionContext.passageLearning ||
+          context == SessionContext.freeReading) {
+        return NextAction(
+            'Revisit ${recent.label}',
+            view.opportunities.isEmpty
+                ? 'No authored challenges are available for this chapter yet. Read, highlight or reflect at your own pace.'
+                : 'You’re caught up with the available challenges here. Replays and connections are optional; your earlier rewards are kept.',
+            ConnectedDestination(
+                Uri(path: '/learn', queryParameters: {'ref': recent.label})
+                    .toString()),
+            optionalReplay: true);
+      }
+    }
+    if (recent != null && context == SessionContext.today) {
+      return NextAction(
+          'Return to ${recent.label}',
+          'Your earlier progress is kept. Read freely or choose another passage when ready.',
+          recent.destination,
+          optionalReplay: true);
+    }
+    // Reuse the established new-user/plan/finished-Journey fallbacks.
+    return resolve(s, passage: passage, finishedJourney: finishedJourney);
   }
 }

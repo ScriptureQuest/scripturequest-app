@@ -98,7 +98,10 @@ void main() {
     ]);
     addTearDown(router.dispose);
     final settings = SettingsProvider();
-    await tester.runAsync(() async { await settings.initialize(); await settings.setBibleReaderTheme(dark ? 'night' : 'paper'); });
+    await tester.runAsync(() async {
+      await settings.initialize();
+      await settings.setBibleReaderTheme(dark ? 'night' : 'paper');
+    });
     addTearDown(settings.dispose);
     await tester.pumpWidget(MultiProvider(
         providers: [
@@ -247,43 +250,47 @@ void main() {
     expect(tester.takeException(), isNull);
     await capture(tester, 'pass3-memory-result');
   });
-  for (final dark in [false, true]) testWidgets(
-      'connected discovery to learning to memory to further Scripture uses real routes (dark=$dark)',
-      (tester) async {
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.runAsync(
-        () => app.completeReaderChapter('Psalms', 46, qualified: true));
-    await mount(tester, const CodexScreen(id: 'refuge'), const Size(390, 844), dark:dark);
-    Future<void> tapText(String text) async {
-      final finder = find.text(text);
-      for (var i = 0; finder.evaluate().isEmpty && i < 20; i++) {
-        await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+  for (final dark in [false, true])
+    testWidgets(
+        'connected discovery to learning to memory to further Scripture uses real routes (dark=$dark)',
+        (tester) async {
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.runAsync(
+          () => app.completeReaderChapter('Psalms', 46, qualified: true));
+      await mount(tester, const CodexScreen(id: 'refuge'), const Size(390, 844),
+          dark: dark);
+      Future<void> tapText(String text) async {
+        final finder = find.text(text);
+        for (var i = 0; finder.evaluate().isEmpty && i < 20; i++) {
+          await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+          await tester.pump(const Duration(milliseconds: 400));
+        }
+        await Scrollable.ensureVisible(tester.element(finder), alignment: 0.5);
         await tester.pump(const Duration(milliseconds: 400));
+        expect(finder.hitTestable(), findsOneWidget);
+        await tester.runAsync(() => tester.tap(finder));
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 100));
+          await tester.runAsync(() async =>
+              Future<void>.delayed(const Duration(milliseconds: 30)));
+        }
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.takeException(), isNull);
       }
-      await tester.ensureVisible(finder);
-      await tester.runAsync(() => tester.tap(finder));
-      for (var i = 0; i < 5; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.runAsync(
-            () async => Future<void>.delayed(const Duration(milliseconds: 30)));
-      }
-      await tester.pump(const Duration(milliseconds: 500));
-      expect(tester.takeException(), isNull);
-    }
 
-    await tapText('Find it in the Passage');
-    await tapText(
-        '1 God is our refuge and strength, a very present help in trouble.');
-    await tapText('Remember a verse from this passage');
-    await tapText('I practiced today');
-    expect(
-        app.explorationState['memory']['Psalms:46:1']['sessions'], isNotEmpty);
-    await tapText('My remembered Scripture');
-    expect(find.textContaining('1 practiced'), findsOneWidget);
-    await tapText('Discover a passage to remember');
-    expect(app.discoveryRecords.containsKey('refuge'), isTrue);
-    await tapText('Read Psalms 23');
-    expect(find.byType(VersesScreen), findsOneWidget);
-  });
+      await tapText('Find it in the Passage');
+      await tapText(
+          '1 God is our refuge and strength, a very present help in trouble.');
+      await tapText('Remember a verse from this passage');
+      await tapText('I practiced today');
+      expect(app.explorationState['memory']['Psalms:46:1']['sessions'],
+          isNotEmpty);
+      await tapText('My remembered Scripture');
+      expect(find.textContaining('1 practiced'), findsOneWidget);
+      await tapText('Discover a passage to remember');
+      expect(app.discoveryRecords.containsKey('refuge'), isTrue);
+      await tapText('Read Psalms 23');
+      expect(find.byType(VersesScreen), findsOneWidget);
+    });
 }

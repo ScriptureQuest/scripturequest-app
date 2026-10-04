@@ -1,3 +1,5 @@
+import '../connected/next_action_panel.dart';
+import '../sessions/done_for_now.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/connected/passage_reference.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +32,10 @@ class GameEndPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final passage = references
+        .map(PassageReference.tryParse)
+        .whereType<PassageReference>()
+        .firstOrNull;
     return SacredCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,39 +45,72 @@ class GameEndPanel extends StatelessWidget {
             children: [
               Icon(Icons.celebration, color: QuestPalette.of(context).success),
               const SizedBox(width: 10),
-              Expanded(child: Text(header, style: theme.textTheme.titleLarge ?? theme.textTheme.titleMedium)),
+              Expanded(
+                  child: Text(header,
+                      style: theme.textTheme.titleLarge ??
+                          theme.textTheme.titleMedium)),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            summary,
-            style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant),
-          ),
+          Semantics(
+              liveRegion: xp != null,
+              child: Text(
+                summary,
+                style: theme.textTheme.labelMedium
+                    ?.copyWith(color: cs.onSurfaceVariant),
+              )),
           if ((xp ?? 0) > 0) ...[
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(Icons.auto_awesome, size: 18, color: QuestPalette.of(context).success),
+                Icon(Icons.auto_awesome,
+                    size: 18, color: QuestPalette.of(context).success),
                 const SizedBox(width: 6),
                 Text('+${(xp ?? 0)} XP', style: theme.textTheme.labelLarge),
               ],
             ),
           ],
+          if (xp != null && passage != null) ...[
+            const Text('Activity saved. Reading and recall remain separate.'),
+            NextActionPanel(
+                reference: passage.label,
+                learning: true,
+                secondaryJourney: true),
+          ],
           for (final ref in references.toSet())
             if (PassageReference.tryParse(ref) != null)
-              TextButton.icon(onPressed: () => context.push(PassageReference.tryParse(ref)!.destination.route), icon: const Icon(Icons.menu_book), label: Text('Explore $ref')),
+              TextButton.icon(
+                  onPressed: () => context
+                      .push(PassageReference.tryParse(ref)!.destination.route),
+                  icon: const Icon(Icons.menu_book),
+                  label: Text('Explore $ref')),
           if (xp == 0) const Text('Practice complete · earlier reward kept.'),
           if (xp == null && onRetrySave != null)
-            TextButton(onPressed: onRetrySave, child: const Text('Save result / retry')),
+            TextButton(
+                onPressed: onRetrySave,
+                child: const Text('Save result / retry')),
+          if (xp != null && passage != null) DoneForNow(passage: passage),
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, c) {
               final isWide = c.maxWidth > 420;
-              final again = ElevatedButton.icon(onPressed: onPlayAgain, icon: const Icon(Icons.replay), label: const Text('Play Again'));
-              final back = OutlinedButton.icon(onPressed:onBackToHub, icon: Icon(Icons.extension,color:cs.primary),label:const Text('Back to Play & Learn'));
+              final again = ElevatedButton.icon(
+                  onPressed: onPlayAgain,
+                  icon: const Icon(Icons.replay),
+                  label: const Text('Play Again'));
+              final back = OutlinedButton.icon(
+                  onPressed: onBackToHub,
+                  icon: Icon(Icons.extension, color: cs.primary),
+                  label: const Text('Back to Play & Learn'));
               return isWide
-                  ? Row(children:[Expanded(child:again),const SizedBox(width:12),Expanded(child:back)])
-                  : Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[again,const SizedBox(height:12),back]);
+                  ? Row(children: [
+                      Expanded(child: again),
+                      const SizedBox(width: 12),
+                      Expanded(child: back)
+                    ])
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [again, const SizedBox(height: 12), back]);
             },
           )
         ],

@@ -1,3 +1,5 @@
+import '../sessions/done_for_now.dart';
+import '../../models/connected/passage_reference.dart';
 import 'next_action_panel.dart';
 import '../../data/exploration/catalog.dart';
 import '../exploration/exploration_art.dart';
@@ -25,6 +27,8 @@ Future<void> showReadingResult(
         builder: (_) => JournalEditorSheet(
             initialLinkedRef: result.reference,
             initialLinkedRefRoute: JourneyContent.route(result.reference)));
+  } else if (destination == '/') {
+    context.go('/');
   } else {
     context.push(destination);
   }
@@ -52,8 +56,10 @@ class ReadingResultSheet extends StatelessWidget {
                     const Icon(Icons.check_circle_outline),
                     const SizedBox(width: 12),
                     Expanded(
-                        child: Text('Reading saved',
-                            style: theme.textTheme.headlineSmall)),
+                        child: Semantics(
+                            liveRegion: true,
+                            child: Text('Reading saved',
+                                style: theme.textTheme.headlineSmall))),
                     IconButton(
                         tooltip: 'Close reading result',
                         onPressed: () => Navigator.pop(context),
@@ -99,19 +105,42 @@ class ReadingResultSheet extends StatelessWidget {
                         onPressed: () => Navigator.pop(context, '/collection'),
                         child: const Text('View my collection')),
                   ],
-                  for (final id in {...result.discoveryIds, if(result.discovered) 'shepherd'}) ...[
+                  for (final id in {
+                    ...result.discoveryIds,
+                    if (result.discovered) 'shepherd'
+                  }) ...[
                     const Divider(height: 32),
                     const AccomplishmentMark(icon: Icons.auto_stories_outlined),
-                    const SizedBox(height: 8), const Text('DISCOVERY ADDED'),
-                    Text(discoveryById(id).title, style: theme.textTheme.titleLarge),
-                    Text('${discoveryById(id).reference} now has a permanent place in your Codex.'),
-                    TextButton(onPressed: () => Navigator.pop(context, '/discoveries/$id'), child: const Text('Open my discovery')),
+                    const SizedBox(height: 8),
+                    const Text('DISCOVERY ADDED'),
+                    Text(discoveryById(id).title,
+                        style: theme.textTheme.titleLarge),
+                    Text(
+                        '${discoveryById(id).reference} now has a permanent place in your Codex.'),
+                    TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, '/discoveries/$id'),
+                        child: const Text('Open my discovery')),
                   ],
                   const SizedBox(height: 24),
-                  NextActionPanel(reference: result.reference, onNavigate: (route) => Navigator.pop(context, route)),
+                  NextActionPanel(
+                      reference: result.reference,
+                      secondaryJourney: true,
+                      onNavigate: (route) => Navigator.pop(context, route)),
                   TextButton(
                       onPressed: () => Navigator.pop(context, 'reflect'),
                       child: const Text('Keep a reflection · optional')),
+                  TextButton(
+                      onPressed: () => Navigator.pop(
+                          context,
+                          Uri(
+                                  path: '/learn',
+                                  queryParameters: {'ref': result.reference})
+                              .toString()),
+                      child: const Text('Learning available for this passage')),
+                  DoneForNow(
+                      passage: PassageReference.tryParse(result.reference)!,
+                      onDone: () => Navigator.pop(context, '/')),
                   TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Keep reading')),

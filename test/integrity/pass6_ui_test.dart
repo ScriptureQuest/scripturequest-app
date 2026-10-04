@@ -227,7 +227,7 @@ void main() {
         scrollable: find.byType(Scrollable).first);
     await tester.tap(save);
     await settleIO(tester);
-    expect(find.text('Passage explored'), findsOneWidget);
+    expect(find.text('Activity completed'), findsOneWidget);
     expect(app.activityRecords.containsKey('crossword_shepherd_v1'), isTrue);
     expect(find.text('Choose a verse to remember'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -270,7 +270,7 @@ void main() {
           scrollable: find.byType(Scrollable).first);
       await tester.tap(save);
       await settleIO(tester);
-      expect(find.text('Passage explored'), findsOneWidget);
+      expect(find.text('Activity completed'), findsOneWidget);
       if (seed == 0) {
         firstXP = app.currentUser!.totalXP;
         final replay = find.text('Play again · no repeat XP');

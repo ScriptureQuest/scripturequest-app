@@ -1,3 +1,4 @@
+import '../services/reading/reading_presence.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -41,7 +42,11 @@ class VersesScreen extends StatefulWidget {
 
 class _VersesScreenState extends State<VersesScreen>
     with WidgetsBindingObserver {
-  final _readingClock = Stopwatch();
+  final _presence = ReadingPresence();
+  @visibleForTesting
+  Duration get debugReadingTime => _presence.elapsed;
+  GoRouter? _readerRouter;
+  String? _readerLocation;
   String? _timedChapter;
   String? _currentReference;
   String _selectedVersionCode = 'KJV';
@@ -827,31 +832,59 @@ class _VersesScreenState extends State<VersesScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _readingClock.stop();
+    _presence.dispose();
+    _readerRouter?.routeInformationProvider.removeListener(_routeChanged);
     _pageController?.dispose();
     super.dispose();
   }
 
   /// Start or restart the reading timer when a chapter is loaded
+  void _attachReaderRoute() {
+    final router = GoRouter.of(context);
+    if (_readerRouter != router) {
+      _readerRouter?.routeInformationProvider.removeListener(_routeChanged);
+      _readerRouter = router;
+      _readerLocation = router.routeInformationProvider.value.uri.toString();
+      router.routeInformationProvider.addListener(_routeChanged);
+    }
+    _syncVisibility();
+  }
+
+  void _routeChanged() {
+    // Stop immediately on navigation; route transitions are checked again after
+    // layout so returning to this exact route resumes rather than resets it.
+    _presence.setVisible(false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncVisibility();
+    });
+  }
+
+  void _syncVisibility() {
+    final content = _chapterCache[_selectedBook]?[_selectedChapter];
+    final ready =
+        content != null && RegExp(r'^\d+\s', multiLine: true).hasMatch(content);
+    _presence.setVisible(ready &&
+        (ModalRoute.of(context)?.isCurrent ?? true) &&
+        _readerRouter?.routeInformationProvider.value.uri.toString() ==
+            _readerLocation);
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      if (_timedChapter != null) _readingClock.start();
-    } else {
-      _readingClock.stop();
-    }
+    _presence.setForeground(state == AppLifecycleState.resumed);
+    if (state == AppLifecycleState.resumed) _syncVisibility();
   }
 
   void _startReadingTimer() {
     final key = '$_selectedBook:$_selectedChapter';
     if (_timedChapter != key) {
       _timedChapter = key;
-      _readingClock.reset();
       _hasMetReadingThreshold = false;
       _dailyQuestProgressedThisSession = false;
       _readingStartTime = DateTime.now();
     }
-    _readingClock.start();
+    _presence.select(key);
+    _syncVisibility();
   }
 
   /// Check if the user has met the reading time threshold for quest progression.
@@ -861,7 +894,7 @@ class _VersesScreenState extends State<VersesScreen>
       if (_hasMetReadingThreshold) return; // Already met
       if (_readingStartTime == null) return;
 
-      final duration = _readingClock.elapsed;
+      final duration = _presence.elapsed;
       if (duration.inSeconds >= _minimumReadingSecondsForQuest) {
         _hasMetReadingThreshold = true;
         debugPrint('Reading time threshold met: ${duration.inSeconds}s');
@@ -909,6 +942,7 @@ class _VersesScreenState extends State<VersesScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _attachReaderRoute();
     if (_initialized) return;
     _initialized = true;
     final provider = Provider.of<AppProvider?>(context, listen: false);
@@ -955,6 +989,8 @@ class _VersesScreenState extends State<VersesScreen>
     if (newRef.isNotEmpty && newRef != (_currentReference ?? '')) {
       final provider = Provider.of<AppProvider?>(context, listen: false);
       if (provider != null) {
+        _readerLocation =
+            _readerRouter?.routeInformationProvider.value.uri.toString();
         _applyParsedReference(provider, newRef);
       }
     }
@@ -1132,9 +1168,13 @@ class _VersesScreenState extends State<VersesScreen>
                           // Progress daily quest if reading time threshold was met
                           _progressDailyQuestIfEligible(provider);
                         },
+                        onContentReady: _syncVisibility,
+                        activePresence: () => _presence.elapsedFor('$book:$ch'),
                         hasMetReadingThreshold: () {
                           _updateReadingTimeThreshold();
-                          return _hasMetReadingThreshold;
+                          return _presence.chapter == '$book:$ch' &&
+                              ch == _selectedChapter &&
+                              _hasMetReadingThreshold;
                         },
                       );
                     },
@@ -1848,6 +1888,7 @@ class _VersesScreenState extends State<VersesScreen>
       _selectedChapter = newChapter;
       _currentReference = '${_selectedBook ?? ''} $newChapter';
     });
+    _startReadingTimer();
     provider.setLastBibleSelection(
       bookDisplay: _selectedBook ?? '',
       chapter: newChapter,
@@ -1877,8 +1918,7 @@ class _VersesScreenState extends State<VersesScreen>
 
     // REMOVED: Do NOT mark chapter as completed just by paging/swiping.
     // Completion is only via the "Complete Chapter" action.
-    // Start/continue reading time tracking (user navigated to a new chapter)
-    _startReadingTimer();
+    // Timing was reset with selection above, before asynchronous work.
     if (kDebugMode) {
       debugPrint(
         '[BibleState] current book=${_selectedBook ?? ''} chapter=$newChapter',
@@ -2000,6 +2040,8 @@ class _ChapterPage extends StatefulWidget {
   final int? initialFocusVerse;
   final VoidCallback?
       onChapterCompleted; // Called when user taps "Complete Chapter"
+  final Duration Function() activePresence;
+  final VoidCallback onContentReady;
   final bool Function()
       hasMetReadingThreshold; // Returns true if reading time threshold was met
   const _ChapterPage({
@@ -2013,6 +2055,8 @@ class _ChapterPage extends StatefulWidget {
     this.initialFocusVerse,
     this.onChapterCompleted,
     required this.hasMetReadingThreshold,
+    required this.activePresence,
+    required this.onContentReady,
   });
 
   @override
@@ -2053,7 +2097,7 @@ class _ChapterPageState extends State<_ChapterPage> {
   void _startCountdownTimer() {
     _countdownTimer?.cancel();
     _updateRemainingSeconds();
-    if (_remainingSeconds > 0) {
+    if (!widget.hasMetReadingThreshold()) {
       _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (!mounted) {
           _countdownTimer?.cancel();
@@ -2061,7 +2105,7 @@ class _ChapterPageState extends State<_ChapterPage> {
         }
         _updateRemainingSeconds();
         setState(() {}); // Rebuild to update button label
-        if (_remainingSeconds <= 0) {
+        if (widget.hasMetReadingThreshold()) {
           _countdownTimer?.cancel();
         }
       });
@@ -2074,7 +2118,7 @@ class _ChapterPageState extends State<_ChapterPage> {
       _remainingSeconds = _minPresenceSeconds;
       return;
     }
-    final elapsed = DateTime.now().difference(_chapterLoadedAt!).inSeconds;
+    final elapsed = widget.activePresence().inSeconds;
     _remainingSeconds = (_minPresenceSeconds - elapsed).clamp(
       0,
       _minPresenceSeconds,
@@ -2167,7 +2211,7 @@ class _ChapterPageState extends State<_ChapterPage> {
   bool _isEligibleToComplete() {
     // Condition A: minimum presence time
     if (_chapterLoadedAt == null) return false;
-    final presence = DateTime.now().difference(_chapterLoadedAt!).inSeconds;
+    final presence = widget.activePresence().inSeconds;
     if (presence < _minPresenceSeconds) return false;
 
     // Condition B: at least one engagement
@@ -2183,7 +2227,7 @@ class _ChapterPageState extends State<_ChapterPage> {
   /// Get message for why completion is disabled
   String _getDisabledReason() {
     if (_chapterLoadedAt == null) return 'Loading...';
-    final presence = DateTime.now().difference(_chapterLoadedAt!).inSeconds;
+    final presence = widget.activePresence().inSeconds;
     if (presence < _minPresenceSeconds) {
       final remaining = _minPresenceSeconds - presence;
       return 'Keep reading for $remaining more seconds';
@@ -2203,6 +2247,8 @@ class _ChapterPageState extends State<_ChapterPage> {
       });
       // Short chapter detection for cached chapters - check actual scroll metrics
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        widget.onContentReady();
         _checkIfViewportFit();
       });
       return;
@@ -2217,6 +2263,8 @@ class _ChapterPageState extends State<_ChapterPage> {
     });
     // Schedule short chapter detection after layout - check actual scroll metrics
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onContentReady();
       _checkIfViewportFit();
     });
     // After load, if an initial focus verse is present, schedule ensureVisible
@@ -2504,7 +2552,9 @@ class _ChapterPageState extends State<_ChapterPage> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Complete the chapter to record your reading. Reading quests also require 45 seconds in the reader.',
+                widget.hasMetReadingThreshold()
+                    ? 'Ready to save reading and eligible Journey/quest progress.'
+                    : 'Chapter progress can be saved after 12 active seconds and engagement. Journey steps, reading quests and streak credit require 45 active seconds. Time pauses when you leave or background the reader.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 16),
@@ -2544,7 +2594,8 @@ class _ChapterPageState extends State<_ChapterPage> {
                               }
                               if (!mounted) return;
                               final result = app.lastReadingCompletion;
-                              if (result != null) await showReadingResult(context, result);
+                              if (result != null)
+                                await showReadingResult(context, result);
                             }
                           : null, // Disabled when not eligible
                       child: Text(_getButtonLabel()),
