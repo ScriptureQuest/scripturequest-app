@@ -43,7 +43,6 @@ void main() {
     });
   });
   setUp(() async {
-
     SharedPreferences.setMockInitialValues({});
     final storage = await StorageService.getInstance();
     await storage.clear();
@@ -53,7 +52,6 @@ void main() {
 
     await storage.save('has_completed_onboarding_${app.currentUser!.id}', true);
     await app.loadData();
-
   });
   tearDown(() => app.dispose());
   final captureKey = GlobalKey();
@@ -78,7 +76,6 @@ void main() {
       }
 
       await GoogleFonts.pendingFonts();
-
     });
     final router = GoRouter(routes: [
       ShellRoute(
@@ -149,13 +146,11 @@ void main() {
     await tester.runAsync(
         () async => Future<void>.delayed(const Duration(milliseconds: 50)));
     await tester.pump(const Duration(seconds: 3));
-
   }
 
   Future<void> capture(WidgetTester tester, String name) async {
     if (Platform.environment['SQ_CAPTURE'] != '1') return;
     await tester.runAsync(() async {
-
       await GoogleFonts.pendingFonts();
 
       final boundary = captureKey.currentContext!.findRenderObject()
@@ -198,6 +193,7 @@ void main() {
         }
       }
   }
+
   Future<void> solveCrossword(WidgetTester tester) async {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -229,12 +225,16 @@ void main() {
     await settleIO(tester);
     expect(find.text('Activity completed'), findsOneWidget);
     expect(app.activityRecords.containsKey('crossword_shepherd_v1'), isTrue);
+    await tester.ensureVisible(find.text('Explore more'));
+    await tester.tap(find.text('Explore more'));
+    await tester.pumpAndSettle();
     expect(find.text('Choose a verse to remember'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpAndSettle();
     expect(find.byType(LinearProgressIndicator), findsNothing);
     await capture(tester, 'pass6-crossword-complete');
   }
+
   Future<void> solveWordSearch(WidgetTester tester) async {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -247,11 +247,9 @@ void main() {
 
     var firstXP = 0;
     for (var seed = 0; seed < 2; seed++) {
-
       final puzzle = WordSearchPuzzle(ActivityCatalog.shepherd, seed: seed);
       for (final path in puzzle.paths.values) {
         for (final cell in [path.first, path.last]) {
-
           final target = find.byKey(Key('search-${cell.row}-${cell.col}'));
           if (target.evaluate().isEmpty)
             await tester.scrollUntilVisible(target, 200,
@@ -273,6 +271,9 @@ void main() {
       expect(find.text('Activity completed'), findsOneWidget);
       if (seed == 0) {
         firstXP = app.currentUser!.totalXP;
+        await tester.ensureVisible(find.text('Explore more'));
+        await tester.tap(find.text('Explore more'));
+        await tester.pumpAndSettle();
         final replay = find.text('Play again · no repeat XP');
         await tester.scrollUntilVisible(replay, 200,
             scrollable: find.byType(Scrollable).first);
@@ -285,7 +286,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   }
-  testWidgets('Pass 6 continuous session: theme/size matrix, crossword, word search and replay', (tester) async {
+
+  testWidgets(
+      'Pass 6 continuous session: theme/size matrix, crossword, word search and replay',
+      (tester) async {
     // Keep the real completion queues in one test event loop, as in one app session.
     // All layout, completion, continuation and replay assertions remain in place.
     await checkLayouts(tester);

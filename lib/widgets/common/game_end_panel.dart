@@ -1,5 +1,4 @@
-import '../connected/next_action_panel.dart';
-import '../sessions/done_for_now.dart';
+import '../sessions/session_ending.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/connected/passage_reference.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +6,7 @@ import 'package:level_up_your_faith/widgets/sacred/sacred_ui.dart';
 import '../../theme/scripture_theme.dart';
 
 /// Unified end screen panel for Play & Learn mini-games.
-/// Visual-only: shows a calm header, summary, optional XP line, and two actions.
+/// Presentation only: saved summary, stopping point and optional exploration.
 class GameEndPanel extends StatelessWidget {
   final String header; // e.g., "Great job!"
   final String summary; // e.g., "You matched all pairs."
@@ -70,49 +69,33 @@ class GameEndPanel extends StatelessWidget {
               ],
             ),
           ],
-          if (xp != null && passage != null) ...[
-            const Text('Activity saved. Reading and recall remain separate.'),
-            NextActionPanel(
-                reference: passage.label,
-                learning: true,
-                secondaryJourney: true),
-          ],
-          for (final ref in references.toSet())
-            if (PassageReference.tryParse(ref) != null)
-              TextButton.icon(
-                  onPressed: () => context
-                      .push(PassageReference.tryParse(ref)!.destination.route),
-                  icon: const Icon(Icons.menu_book),
-                  label: Text('Explore $ref')),
           if (xp == 0) const Text('Practice complete · earlier reward kept.'),
           if (xp == null && onRetrySave != null)
             TextButton(
                 onPressed: onRetrySave,
                 child: const Text('Save result / retry')),
-          if (xp != null && passage != null) DoneForNow(passage: passage),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, c) {
-              final isWide = c.maxWidth > 420;
-              final again = ElevatedButton.icon(
+          if (xp != null)
+            SessionEnding(passage: passage, more: [
+              for (final ref in references.toSet())
+                if (PassageReference.tryParse(ref) != null)
+                  TextButton.icon(
+                      onPressed: () => context.push(
+                          PassageReference.tryParse(ref)!.destination.route),
+                      icon: const Icon(Icons.menu_book),
+                      label: Text('Explore $ref')),
+              TextButton.icon(
                   onPressed: onPlayAgain,
                   icon: const Icon(Icons.replay),
-                  label: const Text('Play Again'));
-              final back = OutlinedButton.icon(
+                  label: const Text('Play Again')),
+              TextButton.icon(
                   onPressed: onBackToHub,
-                  icon: Icon(Icons.extension, color: cs.primary),
-                  label: const Text('Back to Play & Learn'));
-              return isWide
-                  ? Row(children: [
-                      Expanded(child: again),
-                      const SizedBox(width: 12),
-                      Expanded(child: back)
-                    ])
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [again, const SizedBox(height: 12), back]);
-            },
-          )
+                  icon: const Icon(Icons.extension),
+                  label: const Text('Back to Play & Learn')),
+            ])
+          else
+            TextButton(
+                onPressed: onBackToHub,
+                child: const Text('Back to Play & Learn')),
         ],
       ),
     );

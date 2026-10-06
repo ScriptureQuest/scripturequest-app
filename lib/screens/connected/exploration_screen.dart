@@ -1,5 +1,5 @@
 import '../../widgets/sessions/passage_learning_panel.dart';
-import '../../widgets/sessions/done_for_now.dart';
+import '../../widgets/sessions/session_ending.dart';
 import '../../models/connected/passage_reference.dart';
 import '../../widgets/connected/next_action_panel.dart';
 import '../../data/connected/connected_catalog.dart';
@@ -101,39 +101,45 @@ class CodexScreen extends StatelessWidget {
                       Text(records.containsKey(d.id)
                           ? 'Kept through: ${records[d.id]['source']}. This discovery stays when you return.'
                           : 'Complete this chapter after 45 seconds of reading to keep the discovery. The guide is available now.'),
-                      if (id != null)
-                        explorationLink(c, 'Find it in the Passage', d.prompt,
-                            '/find-passage/${d.id}',
-                            icon: Icons.search),
-                      if (id != null)
-                        explorationLink(
-                            c,
-                            'Choose a verse to remember',
-                            d.memoryKey.replaceFirst(':', ' '),
-                            '/memorization-practice?key=${Uri.encodeComponent(d.memoryKey)}',
-                            icon: Icons.psychology_outlined),
                       if (id == null)
                         TextButton(
                             onPressed: () => c.push('/discoveries/${d.id}'),
                             child: const Text('Open discovery guide')),
-                      if (id != null) ...[
-                        for (final connection
-                            in ConnectedCatalog.current.connectionsFor(d))
-                          ConnectionCard(connection: connection),
-                        for (final journey
-                            in ConnectedCatalog.current.journeysFor(d))
-                          explorationLink(
-                              c,
-                              journey.title,
-                              'Explore this passage in a Journey.',
-                              '/journeys/${journey.id}'),
-                        NextActionPanel(reference: d.reference, learning: true),
-                        explorationLink(
-                            c,
-                            'Your exploration, kept',
-                            'Return to your permanent Journey Board.',
-                            '/journey-board'),
-                      ],
+                      if (id != null)
+                        ExpansionTile(
+                            tilePadding: EdgeInsets.zero,
+                            title: const Text('Explore this discovery'),
+                            children: [
+                              if (id != null)
+                                explorationLink(c, 'Find it in the Passage',
+                                    d.prompt, '/find-passage/${d.id}',
+                                    icon: Icons.search),
+                              if (id != null)
+                                explorationLink(
+                                    c,
+                                    'Choose a verse to remember',
+                                    d.memoryKey.replaceFirst(':', ' '),
+                                    '/memorization-practice?key=${Uri.encodeComponent(d.memoryKey)}',
+                                    icon: Icons.psychology_outlined),
+                              if (id != null) ...[
+                                for (final connection in ConnectedCatalog
+                                    .current
+                                    .connectionsFor(d))
+                                  ConnectionCard(connection: connection),
+                                for (final journey
+                                    in ConnectedCatalog.current.journeysFor(d))
+                                  explorationLink(
+                                      c,
+                                      journey.title,
+                                      'Explore this passage in a Journey.',
+                                      '/journeys/${journey.id}'),
+                                explorationLink(
+                                    c,
+                                    'Your exploration, kept',
+                                    'Return to your permanent Journey Board.',
+                                    '/journey-board'),
+                              ],
+                            ]),
                     ]))),
           if (id == null)
             explorationLink(c, 'Earlier collections',
@@ -190,65 +196,70 @@ class LearnScreen extends StatelessWidget {
             const NextActionPanel(learning: true),
             const SizedBox(height: 24),
           ],
-          Text('Browse the learning library',
-              style: Theme.of(c).textTheme.titleLarge),
-          const SizedBox(height: 12),
-          const ActivityShelf(children: [
-            ActivityCard(
-                title: 'Play & Learn',
-                description:
-                    'Passage word searches, Scripture crosswords, matching, verse puzzles, book order and parables.',
-                route: '/play-learn',
-                icon: Icons.extension_outlined),
-            ActivityCard(
-                title: 'Remember Scripture',
-                description:
-                    'Choose a passage to carry with you. Practice, use help, or recall independently.',
-                route: '/remembered',
-                icon: Icons.psychology_outlined),
-            ActivityCard(
-                title: 'Codex — Discoveries',
-                description:
-                    'Return to discoveries, their meaning, and the Scripture that opened them.',
-                route: '/discoveries',
-                icon: Icons.auto_stories_outlined),
-          ]),
-          const SizedBox(height: 24),
           ExpansionTile(
               tilePadding: EdgeInsets.zero,
               initiallyExpanded: passage == null,
-              title: const Text('Passage challenges'),
+              title: const Text('Browse all learning'),
               children: [
-                for (final d in discoveries)
-                  explorationLink(
-                      c,
-                      d.title,
-                      '${d.reference} · ${(app.explorationState['learning'] as Map).containsKey(d.id) ? 'Evidence found · revisit' : 'Find it in the Passage'}',
-                      '/find-passage/${d.id}',
-                      icon: Icons.search),
-              ]),
-          ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              initiallyExpanded: passage == null,
-              title: const Text('Chapter Learning'),
-              subtitle: const Text('All five existing chapter challenges'),
-              children: [
-                for (final ref in ConnectedCatalog.chapterLearning)
-                  explorationLink(
-                      c,
-                      ref.label,
-                      'Quick, Standard or Deep · reflections are optional.',
-                      '/chapter-quiz?book=${ref.book}&chapter=${ref.chapter}'),
-              ]),
-          ExpansionTile(
-              tilePadding: EdgeInsets.zero,
-              initiallyExpanded: passage == null,
-              title: const Text('Scripture Connections'),
-              subtitle: const Text(
-                  'Textual relationships and labeled editorial suggestions'),
-              children: [
-                for (final connection in scriptureConnections)
-                  ConnectionCard(connection: connection),
+                const SizedBox(height: 12),
+                const ActivityShelf(children: [
+                  ActivityCard(
+                      title: 'Play & Learn',
+                      description:
+                          'Passage word searches, Scripture crosswords, matching, verse puzzles, book order and parables.',
+                      route: '/play-learn',
+                      icon: Icons.extension_outlined),
+                  ActivityCard(
+                      title: 'Remember Scripture',
+                      description:
+                          'Choose a passage to carry with you. Practice, use help, or recall independently.',
+                      route: '/remembered',
+                      icon: Icons.psychology_outlined),
+                  ActivityCard(
+                      title: 'Codex — Discoveries',
+                      description:
+                          'Return to discoveries, their meaning, and the Scripture that opened them.',
+                      route: '/discoveries',
+                      icon: Icons.auto_stories_outlined),
+                ]),
+                const SizedBox(height: 24),
+                ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    initiallyExpanded: passage == null,
+                    title: const Text('Passage challenges'),
+                    children: [
+                      for (final d in discoveries)
+                        explorationLink(
+                            c,
+                            d.title,
+                            '${d.reference} · ${(app.explorationState['learning'] as Map).containsKey(d.id) ? 'Evidence found · revisit' : 'Find it in the Passage'}',
+                            '/find-passage/${d.id}',
+                            icon: Icons.search),
+                    ]),
+                ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    initiallyExpanded: passage == null,
+                    title: const Text('Chapter Learning'),
+                    subtitle:
+                        const Text('All five existing chapter challenges'),
+                    children: [
+                      for (final ref in ConnectedCatalog.chapterLearning)
+                        explorationLink(
+                            c,
+                            ref.label,
+                            'Quick, Standard or Deep · reflections are optional.',
+                            '/chapter-quiz?book=${ref.book}&chapter=${ref.chapter}'),
+                    ]),
+                ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    initiallyExpanded: passage == null,
+                    title: const Text('Scripture Connections'),
+                    subtitle: const Text(
+                        'Textual relationships and labeled editorial suggestions'),
+                    children: [
+                      for (final connection in scriptureConnections)
+                        ConnectionCard(connection: connection),
+                    ]),
               ]),
         ];
       });
@@ -317,7 +328,7 @@ class _FindPassageScreenState extends State<FindPassageScreen> {
               Text('${d.reference} · KJV'),
               const SizedBox(height: 8),
               const Text(
-                  'Read in context. Tap the verse containing the evidence. First completion earns 10 base XP and can advance eligible learning quests.'),
+                  'Read the passage. Tap the verse containing the evidence.'),
               if (!s.hasData) const LinearProgressIndicator(),
               if (s.hasData && lines.isEmpty)
                 const Text(
@@ -326,28 +337,8 @@ class _FindPassageScreenState extends State<FindPassageScreen> {
                   onPressed: () => setState(() => hint = true),
                   child: const Text('Show a clue')),
               if (hint) Text('Look for “${d.evidence}”.'),
-              if (feedback != null)
-                Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Semantics(
-                        liveRegion: true,
-                        child: Text(feedback!,
-                            style: Theme.of(c).textTheme.titleMedium))),
-              if (finished) ...[
-                const AccomplishmentMark(icon: Icons.search),
-                explorationLink(
-                    c,
-                    'Keep exploring this discovery',
-                    'Context, connections, and the next Journey',
-                    '/discoveries/${d.id}'),
-                explorationLink(
-                    c,
-                    'Remember a verse from this passage',
-                    'Practice at your own pace.',
-                    '/memorization-practice?key=${Uri.encodeComponent(d.memoryKey)}'),
-                NextActionPanel(reference: d.reference, learning: true),
-                DoneForNow(passage: PassageReference.tryParse(d.reference)!),
-              ],
+              if (!finished && feedback != null)
+                Semantics(liveRegion: true, child: Text(feedback!)),
               for (final line in lines.where(
                   (line) => !finished || line.startsWith('${d.answerVerse} ')))
                 Padding(
@@ -366,6 +357,27 @@ class _FindPassageScreenState extends State<FindPassageScreen> {
                                 .textTheme
                                 .bodyLarge
                                 ?.copyWith(height: 1.7)))),
+              if (finished && feedback != null)
+                Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Semantics(
+                        liveRegion: true,
+                        child: Text(feedback!.split('\n').first,
+                            style: Theme.of(c).textTheme.titleMedium))),
+              if (finished) ...[
+                SessionEnding(
+                    passage: PassageReference.tryParse(d.reference)!,
+                    more: [
+                      explorationLink(c, 'Keep exploring this discovery',
+                          'Context and connections', '/discoveries/${d.id}'),
+                      explorationLink(
+                          c,
+                          'Remember a verse from this passage',
+                          'Practice at your own pace.',
+                          '/memorization-practice?key=${Uri.encodeComponent(d.memoryKey)}'),
+                    ]),
+                SavedDetails(children: [Text(feedback ?? '')]),
+              ],
               TextButton(
                   onPressed: () => c.push(JourneyContent.route(d.reference)),
                   child: const Text('Open the full Bible reader')),
@@ -386,7 +398,7 @@ class RememberedScreen extends StatelessWidget {
               style: Theme.of(c).textTheme.headlineMedium),
           const SizedBox(height: 12),
           const Text(
-              'Practice is a personal record, not a measure of faith. Outcomes are self-reported. Earlier memorization records remain in your original library.'),
+              'Choose a verse to practice. Your practice and recall outcomes are kept separately.'),
           if (keys.isEmpty)
             const Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
@@ -414,8 +426,13 @@ class RememberedScreen extends StatelessWidget {
               'Discover a passage to remember',
               'Choose something meaningful from what you read.',
               '/discoveries'),
-          explorationLink(c, 'Earlier memorization library',
-              'Your existing learning records are preserved.', '/memorization'),
+          ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              title: const Text('Earlier memorization library'),
+              children: [
+                explorationLink(c, 'Open earlier records',
+                    'Your original library and saved history.', '/memorization')
+              ]),
         ];
       });
 }

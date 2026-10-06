@@ -1,3 +1,5 @@
+import '../widgets/sessions/session_ending.dart';
+import '../models/connected/passage_reference.dart';
 import '../widgets/exploration/exploration_art.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -52,7 +54,7 @@ class _MemoryState extends State<MemorizationPracticeScreen> {
             Text(reference, style: Theme.of(c).textTheme.headlineMedium),
             const SizedBox(height: 12),
             const Text(
-                'Study the words. Hide them when you are ready. Say or write them privately, then record how it went. This is self-reported practice, not a test of faith.'),
+                'Study the words, then hide them and recall privately. Record how it went.'),
             const SizedBox(height: 20),
             if (s.connectionState != ConnectionState.done)
               const LinearProgressIndicator(),
@@ -100,21 +102,36 @@ class _MemoryState extends State<MemorizationPracticeScreen> {
               if (result != null)
                 Semantics(
                     liveRegion: true,
-                    child: Text(result!,
+                    child: Text(
+                        saved
+                            ? result!.split('\n').take(2).join('\n')
+                            : result!,
                         style: Theme.of(c).textTheme.titleMedium)),
-              const SizedBox(height: 12),
-              const Text(
-                  'Independent recall can earn the existing daily verse reward. Practicing and recall with help are kept as distinct progress and can advance eligible learning quests.'),
+              if (saved) ...[
+                SessionEnding(
+                    passage: PassageReference.tryParse(reference)!,
+                    more: [
+                      TextButton(
+                          onPressed: () =>
+                              c.push(JourneyContent.route(reference)),
+                          child: const Text('Read this verse in context')),
+                      TextButton(
+                          onPressed: () => c.push('/remembered'),
+                          child: const Text('My remembered Scripture')),
+                    ]),
+                SavedDetails(children: [Text(result!)]),
+              ],
             ],
-            TextButton(
-                onPressed: () => c.push(JourneyContent.route(reference)),
-                child: const Text('Read this verse in context')),
-            TextButton(
-                onPressed: () => c.push('/remembered'),
-                child: const Text('My remembered Scripture')),
-            if (saved)
-              FilledButton(
-                  onPressed: () => c.go('/learn'),
-                  child: const Text('Choose what to explore next')),
+            if (!saved)
+              TextButton(
+                  onPressed: () => c.push(JourneyContent.route(reference)),
+                  child: const Text('Read this verse in context')),
+            ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: const Text('About practice and recall'),
+                children: const [
+                  Text(
+                      'Outcomes are self-reported, not a measure of faith. Independent recall can earn the existing daily verse reward. Practicing and recall with help are kept separately and can advance eligible learning quests.')
+                ]),
           ]));
 }

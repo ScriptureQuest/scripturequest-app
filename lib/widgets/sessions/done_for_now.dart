@@ -20,8 +20,7 @@ class _DoneForNowState extends State<DoneForNow> {
   Widget build(BuildContext context) =>
       Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const SizedBox(height: 12),
-        const Text('You can pause here. Continue when you’re ready.'),
-        TextButton.icon(
+        FilledButton.icon(
             icon: const Icon(Icons.check_circle_outline),
             label: Text(busy ? 'Keeping your return point…' : 'Done for now'),
             onPressed: busy

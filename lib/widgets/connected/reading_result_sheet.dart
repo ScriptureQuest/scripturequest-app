@@ -1,8 +1,7 @@
-import '../sessions/done_for_now.dart';
+import '../sessions/session_ending.dart';
+import '../../services/continuity/next_action.dart';
 import '../../models/connected/passage_reference.dart';
-import 'next_action_panel.dart';
 import '../../data/exploration/catalog.dart';
-import '../exploration/exploration_art.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -83,67 +82,68 @@ class ReadingResultSheet extends StatelessWidget {
                         padding: EdgeInsets.only(top: 12),
                         child: Text(
                             'Chapter progress saved. Journey steps, reading quests, and streak credit require 45 seconds in the reader. Keep reading, then complete again; chapter XP will not repeat.')),
-                  for (final change in result.changes)
-                    Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.check, size: 20),
-                              const SizedBox(width: 8),
-                              Expanded(child: Text(change))
-                            ])),
-                  for (final a in achievements)
-                    Padding(
-                        padding: const EdgeInsets.only(top: 12),
-                        child: Text('Achievement · ${a.title}')),
-                  if (result.keepsakes.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                        'Collection additions · ${result.keepsakes.join(', ')}'),
-                    TextButton(
-                        onPressed: () => Navigator.pop(context, '/collection'),
-                        child: const Text('View my collection')),
-                  ],
-                  for (final id in {
-                    ...result.discoveryIds,
-                    if (result.discovered) 'shepherd'
-                  }) ...[
-                    const Divider(height: 32),
-                    const AccomplishmentMark(icon: Icons.auto_stories_outlined),
-                    const SizedBox(height: 8),
-                    const Text('DISCOVERY ADDED'),
-                    Text(discoveryById(id).title,
-                        style: theme.textTheme.titleLarge),
-                    Text(
-                        '${discoveryById(id).reference} now has a permanent place in your Codex.'),
-                    TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, '/discoveries/$id'),
-                        child: const Text('Open my discovery')),
-                  ],
-                  const SizedBox(height: 24),
-                  NextActionPanel(
-                      reference: result.reference,
-                      secondaryJourney: true,
-                      onNavigate: (route) => Navigator.pop(context, route)),
-                  TextButton(
-                      onPressed: () => Navigator.pop(context, 'reflect'),
-                      child: const Text('Keep a reflection · optional')),
-                  TextButton(
-                      onPressed: () => Navigator.pop(
-                          context,
-                          Uri(
-                                  path: '/learn',
-                                  queryParameters: {'ref': result.reference})
-                              .toString()),
-                      child: const Text('Learning available for this passage')),
-                  DoneForNow(
+                  SessionEnding(
                       passage: PassageReference.tryParse(result.reference)!,
-                      onDone: () => Navigator.pop(context, '/')),
-                  TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Keep reading')),
+                      contextKind: SessionContext.readingResult,
+                      onDone: () => Navigator.pop(context, '/'),
+                      onNavigate: (route) => Navigator.pop(context, route),
+                      more: [
+                        TextButton(
+                            onPressed: () => Navigator.pop(context, 'reflect'),
+                            child: const Text('Keep a reflection · optional')),
+                        TextButton(
+                            onPressed: () => Navigator.pop(
+                                context,
+                                Uri(path: '/learn', queryParameters: {
+                                  'ref': result.reference
+                                }).toString()),
+                            child: const Text(
+                                'Learning available for this passage')),
+                        TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Keep reading')),
+                      ]),
+                  SavedDetails(children: [
+                    for (final change in result.changes)
+                      Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.check, size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(change))
+                              ])),
+                    for (final a in achievements)
+                      Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Text('Achievement · ${a.title}')),
+                    if (result.keepsakes.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                          'Collection additions · ${result.keepsakes.join(', ')}'),
+                      TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, '/collection'),
+                          child: const Text('View my collection')),
+                    ],
+                    for (final id in {
+                      ...result.discoveryIds,
+                      if (result.discovered) 'shepherd'
+                    }) ...[
+                      const Divider(height: 32),
+                      const SizedBox(height: 8),
+                      const Text('DISCOVERY ADDED'),
+                      Text(discoveryById(id).title,
+                          style: theme.textTheme.titleLarge),
+                      Text(
+                          '${discoveryById(id).reference} now has a permanent place in your Codex.'),
+                      TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, '/discoveries/$id'),
+                          child: const Text('Open my discovery')),
+                    ],
+                  ]),
                 ])));
   }
 }

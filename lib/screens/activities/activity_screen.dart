@@ -1,4 +1,4 @@
-import '../../widgets/sessions/done_for_now.dart';
+import '../../widgets/sessions/session_ending.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -10,28 +10,24 @@ import '../../models/connected/passage_reference.dart';
 import '../../providers/app_provider.dart';
 import '../../services/activities/puzzle_engine.dart';
 import '../../widgets/product/product_ui.dart';
-import '../../widgets/connected/next_action_panel.dart';
 
 class ActivityFollowUp extends StatelessWidget {
   final PassageReference passage;
-  const ActivityFollowUp({super.key, required this.passage});
+  final List<Widget> more;
+  const ActivityFollowUp(
+      {super.key, required this.passage, this.more = const []});
   @override
-  Widget build(BuildContext context) =>
-      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        NextActionPanel(
-            reference: passage.label, learning: true, secondaryJourney: true),
+  Widget build(BuildContext context) => SessionEnding(passage: passage, more: [
         TextButton.icon(
-            onPressed: () => context.push(
-                Uri(path: '/learn', queryParameters: {'ref': passage.label})
-                    .toString()),
-            icon: const Icon(Icons.auto_stories_outlined),
-            label: const Text('All learning for this passage')),
+            onPressed: () => context.push(passage.destination.route),
+            icon: const Icon(Icons.menu_book_outlined),
+            label: const Text('Read the passage in context')),
         for (final d in ConnectedCatalog.current.forPassage(passage))
           TextButton(
               onPressed: () => context.push(
                   '/memorization-practice?key=${Uri.encodeComponent(d.memoryKey)}'),
               child: const Text('Choose a verse to remember')),
-        DoneForNow(passage: passage),
+        ...more,
       ]);
 }
 
@@ -248,8 +244,7 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
                             Text(
                                 '${a.passage!.label} · KJV · ${a.words.length} words'),
                             const SizedBox(height: 8),
-                            const Text(
-                                'Passage words from KJV. Replays keep earlier rewards. Looking at Scripture is encouraged.'),
+                            const Text('Looking at Scripture is encouraged.'),
                             TextButton(
                                 onPressed: () =>
                                     context.push(a.passage!.destination.route),
@@ -261,27 +256,31 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
                                       .textTheme
                                       .headlineSmall),
                               Semantics(
-                                  liveRegion: true, child: Text(message ?? '')),
+                                  liveRegion: true,
+                                  child:
+                                      Text((message ?? '').split('\n').first)),
                               const Text(
                                   'This records activity completion, not reading or independent recall.'),
-                              Text(
-                                  '${deliveredHints ?? hinted.length} answer hints used · personal best tracks fewer hints, not speed.'),
-                              const SizedBox(height: 16),
-                              ActivityFollowUp(passage: a.passage!),
-                              const SizedBox(height: 16),
-                              FilledButton.icon(
-                                  onPressed: () => setState(() {
-                                        seed++;
-                                        _reset();
-                                      }),
-                                  icon: const Icon(Icons.replay),
-                                  label:
-                                      const Text('Play again · no repeat XP')),
-                              TextButton(
-                                  onPressed: () => context.canPop()
-                                      ? context.pop()
-                                      : context.go('/play-learn'),
-                                  child: const Text('Back to activities')),
+                              ActivityFollowUp(passage: a.passage!, more: [
+                                TextButton.icon(
+                                    onPressed: () => setState(() {
+                                          seed++;
+                                          _reset();
+                                        }),
+                                    icon: const Icon(Icons.replay),
+                                    label: const Text(
+                                        'Play again · no repeat XP')),
+                                TextButton(
+                                    onPressed: () => context.canPop()
+                                        ? context.pop()
+                                        : context.go('/play-learn'),
+                                    child: const Text('Back to activities')),
+                              ]),
+                              SavedDetails(children: [
+                                Text(message ?? ''),
+                                Text(
+                                    '${deliveredHints ?? hinted.length} answer hints used · personal best tracks fewer hints, not speed.'),
+                              ]),
                             ] else ...[
                               if (pendingDelivery != null) ...[
                                 const Text(
@@ -321,8 +320,6 @@ class _ScriptureActivityScreenState extends State<ScriptureActivityScreen> {
                                 const SizedBox(height: 12),
                                 LinearProgressIndicator(
                                     value: found.length / a.words.length),
-                                Text(
-                                    '${found.length} / ${a.words.length} found'),
                               ] else ...[
                                 const Text(
                                     'Choose a clue or square, then enter the whole answer. Crossing letters are shared.'),

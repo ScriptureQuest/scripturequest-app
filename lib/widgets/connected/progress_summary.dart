@@ -7,7 +7,8 @@ import 'package:level_up_your_faith/widgets/reading_v2/reading_design.dart';
 import 'journey_content.dart';
 
 class ProgressSummary extends StatelessWidget {
-  const ProgressSummary({super.key});
+  final bool compact;
+  const ProgressSummary({super.key, this.compact = false});
   @override
   Widget build(BuildContext context) {
     final u = context.watch<AppProvider>().currentUser;
@@ -24,7 +25,7 @@ class ProgressSummary extends StatelessWidget {
                 Text('Level ${u.currentLevel}',
                     style: Theme.of(context).textTheme.titleMedium),
                 Text('${u.currentXP} / ${u.xpToNextLevel} XP'),
-                Text('${u.totalXP} XP earned'),
+                if (!compact) Text('${u.totalXP} XP earned'),
               ]),
           const SizedBox(height: 10),
           LinearProgressIndicator(
@@ -49,7 +50,11 @@ class TodayJourney extends StatelessWidget {
       Text(journey == null ? 'YOUR SCRIPTURE QUEST' : 'YOUR CURRENT JOURNEY',
           style: theme.textTheme.labelMedium),
       const SizedBox(height: 12),
-      Text(journey?.questline.title ?? (app.lastBibleReference == null ? 'Start somewhere meaningful.' : 'Your reading continues.'),
+      Text(
+          journey?.questline.title ??
+              (app.lastBibleReference == null
+                  ? 'Start somewhere meaningful.'
+                  : 'Your reading continues.'),
           style: theme.textTheme.headlineMedium),
       const SizedBox(height: 8),
       Text(journey == null

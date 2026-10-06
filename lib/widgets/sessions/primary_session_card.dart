@@ -13,13 +13,11 @@ class PrimarySessionCard extends StatelessWidget {
     return ReadingSurface(
         child:
             Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('A PLACE FOR SCRIPTURE',
+      Text('YOUR NEXT SCRIPTURE STEP',
           style: Theme.of(context).textTheme.labelMedium),
       const SizedBox(height: 12),
-      Text('Your next Scripture step',
-          style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: 12),
-      const NextActionPanel(sessionContext: SessionContext.today),
+      const NextActionPanel(
+          sessionContext: SessionContext.today, prominent: true),
       if (app.focusedJourney != null) ...[
         const SizedBox(height: 12),
         Text(

@@ -233,6 +233,16 @@ void main() {
                                 result: app.lastReadingCompletion!))))))));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    for (final label in ['Saved progress details', 'Explore more']) {
+      final target = find.text(label);
+      await tester.scrollUntilVisible(target, 180,
+          scrollable: find.byType(Scrollable).first);
+      await tester.ensureVisible(target);
+      await tester.pumpAndSettle();
+      expect(target.hitTestable(), findsOneWidget);
+      await tester.tap(target);
+      await tester.pumpAndSettle();
+    }
     expect(find.text('The Shepherd’s Care'), findsOneWidget);
     await tester.ensureVisible(find.text('Keep reading'));
     await tester.pumpAndSettle();

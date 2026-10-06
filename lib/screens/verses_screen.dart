@@ -2554,9 +2554,16 @@ class _ChapterPageState extends State<_ChapterPage> {
               Text(
                 widget.hasMetReadingThreshold()
                     ? 'Ready to save reading and eligible Journey/quest progress.'
-                    : 'Chapter progress can be saved after 12 active seconds and engagement. Journey steps, reading quests and streak credit require 45 active seconds. Time pauses when you leave or background the reader.',
+                    : 'Chapter saving and Journey credit become ready separately. Journey, reading-quest and streak credit need 45 active seconds.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+              ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: const Text('How reading progress is saved'),
+                  children: const [
+                    Text(
+                        'Chapter progress can be saved after 12 active seconds and engagement. Journey steps, reading quests and streak credit require 45 active seconds. Time pauses when you leave or background the reader. Saving again after qualification keeps earlier chapter XP.')
+                  ]),
               const SizedBox(height: 16),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2642,11 +2649,7 @@ class _ChapterPageState extends State<_ChapterPage> {
                               }
                             : null,
                         icon: const Icon(Icons.quiz_outlined),
-                        label: Text(
-                          quizAvailable
-                              ? 'Take Chapter Quiz'
-                              : 'Quiz (Coming soon)',
-                        ),
+                        label: const Text('Chapter Learning'),
                       );
                     },
                   ),

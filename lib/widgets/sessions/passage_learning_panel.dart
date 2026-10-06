@@ -50,40 +50,46 @@ class PassageLearningPanel extends StatelessWidget {
                   onPressed: () => context.push(passage.destination.route),
                   icon: const Icon(Icons.menu_book_outlined),
                   label: const Text('Read in context')),
-              Semantics(
-                  liveRegion: true,
-                  child: Text(view.caughtUp
-                      ? 'You’re caught up with the available challenges here. Replays are optional.'
-                      : view.opportunities.isEmpty
-                          ? 'No authored challenges are available for this chapter yet.'
-                          : 'Choose a way to look closer at this passage.')),
-              links(view.opportunities),
-              if (s.activeJourney != null &&
-                  view.journeys.any((j) =>
-                      j.route ==
-                      '/journeys/${s.activeJourney!.questline.id}') &&
-                  s.activeJourney!.currentStep != null &&
-                  s.activeJourney!.currentStep!.questId
-                      .startsWith('tpl:reflect'))
-                NextActionPanel(sessionContext: SessionContext.journey),
-              if (view.connections.isNotEmpty)
-                ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text('Connections & discoveries'),
-                    children: [links(view.connections)]),
-              if (view.remembering.isNotEmpty)
-                ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text('Remember these words'),
-                    children: [links(view.remembering)]),
-              if (view.remembering.isEmpty)
-                const Text(
-                    'To remember words from this chapter, open Scripture and choose a verse.'),
-              if (view.journeys.isNotEmpty)
-                ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text('Related Journeys · optional'),
-                    children: [links(view.journeys)]),
+              const Text('One way to look closer · optional'),
+              NextActionPanel(
+                  reference: passage.label,
+                  sessionContext: SessionContext.passageLearning),
+              ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: const Text('Explore this passage'),
+                  subtitle:
+                      const Text('All activities, connections and remembering'),
+                  children: [
+                    if (view.opportunities.isEmpty)
+                      const Text(
+                          'No authored activities for this chapter. You can read, highlight or reflect.'),
+                    links(view.opportunities),
+                    if (view.connections.isNotEmpty)
+                      ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          title: const Text('Connections & discoveries'),
+                          children: [links(view.connections)]),
+                    if (view.remembering.isNotEmpty)
+                      ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          title: const Text('Remember these words'),
+                          children: [links(view.remembering)]),
+                    if (view.remembering.isEmpty)
+                      const Text(
+                          'To remember words from this chapter, open Scripture and choose a verse.'),
+                    if (view.journeys.isNotEmpty)
+                      ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          title: const Text('Related Journeys · optional'),
+                          children: [
+                            if (s.activeJourney?.currentStep?.questId
+                                    .startsWith('tpl:reflect') ==
+                                true)
+                              const Text(
+                                  'Optional Journey response · continue with or without writing.'),
+                            links(view.journeys)
+                          ]),
+                  ]),
             ]));
       });
 }

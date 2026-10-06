@@ -10,7 +10,7 @@ class LearningOpportunity {
   final OpportunityState state;
   const LearningOpportunity(this.title, this.detail, this.route, this.state);
   String get status => switch (state) {
-        OpportunityState.available => 'Not yet completed',
+        OpportunityState.available => 'Available · optional',
         OpportunityState.completed => 'Completed · optional replay',
         OpportunityState.pending => 'Completion needs delivery · retry',
         OpportunityState.optional => 'Optional exploration',

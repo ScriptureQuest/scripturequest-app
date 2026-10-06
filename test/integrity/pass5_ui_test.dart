@@ -225,14 +225,35 @@ void main() {
       for (final width in [320.0, 1280.0]) {
         for (final screen in <Widget>[
           ReadingResultSheet(result: app.lastReadingCompletion!),
-          const LearnScreen(),
+          const LearnScreen(reference: 'John 1'),
           const CodexScreen(id: 'word'),
           const JourneysScreen(board: true),
         ]) {
           await mount(tester, screen, Size(width, 900), dark: dark);
           await settleIO(tester);
           if (screen is ReadingResultSheet || screen is LearnScreen) {
-            expect(find.text('Continue Knowing Jesus'), findsOneWidget);
+            final disclosure = find.text(screen is ReadingResultSheet
+                ? 'Explore more'
+                : 'Explore this passage');
+            await tester.ensureVisible(disclosure);
+            await tester.tap(disclosure);
+            await tester.pumpAndSettle();
+            if (screen is LearnScreen) {
+              await tester
+                  .ensureVisible(find.text('Related Journeys · optional'));
+              await tester.pumpAndSettle();
+              await tester
+                  .ensureVisible(find.text('Related Journeys · optional'));
+              await tester.pumpAndSettle();
+              expect(find.text('Related Journeys · optional').hitTestable(),
+                  findsOneWidget);
+              await tester.tap(find.text('Related Journeys · optional'));
+              await tester.pumpAndSettle();
+              expect(find.text('Knowing Jesus'), findsOneWidget);
+            } else {
+              expect(find.text('Return to Knowing Jesus · optional'),
+                  findsOneWidget);
+            }
             expect(find.textContaining('without writing'), findsOneWidget);
           }
           await capture(tester,

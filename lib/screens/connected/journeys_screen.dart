@@ -310,7 +310,7 @@ class _GuidedJourneyScreenState extends State<GuidedJourneyScreen> {
                             ? 'What stayed with you? Keep a thought or question, or continue without writing.'
                             : d.description)),
                     if (canRead)
-                      TextButton.icon(
+                      FilledButton.icon(
                           icon: const Icon(Icons.menu_book_outlined),
                           label: Text(
                               done ? 'Revisit Scripture' : 'Read in the Bible'),
@@ -406,18 +406,24 @@ class _GuidedJourneyScreenState extends State<GuidedJourneyScreen> {
                             : null))))
                   buildStep(step)
               ]),
-          for (final discovery in ConnectedCatalog.current.forJourney(d.id))
-            _link(
-                context,
-                Icons.auto_stories_outlined,
-                'A discovery along the way',
-                '${discovery.title} · ${discovery.reference}',
-                '/discoveries/${discovery.id}'),
-          if (complete) NextActionPanel(finishedJourney: d.id),
-          _link(context, Icons.route_outlined, 'Keep the accomplishment',
-              'See your Journey Board.', '/journey-board'),
-          _link(context, Icons.edit_note, 'Your journal',
-              'Return to thoughts and linked passages.', '/journal'),
+          ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              title: const Text('Along this Journey'),
+              children: [
+                for (final discovery
+                    in ConnectedCatalog.current.forJourney(d.id))
+                  _link(
+                      context,
+                      Icons.auto_stories_outlined,
+                      'A discovery along the way',
+                      '${discovery.title} · ${discovery.reference}',
+                      '/discoveries/${discovery.id}'),
+                if (complete) NextActionPanel(finishedJourney: d.id),
+                _link(context, Icons.route_outlined, 'Keep the accomplishment',
+                    'See your Journey Board.', '/journey-board'),
+                _link(context, Icons.edit_note, 'Your journal',
+                    'Return to thoughts and linked passages.', '/journal'),
+              ]),
         ]);
       });
 }

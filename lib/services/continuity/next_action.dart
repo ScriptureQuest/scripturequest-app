@@ -5,7 +5,14 @@ import '../../models/connected/destination.dart';
 import '../../models/connected/passage_reference.dart';
 import '../../models/questline.dart';
 
-enum SessionContext { today, journey, freeReading, passageLearning }
+enum SessionContext {
+  today,
+  journey,
+  freeReading,
+  passageLearning,
+  readingResult,
+  learningResult
+}
 
 class NextAction {
   final String title, reason;
@@ -152,6 +159,24 @@ class NextActionGuidance {
             ConnectedDestination('/journeys/${j.questline.id}'));
       }
     }
+    // Entry guidance resumes reading intentions; optional catalog work never
+    // competes with a chosen Journey, plan or return point on Today.
+    if (context == SessionContext.today || context == SessionContext.journey) {
+      if (s.planReading != null) {
+        return NextAction(
+            'Continue ${s.planTitle ?? 'your reading plan'}',
+            'Next reading · ${s.planReading!.label}',
+            const ConnectedDestination('/reading-plans'));
+      }
+      final resume = PassageReference.tryParse(s.returnPoint?.reference) ??
+          s.recentReading;
+      if (resume != null && finishedJourney == null) {
+        return NextAction('Return to ${resume.label}',
+            'Continue reading at your pace.', resume.destination,
+            optionalReplay: s.returnPoint != null);
+      }
+      return resolve(s, finishedJourney: finishedJourney);
+    }
     final recent = passage ??
         s.recentReading ??
         PassageReference.tryParse(s.returnPoint?.reference);
@@ -172,31 +197,32 @@ class NextActionGuidance {
           .toList();
       available.sort((a, b) => (a.route.startsWith('/find-passage') ? 0 : 1)
           .compareTo(b.route.startsWith('/find-passage') ? 0 : 1));
-      final next = pending.isNotEmpty ? pending.first : available.firstOrNull;
-      if (next != null)
+      if (context == SessionContext.learningResult && pending.isEmpty) {
         return NextAction(
-            next.title,
-            '${recent.label} · ${next.state == OpportunityState.pending ? 'An earlier completion still needs delivery. Retry keeps the same reward identity.' : next.detail}',
-            ConnectedDestination(next.route));
-      if (context == SessionContext.passageLearning ||
-          context == SessionContext.freeReading) {
-        return NextAction(
-            'Revisit ${recent.label}',
-            view.opportunities.isEmpty
-                ? 'No authored challenges are available for this chapter yet. Read, highlight or reflect at your own pace.'
-                : 'You’re caught up with the available challenges here. Replays and connections are optional; your earlier rewards are kept.',
+            'Explore ${recent.label}',
+            'More study is here whenever you want it.',
             ConnectedDestination(
                 Uri(path: '/learn', queryParameters: {'ref': recent.label})
                     .toString()),
             optionalReplay: true);
       }
-    }
-    if (recent != null && context == SessionContext.today) {
-      return NextAction(
-          'Return to ${recent.label}',
-          'Your earlier progress is kept. Read freely or choose another passage when ready.',
-          recent.destination,
-          optionalReplay: true);
+      final next = pending.isNotEmpty ? pending.first : available.firstOrNull;
+      if (next != null)
+        return NextAction(
+            next.title,
+            '${recent.label} · ${next.state == OpportunityState.pending ? 'Finish saving your earlier completion.' : next.route.startsWith('/find-passage') ? 'Find evidence in the passage.' : next.route.startsWith('/chapter-quiz') ? 'Consider questions about what you read.' : 'Work with words from the passage.'}',
+            ConnectedDestination(next.route));
+      if (context == SessionContext.passageLearning ||
+          context == SessionContext.freeReading ||
+          context == SessionContext.readingResult) {
+        return NextAction(
+            'Revisit ${recent.label}',
+            view.opportunities.isEmpty
+                ? 'No authored challenges are available for this chapter yet. Read, highlight or reflect at your own pace.'
+                : 'Return to the passage, or explore its connections at your pace.',
+            recent.destination,
+            optionalReplay: true);
+      }
     }
     // Reuse the established new-user/plan/finished-Journey fallbacks.
     return resolve(s, passage: passage, finishedJourney: finishedJourney);

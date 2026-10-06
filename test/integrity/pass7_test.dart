@@ -88,7 +88,8 @@ void main() {
     final action = guidance.resolve(s,
         passage: p, context: SessionContext.passageLearning);
     expect(action.optionalReplay, isTrue);
-    expect(action.reason, contains('caught up'));
+    expect(action.reason, contains('at your pace'));
+    expect(action.destination.route, p.destination.route);
     final id = ActivityCatalog.forPassage(p).first.id;
     all[id] = {'pending': true};
     final pending = guidance.resolve(

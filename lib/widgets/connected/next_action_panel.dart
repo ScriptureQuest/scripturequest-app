@@ -13,6 +13,7 @@ class NextActionPanel extends StatelessWidget {
   final bool learning;
   final SessionContext? sessionContext;
   final bool secondaryJourney;
+  final bool subdued, prominent;
   final ValueChanged<String>? onNavigate;
   const NextActionPanel(
       {super.key,
@@ -21,6 +22,8 @@ class NextActionPanel extends StatelessWidget {
       this.learning = false,
       this.sessionContext,
       this.secondaryJourney = false,
+      this.subdued = false,
+      this.prominent = false,
       this.onNavigate});
   @override
   Widget build(BuildContext context) {
@@ -56,21 +59,30 @@ class NextActionPanel extends StatelessWidget {
           return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (action.optionalReplay) const Text('OPTIONAL REVISIT'),
+                if (action.optionalReplay && !subdued)
+                  const Text('OPTIONAL REVISIT'),
                 Text(action.reason, style: Theme.of(c).textTheme.bodyMedium),
                 const SizedBox(height: 10),
-                if (action.optionalReplay)
+                if (action.optionalReplay || subdued)
                   OutlinedButton(
                       onPressed: () => onNavigate != null
                           ? onNavigate!(action.destination.route)
                           : c.push(action.destination.route),
-                      child: Text(action.title, textAlign: TextAlign.center))
+                      child: Text(action.title,
+                          textAlign: TextAlign.center,
+                          style: prominent
+                              ? Theme.of(c).textTheme.titleLarge
+                              : null))
                 else
                   FilledButton(
                       onPressed: () => onNavigate != null
                           ? onNavigate!(action.destination.route)
                           : c.push(action.destination.route),
-                      child: Text(action.title, textAlign: TextAlign.center)),
+                      child: Text(action.title,
+                          textAlign: TextAlign.center,
+                          style: prominent
+                              ? Theme.of(c).textTheme.titleLarge
+                              : null)),
                 if (secondaryJourney &&
                     related &&
                     j.currentStep != null &&

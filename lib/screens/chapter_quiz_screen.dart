@@ -1,3 +1,4 @@
+import '../widgets/sessions/session_ending.dart';
 import 'activities/activity_screen.dart';
 import '../models/connected/passage_reference.dart';
 import '../theme/scripture_theme.dart';
@@ -139,7 +140,7 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
                       child: Text('Chapter learning saved.',
                           style: theme.textTheme.titleLarge)),
                   SizedBox(height: 8),
-                  Text(_savedSummary),
+                  Text(_savedSummary.split('\n').first),
                   Text(
                       'You answered ${result.correct} out of ${result.totalFactual} correctly.',
                       style: theme.textTheme.bodyMedium),
@@ -154,36 +155,17 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
             ),
             const SizedBox(height: 16),
             ActivityFollowUp(
-                passage: PassageReference(widget.bookId, widget.chapter)),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.push(Uri(
-                        path: '/verses',
-                        queryParameters: {
-                          'ref': '${widget.bookId} ${widget.chapter}'
-                        }).toString()),
-                    child: Text('Read the chapter'),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _finished = false;
-                        _difficultyLocked = false;
-                        // Reload the quiz with the same difficulty
-                        _load();
-                      });
-                    },
-                    child: Text('Try again'),
-                  ),
-                ),
-              ],
-            ),
+                passage: PassageReference(widget.bookId, widget.chapter),
+                more: [
+                  TextButton(
+                      onPressed: () => setState(() {
+                            _finished = false;
+                            _difficultyLocked = false;
+                            _load();
+                          }),
+                      child: const Text('Try again')),
+                ]),
+            SavedDetails(children: [Text(_savedSummary)]),
           ],
         ),
       );
@@ -203,7 +185,12 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
                       }).toString()),
               child: Text('Read the passage in context')),
           SizedBox(height: 12),
-          _difficultySelector(theme),
+          ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              title: Text(
+                  '${_selectedDifficulty.label} · ${_quiz!.questions.length} questions'),
+              subtitle: const Text('Change question count'),
+              children: [_difficultySelector(theme)]),
           SizedBox(height: 12),
           Expanded(
             child: ListView.separated(
@@ -416,7 +403,14 @@ class _ChapterQuizScreenState extends State<ChapterQuizScreen> {
 
   Widget _difficultySelector(ThemeData theme) {
     final locked = _difficultyLocked;
-    String count(QuizDifficulty d) => '${d.desiredQuestionCount} questions';
+    String count(QuizDifficulty d) {
+      final available =
+          ChapterQuizService.getQuizForChapter(widget.bookId, widget.chapter)!
+              .questions
+              .length;
+      return '${d.desiredQuestionCount.clamp(0, available)} questions';
+    }
+
     Widget chip(QuizDifficulty d, {required IconData icon}) {
       final selected = _selectedDifficulty == d;
       final base = QuestPalette.of(context).accent;

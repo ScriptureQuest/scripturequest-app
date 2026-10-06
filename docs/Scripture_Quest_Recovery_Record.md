@@ -556,3 +556,20 @@ VERIFIED: **98 tests pass** (all 85 earlier plus 13 new); analyzer **0 errors, 9
 DEFERRED: backup/recovery, comprehensive integrity audit, larger content, onboarding, provider/storage/router decomposition, native/VoiceOver/release qualification, older content pools and the 19 unmatched red-letter verses. Live-browser/native acceptance is not claimed. Legacy weekly-title range and Bible fallback logs are recorded for later investigation.
 
 Details: `docs/PASS7_CLEAR_SCRIPTURE_SESSION.md`. Full-history transfer verification is part of the handoff. CURRENT STATE: implementation and automated acceptance complete; user review outstanding. NEXT: review Pass 7 in the existing Codespace. **Do not begin Pass 8 without authorization.**
+
+
+## Pass 8 completed — Clear Choices, Clear Endings (2026-10-06)
+
+Authorized separately and built directly on the fetched GitHub Pass 7 HEAD `8c4fb33926c9471c58cc52e982a833eab47bc62e` on `v2/reading-design`. Pass 7 was not recreated. The StorageService startup repair `12d8b0379e013966e3ab5501a3ff3e85ca5a75bb` remains in ancestry and unchanged.
+
+IMPLEMENTED: one optional passage Learn recommendation with full passage/library disclosure; separate reading-result and learning-result guidance; shared prominent Done for now, one optional continuation, Explore more and saved-detail disclosures; equivalent saved memory ending; evidence Scripture before reward feedback; compact chapter-learning mode with actual counts; small Today, Journey, reader and discovery hierarchy/copy changes. Scripture reading depth and authored content remain. AppProvider stays 6,155 lines, unchanged.
+
+VERIFIED: **107 tests pass** (all 98 earlier plus eight new logic cases and one continuous UI scenario); analyzer **0 errors, 92 existing warnings, 26 infos**, identical baseline diagnostic identities; production Web build succeeds. New UI scenario covers 48 Light/Dark views at phone/tablet/desktop widths, larger text, actual quiz completion/replay, memory stopping/save failures, pending delivery/hints, classic result replay/stopping and catalog navigation; earlier puzzle, reading-lifecycle, receipt and startup protections remain. Existing tests now open new disclosures while retaining their behavioral assertions. Renders and diff reviewed.
+
+PRESERVED: persistence/schema, reward and completion semantics, quest/achievement rules, user history, content/Scripture/red-letter data, original StorageService repair, reading presence and qualification thresholds. No migrations/resets or new progression economy. Preview configuration and build/transfer files excluded.
+
+LIMITATIONS: local live-browser access blocked (`ERR_BLOCKED_BY_CLIENT`); native/soft-keyboard/VoiceOver/TalkBack and user usability acceptance remain unverified. Existing analyzer debt, notification fixture warnings and previously recorded weekly-title/Bible fallback logs remain recorded; no scoped data-integrity blocker was found.
+
+DEFERRED: content/game expansion, onboarding, backup/recovery and comprehensive integrity audit, architecture decomposition, native release qualification, unfinished-board resume and the 19 unmatched red-letter verses requiring trusted review.
+
+Details: `docs/PASS8_CLEAR_CHOICES_CLEAR_ENDINGS.md`. NEXT: user acceptance in the existing Codespace/mobile environment. Exact commit and full-history transfer verification are reported separately. **Stop after Pass 8; do not begin Pass 9.**

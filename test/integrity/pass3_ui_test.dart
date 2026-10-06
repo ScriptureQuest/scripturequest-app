@@ -210,6 +210,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(
         find.textContaining('Evidence found in Psalms 46:1.'), findsOneWidget);
+    await tester.ensureVisible(find.text('Explore more'));
+    await tester.tap(find.text('Explore more'));
+    await tester.pumpAndSettle();
     expect(find.text('Keep exploring this discovery'), findsOneWidget);
     expect(find.text('Remember a verse from this passage'), findsOneWidget);
     expect((app.explorationState['learning'] as Map).containsKey('refuge'),
@@ -279,13 +282,16 @@ void main() {
         expect(tester.takeException(), isNull);
       }
 
+      await tapText('Explore this discovery');
       await tapText('Find it in the Passage');
       await tapText(
           '1 God is our refuge and strength, a very present help in trouble.');
+      await tapText('Explore more');
       await tapText('Remember a verse from this passage');
       await tapText('I practiced today');
       expect(app.explorationState['memory']['Psalms:46:1']['sessions'],
           isNotEmpty);
+      await tapText('Explore more');
       await tapText('My remembered Scripture');
       expect(find.textContaining('1 practiced'), findsOneWidget);
       await tapText('Discover a passage to remember');

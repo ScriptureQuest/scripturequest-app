@@ -256,17 +256,8 @@ class _QuestHubScreenState extends State<QuestHubScreen>
                     const SizedBox(height: 26),
                     const PrimarySessionCard(),
                     const SizedBox(height: 24),
-                    const ProgressSummary(),
+                    const ProgressSummary(compact: true),
                     const SizedBox(height: 12),
-                    Wrap(spacing: 12, runSpacing: 8, children: [
-                      Chip(
-                          label:
-                              Text('Daily Quests $completed/${today.length}')),
-                      Chip(
-                          label: Text(
-                              'Weekly Quests ${weeklyTasks.where((q) => q.isCompleted).length}/${weeklyTasks.length}')),
-                    ]),
-                    const SizedBox(height: 16),
                     ExpansionTile(
                         tilePadding: EdgeInsets.zero,
                         title: const Text('Daily Quests'),
@@ -367,7 +358,7 @@ class _QuestHubScreenState extends State<QuestHubScreen>
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Icon(Icons.route_outlined, color: cs.primary),
-                      title: const Text('Find a guided quest'),
+                      title: const Text('Explore Journeys'),
                       subtitle: const Text(
                         'A little direction for your next steps',
                       ),
